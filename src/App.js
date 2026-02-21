@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, UserCheck, Menu, Key, CheckSquare, Square, Bell, MapPin, Award } from 'lucide-react';
+import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, UserCheck, Menu, Key, CheckSquare, Square, Bell, MapPin, Award, User } from 'lucide-react';
 
 const supabase = createClient(
   'https://wqtylxrrerhbxagdzftn.supabase.co',
@@ -26,16 +26,26 @@ const sendEmail = async (to, subject, html) => {
   } catch (e) { return null; }
 };
 
-const Logo = ({ size = 'large' }) => <img src="/logo.png" alt="KeyPrime" className={size === 'large' ? 'h-16 md:h-24' : 'h-12 md:h-16'} style={{ objectFit: 'contain' }} />;
+// LOGO - Centrato con dimensioni responsive
+const Logo = ({ size = 'large', centered = false }) => (
+  <div className={centered ? 'flex justify-center w-full' : ''}>
+    <img 
+      src="/logo.png" 
+      alt="KeyPrime" 
+      className={size === 'large' ? 'h-16 sm:h-20 md:h-24 w-auto max-w-[250px] sm:max-w-[300px]' : 'h-10 md:h-12 w-auto'} 
+      style={{ objectFit: 'contain' }} 
+    />
+  </div>
+);
 
 const InstallPrompt = ({ onClose }) => {
   const [dp, setDp] = useState(null);
   useEffect(() => { const h = (e) => { e.preventDefault(); setDp(e); }; window.addEventListener('beforeinstallprompt', h); return () => window.removeEventListener('beforeinstallprompt', h); }, []);
   const install = async () => { if (dp) { dp.prompt(); await dp.userChoice; setDp(null); onClose(); } };
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  if (!dp && isIOS) return <div className="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 p-4 z-50 safe-area-bottom"><div className="flex items-start gap-3"><div className="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center"><img src="/icon-192.png" alt="" className="w-8 h-8 rounded" /></div><div className="flex-1"><div className="text-white font-medium">Installa KeyPrime</div><div className="text-slate-400 text-sm">Condividi → Aggiungi a Home</div></div><button onClick={onClose} className="text-slate-400"><X className="w-5 h-5" /></button></div></div>;
+  if (!dp && isIOS) return <div className="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 p-4 z-50"><div className="flex items-start gap-3"><div className="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center"><img src="/icon-192.png" alt="" className="w-8 h-8 rounded" /></div><div className="flex-1"><div className="text-white font-medium">Installa KeyPrime</div><div className="text-slate-400 text-sm">Condividi → Aggiungi a Home</div></div><button onClick={onClose} className="text-slate-400"><X className="w-5 h-5" /></button></div></div>;
   if (!dp) return null;
-  return <div className="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 p-4 z-50 safe-area-bottom"><div className="flex items-center gap-3"><div className="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center"><img src="/icon-192.png" alt="" className="w-8 h-8 rounded" /></div><div className="flex-1"><div className="text-white font-medium">Installa KeyPrime</div></div><button onClick={install} className="bg-amber-500 text-slate-900 px-4 py-2 rounded-lg font-medium">Installa</button><button onClick={onClose} className="text-slate-400"><X className="w-5 h-5" /></button></div></div>;
+  return <div className="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 p-4 z-50"><div className="flex items-center gap-3"><div className="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center"><img src="/icon-192.png" alt="" className="w-8 h-8 rounded" /></div><div className="flex-1"><div className="text-white font-medium">Installa KeyPrime</div></div><button onClick={install} className="bg-amber-500 text-slate-900 px-4 py-2 rounded-lg font-medium">Installa</button><button onClick={onClose} className="text-slate-400"><X className="w-5 h-5" /></button></div></div>;
 };
 
 const MobileMenu = ({ isOpen, onClose, tabs, activeTab, setActiveTab, user, onLogout }) => {
@@ -48,6 +58,76 @@ const SelectWithOther = ({ value, onChange, options, placeholder, className }) =
   const [cv, setCv] = useState('');
   useEffect(() => { if (value && !options.includes(value) && value !== 'Altro') { setShowCustom(true); setCv(value); } }, [value, options]);
   return <div className="space-y-2"><select value={showCustom ? 'Altro' : value} onChange={(e) => { if (e.target.value === 'Altro') { setShowCustom(true); setCv(''); onChange(''); } else { setShowCustom(false); onChange(e.target.value); }}} className={className}><option value="">{placeholder || 'Seleziona'}</option>{options.map(o => <option key={o} value={o}>{o}</option>)}</select>{showCustom && <input type="text" value={cv} onChange={(e) => { setCv(e.target.value); onChange(e.target.value); }} placeholder="Specifica..." className={className} autoFocus />}</div>;
+};
+
+// CLIENT SEARCH COMPONENT
+const ClientSearch = ({ clienti, onSelect, onCreateNew, selectedClient }) => {
+  const [search, setSearch] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  
+  const filtered = search.length >= 2 ? clienti.filter(c => 
+    `${c.nome} ${c.cognome} ${c.email} ${c.telefono}`.toLowerCase().includes(search.toLowerCase())
+  ).slice(0, 5) : [];
+
+  return (
+    <div className="relative">
+      {selectedClient ? (
+        <div className="bg-emerald-900/30 border border-emerald-500/50 rounded-xl p-3 flex items-center justify-between">
+          <div>
+            <div className="text-white font-medium">{selectedClient.nome} {selectedClient.cognome}</div>
+            <div className="text-emerald-400 text-xs">{selectedClient.telefono || selectedClient.email}</div>
+          </div>
+          <button onClick={() => onSelect(null)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+        </div>
+      ) : (
+        <>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Cerca cliente esistente..." 
+              value={search} 
+              onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); }}
+              onFocus={() => setShowDropdown(true)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white text-sm"
+            />
+          </div>
+          {showDropdown && search.length >= 2 && (
+            <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
+              {filtered.length > 0 ? (
+                filtered.map(c => (
+                  <button 
+                    key={c.id} 
+                    onClick={() => { onSelect(c); setSearch(''); setShowDropdown(false); }}
+                    className="w-full text-left px-4 py-3 hover:bg-slate-700 border-b border-slate-700 last:border-0"
+                  >
+                    <div className="text-white text-sm font-medium">{c.nome} {c.cognome}</div>
+                    <div className="text-slate-400 text-xs">{c.telefono} {c.email && `• ${c.email}`}</div>
+                  </button>
+                ))
+              ) : (
+                <div className="px-4 py-3 text-slate-400 text-sm">Nessun cliente trovato</div>
+              )}
+              <button 
+                onClick={() => { onCreateNew(); setShowDropdown(false); }}
+                className="w-full text-left px-4 py-3 bg-blue-900/30 hover:bg-blue-900/50 text-blue-400 flex items-center gap-2"
+              >
+                <UserPlus className="w-4 h-4" /> Crea nuovo cliente
+              </button>
+            </div>
+          )}
+          {!search && (
+            <button 
+              onClick={onCreateNew}
+              className="w-full mt-2 bg-slate-700/50 border border-dashed border-slate-600 rounded-xl py-3 text-slate-400 text-sm flex items-center justify-center gap-2 hover:border-slate-500"
+            >
+              <UserPlus className="w-4 h-4" /> Oppure crea nuovo cliente
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
 };
 
 export default function App() {
@@ -91,7 +171,7 @@ export default function App() {
   const loadClienti = async () => { const { data } = await supabase.from('clienti').select('*').order('created_at', { ascending: false }); setClienti(data || []); };
   const loadNotifications = async () => { const { data } = await supabase.from('sales').select('*').order('created_at', { ascending: false }).limit(50); setNotifications((data || []).map(s => ({ id: s.id, type: s.stato === 'venduto' ? 'vendita' : 'lead', message: `${s.inserted_by} ha aggiunto: ${s.progetto || 'Nuovo'}`, time: s.created_at, read: false }))); };
   
-  useEffect(() => { if (user) { loadSales(); if (user.ruolo === 'admin') { loadUsers(); loadClienti(); loadNotifications(); }}}, [user]);
+  useEffect(() => { if (user) { loadSales(); loadClienti(); if (user.ruolo === 'admin') { loadUsers(); loadNotifications(); }}}, [user]);
   
   useEffect(() => {
     if (user?.ruolo !== 'admin') return;
@@ -107,16 +187,111 @@ export default function App() {
   const handleLogout = () => { setUser(null); localStorage.removeItem('keyprime_user'); setView('login'); setMobileMenuOpen(false); };
   const changePassword = async (np) => { const { error: e } = await supabase.from('user_credentials').update({ password: np }).eq('id', user.id); if (e) { setError(e.message); return false; } const u = { ...user, password: np }; setUser(u); localStorage.setItem('keyprime_user', JSON.stringify(u)); setShowPasswordModal(false); setSaveStatus('Password aggiornata!'); setTimeout(() => setSaveStatus(''), 2000); return true; };
 
+  // ADD LEAD - crea cliente automaticamente
   const addLead = async (ld) => {
     setSaveStatus('Salvataggio...');
-    let cliente_id = null;
-    if (ld.cliente_nome) { const { data: cd } = await supabase.from('clienti').insert([{ nome: ld.cliente_nome, cognome: ld.cliente_cognome, email: ld.cliente_email, telefono: ld.cliente_telefono, whatsapp: ld.cliente_whatsapp, nazionalita: ld.cliente_nazionalita, budget_min: ld.cliente_budget_min ? parseFloat(ld.cliente_budget_min) : null, budget_max: ld.cliente_budget_max ? parseFloat(ld.cliente_budget_max) : null, note: ld.cliente_note, stato: 'nuovo', fonte: 'Agente', agente_riferimento: user?.nome, created_by: user?.nome, referente: user?.referente }]).select().single(); if (cd) cliente_id = cd.id; }
-    const { error: e } = await supabase.from('sales').insert([{ data: ld.data, developer: ld.developer, progetto: ld.progetto, zona: ld.zona, valore: ld.valore || 0, agente: ld.agente, segnalatore: ld.segnalatore, referente: user?.referente, commission_pct: 5, inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: ld.stato || 'lead', cliente_id }]);
-    if (e) { setSaveStatus('Errore!'); setError(e.message); } else { setSaveStatus('Lead salvato!'); setShowForm(null); loadSales(); setTimeout(() => setSaveStatus(''), 2000); }
+    let cliente_id = ld.cliente_id || null;
+    
+    // Se non c'è un cliente selezionato ma ci sono dati cliente, crealo
+    if (!cliente_id && ld.cliente_nome) { 
+      const { data: cd } = await supabase.from('clienti').insert([{ 
+        nome: ld.cliente_nome, 
+        cognome: ld.cliente_cognome, 
+        email: ld.cliente_email, 
+        telefono: ld.cliente_telefono, 
+        whatsapp: ld.cliente_whatsapp, 
+        nazionalita: ld.cliente_nazionalita, 
+        budget_min: ld.cliente_budget_min ? parseFloat(ld.cliente_budget_min) : null, 
+        budget_max: ld.cliente_budget_max ? parseFloat(ld.cliente_budget_max) : null, 
+        note: ld.cliente_note, 
+        stato: 'nuovo', 
+        fonte: 'Agente', 
+        agente_riferimento: user?.nome, 
+        created_by: user?.nome, 
+        referente: user?.referente 
+      }]).select().single(); 
+      if (cd) cliente_id = cd.id; 
+    }
+    
+    const { error: e } = await supabase.from('sales').insert([{ 
+      data: ld.data, 
+      developer: ld.developer, 
+      progetto: ld.progetto, 
+      zona: ld.zona, 
+      valore: ld.valore || 0, 
+      agente: ld.agente, 
+      segnalatore: ld.segnalatore, 
+      referente: user?.referente, 
+      commission_pct: 5, 
+      inserted_by: user?.nome, 
+      inserted_as: user?.ruolo, 
+      pagato: false, 
+      stato: ld.stato || 'lead', 
+      cliente_id 
+    }]);
+    
+    if (e) { setSaveStatus('Errore!'); setError(e.message); } 
+    else { setSaveStatus('Lead salvato!'); setShowForm(null); loadSales(); loadClienti(); setTimeout(() => setSaveStatus(''), 2000); }
   };
 
-  const addSale = async (sd) => { setSaveStatus('Salvataggio...'); const { error: e } = await supabase.from('sales').insert([{ ...sd, referente: user?.referente, commission_pct: 5, inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: 'venduto' }]); if (e) { setSaveStatus('Errore!'); setError(e.message); } else { setSaveStatus('Vendita registrata!'); setShowForm(null); loadSales(); setTimeout(() => setSaveStatus(''), 2000); }};
-  const convertLeadToSale = async (id, v) => { setSaveStatus('Conversione...'); await supabase.from('sales').update({ stato: 'venduto', valore: v }).eq('id', id); setSaveStatus('Convertito!'); setConvertingSale(null); loadSales(); setTimeout(() => setSaveStatus(''), 2000); };
+  // ADD SALE - con cliente esistente o nuovo
+  const addSale = async (sd) => { 
+    setSaveStatus('Salvataggio...'); 
+    let cliente_id = sd.cliente_id || null;
+    
+    // Se non c'è cliente selezionato, creane uno nuovo con i dati forniti
+    if (!cliente_id && sd.cliente_nome) {
+      const { data: cd } = await supabase.from('clienti').insert([{ 
+        nome: sd.cliente_nome, 
+        cognome: sd.cliente_cognome || '', 
+        telefono: sd.cliente_telefono || '',
+        email: sd.cliente_email || '',
+        stato: 'acquistato',  // Stato acquistato per vendita
+        fonte: 'Vendita Diretta', 
+        agente_riferimento: user?.nome, 
+        created_by: user?.nome, 
+        referente: user?.referente 
+      }]).select().single(); 
+      if (cd) cliente_id = cd.id;
+    }
+    
+    // Se c'è un cliente esistente, aggiorna il suo stato a "acquistato"
+    if (sd.cliente_id) {
+      await supabase.from('clienti').update({ stato: 'acquistato' }).eq('id', sd.cliente_id);
+    }
+    
+    const { error: e } = await supabase.from('sales').insert([{ 
+      ...sd, 
+      cliente_id,
+      referente: user?.referente, 
+      commission_pct: 5, 
+      inserted_by: user?.nome, 
+      inserted_as: user?.ruolo, 
+      pagato: false, 
+      stato: 'venduto' 
+    }]); 
+    
+    if (e) { setSaveStatus('Errore!'); setError(e.message); } 
+    else { setSaveStatus('Vendita registrata!'); setShowForm(null); loadSales(); loadClienti(); setTimeout(() => setSaveStatus(''), 2000); }
+  };
+  
+  const convertLeadToSale = async (id, v) => { 
+    setSaveStatus('Conversione...'); 
+    const sale = sales.find(s => s.id === id);
+    
+    // Aggiorna stato cliente a "acquistato" se esiste
+    if (sale?.cliente_id) {
+      await supabase.from('clienti').update({ stato: 'acquistato' }).eq('id', sale.cliente_id);
+    }
+    
+    await supabase.from('sales').update({ stato: 'venduto', valore: v }).eq('id', id); 
+    setSaveStatus('Convertito!'); 
+    setConvertingSale(null); 
+    loadSales(); 
+    loadClienti();
+    setTimeout(() => setSaveStatus(''), 2000); 
+  };
+  
   const updateSale = async (id, u) => { const s = sales.find(x => x.id === id); if (u.pagato === true && !s?.pagato) { const tn = s.agente || s.segnalatore; if (tn) { const { data: tu } = await supabase.from('user_credentials').select('*').eq('nome', tn).single(); if (tu?.email) { const ca = Number(s.valore) * (s.commission_pct || 5) / 100 * (s.agente ? 0.7 : 0.3); await sendEmail(tu.email, '💰 Commissione Pagata', `<h2>Commissione Pagata!</h2><p>${s.progetto}: ${fmt(ca)} AED</p>`); }}} await supabase.from('sales').update(u).eq('id', id); loadSales(); };
   const deleteSale = async (id) => { if (!window.confirm('Eliminare?')) return; await supabase.from('sales').delete().eq('id', id); loadSales(); };
   const deleteSelectedSales = async () => { if (!selectedSales.length || !window.confirm(`Eliminare ${selectedSales.length} elementi?`)) return; for (const id of selectedSales) await supabase.from('sales').delete().eq('id', id); setSelectedSales([]); loadSales(); setSaveStatus(`Eliminati`); setTimeout(() => setSaveStatus(''), 2000); };
@@ -136,20 +311,28 @@ export default function App() {
   const filteredSales = sales.filter(s => { if (filters.search && !`${s.progetto} ${s.developer} ${s.agente}`.toLowerCase().includes(filters.search.toLowerCase())) return false; if (filters.stato && s.stato !== filters.stato) return false; if (filters.pagato === 'si' && !s.pagato) return false; if (filters.pagato === 'no' && s.pagato) return false; return true; });
   const ErrorBanner = () => error && <div className="bg-red-500/20 border border-red-500/50 text-red-300 rounded-xl px-4 py-3 mb-4 flex items-center gap-2"><AlertCircle className="w-5 h-5" /><span className="text-sm">{error}</span><button onClick={() => setError(null)} className="ml-auto">✕</button></div>;
 
-  // LOGIN
+  // ==================== LOGIN ====================
   if (view === 'login') return (
-    <div className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8"><Logo size="large" /></div>
+        {/* Logo centrato */}
+        <div className="text-center mb-8">
+          <Logo size="large" centered />
+          <p className="text-slate-400 text-sm mt-3">Sales Management</p>
+        </div>
+        
         {error && <div className="bg-red-500/20 border border-red-500/50 text-red-300 rounded-xl px-4 py-3 mb-4 text-sm">{error}</div>}
+        
         <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
           <LoginForm onLogin={handleLogin} loading={loading} />
         </div>
+        
+        <p className="text-center text-slate-500 text-xs mt-6">© 2024 KeyPrime Real Estate</p>
       </div>
     </div>
   );
 
-  // AGENTE/SEGNALATORE
+  // ==================== AGENTE/SEGNALATORE ====================
   if (view === 'agente' || view === 'segnalatore') {
     const type = view;
     const mySales = sales.filter(s => type === 'agente' ? s.agente === user?.nome : s.segnalatore === user?.nome);
@@ -160,22 +343,22 @@ export default function App() {
     const byStato = pipelineStati.reduce((acc, st) => { acc[st] = mySales.filter(s => (s.stato || 'lead') === st); return acc; }, {});
     const agentTabs = [{ id: 'lista', icon: '📋', label: 'Lista' }, { id: 'pipeline', icon: '🎯', label: 'Pipeline' }, { id: 'settings', icon: '⚙️', label: 'Impostazioni' }];
 
-    // FORM MODE - CLEAN
+    // FORM MODE - Vista pulita
     if (showForm) return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-700 px-4 py-3 safe-area-top">
+        <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-700 px-4 py-3">
           <div className="flex items-center justify-between max-w-lg mx-auto">
             <button onClick={() => setShowForm(null)} className="text-slate-400 flex items-center gap-2"><X className="w-5 h-5" /><span className="text-sm">Annulla</span></button>
             <span className="text-white font-medium">{showForm === 'lead' ? 'Nuovo Lead' : 'Nuova Vendita'}</span>
             <div className="w-16"></div>
           </div>
         </div>
-        <div className="p-4 pb-24 max-w-lg mx-auto">
+        <div className="p-4 pb-28 max-w-lg mx-auto">
           {saveStatus && <div className="bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 rounded-xl px-4 py-2 mb-4 text-center text-sm">{saveStatus}</div>}
-          {showForm === 'lead' && <LeadFormClean type={type} userName={user?.nome} onSubmit={addLead} />}
-          {showForm === 'vendita' && <SaleFormClean type={type} userName={user?.nome} onSubmit={addSale} />}
+          {showForm === 'lead' && <LeadFormClean type={type} userName={user?.nome} clienti={clienti} onSubmit={addLead} />}
+          {showForm === 'vendita' && <SaleFormClean type={type} userName={user?.nome} clienti={clienti} onSubmit={addSale} />}
         </div>
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur border-t border-slate-700 safe-area-bottom">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur border-t border-slate-700">
           <button onClick={() => document.getElementById('submitBtn')?.click()} className={`w-full ${showForm === 'lead' ? 'bg-blue-500' : 'bg-emerald-500'} text-white rounded-xl py-4 font-semibold text-lg`}>
             {showForm === 'lead' ? '💾 Salva Lead' : '💰 Registra Vendita'}
           </button>
@@ -185,7 +368,7 @@ export default function App() {
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-700 safe-area-top">
+        <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-700">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3"><button onClick={() => setMobileMenuOpen(true)} className="md:hidden text-slate-400"><Menu className="w-6 h-6" /></button><Logo size="small" /></div>
             <div className="hidden md:flex items-center gap-4"><div className="text-right"><div className="text-slate-400 text-xs">{type}</div><div className="text-white text-sm">{user?.nome}</div></div><button onClick={() => setShowPasswordModal(true)} className="text-slate-400"><Key className="w-5 h-5" /></button><button onClick={handleLogout} className="text-slate-400"><LogOut className="w-5 h-5" /></button></div>
@@ -205,7 +388,7 @@ export default function App() {
           {!convertingSale && agentTab !== 'settings' && <div className="grid grid-cols-2 gap-3 mb-4"><button onClick={() => setShowForm('lead')} className="bg-blue-500 text-white rounded-xl p-3 flex items-center justify-center gap-2 font-semibold text-sm"><Target className="w-4 h-4" /> Nuovo Lead</button><button onClick={() => setShowForm('vendita')} className="bg-emerald-500 text-white rounded-xl p-3 flex items-center justify-center gap-2 font-semibold text-sm"><DollarSign className="w-4 h-4" /> Vendita</button></div>}
           {convertingSale && <ConvertModal sale={convertingSale} onConvert={convertLeadToSale} onCancel={() => setConvertingSale(null)} />}
           <div className="hidden md:flex gap-2 mb-4">{agentTabs.map(t => <button key={t.id} onClick={() => setAgentTab(t.id)} className={`px-4 py-2 rounded-xl font-medium text-sm ${agentTab === t.id ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-white'}`}>{t.icon} {t.label}</button>)}<div className="flex-1" /><button onClick={loadSales} className="bg-slate-700 text-white rounded-xl px-3 py-2"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button></div>
-          {agentTab === 'lista' && (mySales.length === 0 ? <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center text-slate-500">Nessun lead</div> : <div className="space-y-3">{mySales.map(s => { const mc = (s.stato === 'venduto' || s.stato === 'incassato') ? Number(s.valore) * (s.commission_pct || 5) / 100 * rate : 0; const cv = ['prenotato', 'trattativa'].includes(s.stato) || (s.stato === 'venduto' && !s.valore); return <div key={s.id} className="bg-slate-800 border border-slate-700 rounded-xl p-3"><div className="flex justify-between items-start mb-2"><div><div className="flex items-center gap-2"><span className="text-white font-medium text-sm">{s.progetto || 'TBD'}</span><span className={`px-2 py-0.5 rounded text-xs text-white ${pipelineColors[s.stato || 'lead']}`}>{s.stato}</span></div><div className="text-slate-400 text-xs">{s.developer} • {s.zona}</div>{s.cliente_nome && <div className="text-blue-400 text-xs">👤 {s.cliente_nome}</div>}</div><div className="text-right">{s.valore > 0 ? <div className="text-amber-400 font-semibold text-sm">{fmt(s.valore)}</div> : <div className="text-slate-500 text-xs">TBD</div>}</div></div><div className="flex items-center gap-1 py-2 border-t border-slate-700 overflow-x-auto">{pipelineStati.slice(0, -1).map(st => <button key={st} onClick={() => updateSale(s.id, { stato: st })} className={`px-2 py-1 rounded text-xs ${s.stato === st ? `${pipelineColors[st]} text-white` : 'bg-slate-700 text-slate-400'}`}>{st}</button>)}</div><div className="flex justify-between items-center">{mc > 0 ? <div className="text-xs"><span className="text-slate-400">Comm: </span><span className="text-amber-300">{fmt(mc)}</span><span className={`ml-1 px-1.5 py-0.5 rounded ${s.pagato ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{s.pagato ? '✓' : '⏳'}</span></div> : <span className="text-slate-500 text-xs">-</span>}{cv && <button onClick={() => setConvertingSale(s)} className="bg-emerald-500 text-white px-2 py-1 rounded text-xs">💰</button>}</div></div>; })}</div>)}
+          {agentTab === 'lista' && (mySales.length === 0 ? <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center text-slate-500">Nessun lead</div> : <div className="space-y-3">{mySales.map(s => { const mc = (s.stato === 'venduto' || s.stato === 'incassato') ? Number(s.valore) * (s.commission_pct || 5) / 100 * rate : 0; const cv = ['prenotato', 'trattativa'].includes(s.stato) || (s.stato === 'venduto' && !s.valore); return <div key={s.id} className="bg-slate-800 border border-slate-700 rounded-xl p-3"><div className="flex justify-between items-start mb-2"><div><div className="flex items-center gap-2"><span className="text-white font-medium text-sm">{s.progetto || 'TBD'}</span><span className={`px-2 py-0.5 rounded text-xs text-white ${pipelineColors[s.stato || 'lead']}`}>{s.stato}</span></div><div className="text-slate-400 text-xs">{s.developer} • {s.zona}</div>{s.cliente_nome && <div className="text-blue-400 text-xs mt-1">👤 {s.cliente_nome} {s.cliente_cognome}</div>}</div><div className="text-right">{s.valore > 0 ? <div className="text-amber-400 font-semibold text-sm">{fmt(s.valore)}</div> : <div className="text-slate-500 text-xs">TBD</div>}</div></div><div className="flex items-center gap-1 py-2 border-t border-slate-700 overflow-x-auto">{pipelineStati.slice(0, -1).map(st => <button key={st} onClick={() => updateSale(s.id, { stato: st })} className={`px-2 py-1 rounded text-xs ${s.stato === st ? `${pipelineColors[st]} text-white` : 'bg-slate-700 text-slate-400'}`}>{st}</button>)}</div><div className="flex justify-between items-center">{mc > 0 ? <div className="text-xs"><span className="text-slate-400">Comm: </span><span className="text-amber-300">{fmt(mc)}</span><span className={`ml-1 px-1.5 py-0.5 rounded ${s.pagato ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{s.pagato ? '✓' : '⏳'}</span></div> : <span className="text-slate-500 text-xs">-</span>}{cv && <button onClick={() => setConvertingSale(s)} className="bg-emerald-500 text-white px-2 py-1 rounded text-xs">💰</button>}</div></div>; })}</div>)}
           {agentTab === 'pipeline' && <div className="grid grid-cols-2 md:grid-cols-4 gap-2">{pipelineStati.slice(0, -1).map(st => <div key={st} className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden"><div className={`${pipelineColors[st]} px-2 py-1.5 text-white text-xs flex justify-between`}><span>{st}</span><span className="bg-white/20 px-1.5 rounded">{byStato[st]?.length || 0}</span></div><div className="p-2 space-y-2 max-h-[40vh] overflow-y-auto">{byStato[st]?.map(s => <div key={s.id} className="bg-slate-700/50 rounded-lg p-2"><div className="text-white text-xs truncate">{s.progetto || 'TBD'}</div>{s.cliente_nome && <div className="text-blue-400 text-xs truncate">👤 {s.cliente_nome}</div>}{s.valore > 0 && <div className="text-amber-400 text-xs">{fmt(s.valore)}</div>}</div>)}{(!byStato[st] || !byStato[st].length) && <div className="text-slate-500 text-xs text-center py-3">-</div>}</div></div>)}</div>}
           {agentTab === 'settings' && <div className="bg-slate-800 border border-slate-700 rounded-xl p-4"><h3 className="text-white font-semibold mb-4">Impostazioni</h3><div className="flex justify-between items-center py-3"><div className="text-white text-sm">Password</div><button onClick={() => setShowPasswordModal(true)} className="bg-amber-500 text-slate-900 px-3 py-1.5 rounded-lg text-sm font-medium">Cambia</button></div></div>}
         </div>
@@ -215,7 +398,7 @@ export default function App() {
     );
   }
 
-  // ADMIN
+  // ==================== ADMIN ====================
   if (view === 'admin') {
     const vendite = sales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
     const totals = sales.reduce((a, s) => { const c = Number(s.valore) * (s.commission_pct || 5) / 100; const ag = s.agente ? c * 0.7 : 0; const sg = s.segnalatore ? c * 0.3 : 0; const n = c - ag - sg; const p = s.referente === 'Pellegrino' ? n * 0.7 : (s.referente === 'Giovanni' ? n * 0.3 : 0); const g = s.referente === 'Giovanni' ? n * 0.7 : (s.referente === 'Pellegrino' ? n * 0.3 : 0); return { valore: a.valore + Number(s.valore), comm: a.comm + c, ag: a.ag + ag, sg: a.sg + sg, netto: a.netto + n, pell: a.pell + p, giov: a.giov + g }; }, { valore: 0, comm: 0, ag: 0, sg: 0, netto: 0, pell: 0, giov: 0 });
@@ -228,7 +411,7 @@ export default function App() {
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-700 safe-area-top">
+        <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-700">
           <div className="flex items-center justify-between px-4 py-3 max-w-7xl mx-auto">
             <div className="flex items-center gap-3"><button onClick={() => setMobileMenuOpen(true)} className="md:hidden text-slate-400"><Menu className="w-6 h-6" /></button><Logo size="small" /></div>
             <div className="hidden md:flex items-center gap-4"><button onClick={() => setAdminTab('notifiche')} className="relative text-slate-400"><Bell className="w-5 h-5" />{unreadNotifs > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">{unreadNotifs}</span>}</button><div className="text-right"><div className="text-slate-400 text-xs">Admin</div><div className="text-white text-sm">{user?.nome}</div></div><button onClick={handleLogout} className="text-slate-400"><LogOut className="w-5 h-5" /></button></div>
@@ -254,7 +437,8 @@ export default function App() {
   return null;
 }
 
-// SUB-COMPONENTS
+// ==================== SUB-COMPONENTS ====================
+
 function LoginForm({ onLogin, loading }) {
   const [u, setU] = useState(''); const [p, setP] = useState(''); const [sp, setSp] = useState(false);
   return <form onSubmit={(e) => { e.preventDefault(); onLogin(u, p); }} className="space-y-4"><div><label className="block text-slate-300 text-sm mb-2">Username</label><input type="text" value={u} onChange={(e) => setU(e.target.value)} className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white" /></div><div><label className="block text-slate-300 text-sm mb-2">Password</label><div className="relative"><input type={sp ? 'text' : 'password'} value={p} onChange={(e) => setP(e.target.value)} className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 pr-12 text-white" /><button type="button" onClick={() => setSp(!sp)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">{sp ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button></div></div><button type="submit" disabled={loading || !u || !p} className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-slate-600 text-slate-900 rounded-xl py-3 font-semibold">{loading ? '...' : 'Accedi'}</button></form>;
@@ -267,23 +451,167 @@ function PasswordModal({ currentPassword, onSave, onClose }) {
   return <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"><div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full border border-slate-700"><h3 className="text-lg font-semibold text-white mb-4">Cambia Password</h3>{e && <div className="bg-red-500/20 text-red-300 rounded-lg px-3 py-2 mb-4 text-sm">{e}</div>}<div className="space-y-3"><input type="password" placeholder="Password attuale" value={op} onChange={(e) => setOp(e.target.value)} className={inp} /><input type="password" placeholder="Nuova password" value={np} onChange={(e) => setNp(e.target.value)} className={inp} /><input type="password" placeholder="Conferma" value={cp} onChange={(e) => setCp(e.target.value)} className={inp} /><div className="flex gap-3 pt-2"><button onClick={onClose} className="flex-1 bg-slate-700 text-white rounded-xl py-3 text-sm">Annulla</button><button onClick={save} className="flex-1 bg-amber-500 text-slate-900 rounded-xl py-3 font-semibold text-sm">Salva</button></div></div></div></div>;
 }
 
-function LeadFormClean({ type, userName, onSubmit }) {
-  const [f, setF] = useState({ data: new Date().toISOString().split('T')[0], developer: '', progetto: '', zona: '', valore: '', stato: 'lead', cliente_nome: '', cliente_cognome: '', cliente_email: '', cliente_telefono: '', cliente_whatsapp: '', cliente_nazionalita: '', cliente_budget_min: '', cliente_budget_max: '', cliente_note: '' });
-  const sub = (e) => { e?.preventDefault(); if (!f.cliente_nome) { alert('Nome cliente obbligatorio'); return; } onSubmit({ ...f, developer: f.developer || 'TBD', progetto: f.progetto || 'TBD', zona: f.zona || 'TBD', valore: f.valore ? parseFloat(f.valore) : 0, agente: type === 'agente' ? userName : null, segnalatore: type === 'segnalatore' ? userName : null }); };
+// LEAD FORM - con ricerca cliente
+function LeadFormClean({ type, userName, clienti, onSubmit }) {
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [f, setF] = useState({ 
+    data: new Date().toISOString().split('T')[0], 
+    developer: '', progetto: '', zona: '', valore: '', stato: 'lead', 
+    cliente_nome: '', cliente_cognome: '', cliente_email: '', cliente_telefono: '', 
+    cliente_whatsapp: '', cliente_nazionalita: '', cliente_budget_min: '', cliente_budget_max: '', cliente_note: '' 
+  });
+  
+  const sub = (e) => { 
+    e?.preventDefault(); 
+    if (!selectedClient && !f.cliente_nome) { alert('Seleziona o crea un cliente'); return; } 
+    onSubmit({ 
+      ...f, 
+      cliente_id: selectedClient?.id || null,
+      cliente_nome: selectedClient?.nome || f.cliente_nome,
+      cliente_cognome: selectedClient?.cognome || f.cliente_cognome,
+      developer: f.developer || 'TBD', 
+      progetto: f.progetto || 'TBD', 
+      zona: f.zona || 'TBD', 
+      valore: f.valore ? parseFloat(f.valore) : 0, 
+      agente: type === 'agente' ? userName : null, 
+      segnalatore: type === 'segnalatore' ? userName : null 
+    }); 
+  };
+  
   const inp = "w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm";
-  return <form onSubmit={sub}><div className="space-y-4"><div className="bg-slate-800/50 rounded-xl p-4"><h4 className="text-white font-medium mb-3">👤 Cliente</h4><div className="grid grid-cols-2 gap-3"><input type="text" placeholder="Nome *" value={f.cliente_nome} onChange={(e) => setF({ ...f, cliente_nome: e.target.value })} className={inp} required /><input type="text" placeholder="Cognome" value={f.cliente_cognome} onChange={(e) => setF({ ...f, cliente_cognome: e.target.value })} className={inp} /><input type="email" placeholder="Email" value={f.cliente_email} onChange={(e) => setF({ ...f, cliente_email: e.target.value })} className={inp} /><input type="tel" placeholder="Telefono" value={f.cliente_telefono} onChange={(e) => setF({ ...f, cliente_telefono: e.target.value })} className={inp} /><input type="tel" placeholder="WhatsApp" value={f.cliente_whatsapp} onChange={(e) => setF({ ...f, cliente_whatsapp: e.target.value })} className={inp} /><input type="text" placeholder="Nazionalità" value={f.cliente_nazionalita} onChange={(e) => setF({ ...f, cliente_nazionalita: e.target.value })} className={inp} /><input type="number" placeholder="Budget Min" value={f.cliente_budget_min} onChange={(e) => setF({ ...f, cliente_budget_min: e.target.value })} className={inp} /><input type="number" placeholder="Budget Max" value={f.cliente_budget_max} onChange={(e) => setF({ ...f, cliente_budget_max: e.target.value })} className={inp} /></div><textarea placeholder="Note..." value={f.cliente_note} onChange={(e) => setF({ ...f, cliente_note: e.target.value })} className={`${inp} mt-3 h-16`} /></div><div className="bg-slate-800/50 rounded-xl p-4"><h4 className="text-white font-medium mb-3">🏠 Interesse</h4><div className="grid grid-cols-2 gap-3"><SelectWithOther value={f.developer} onChange={(v) => setF({ ...f, developer: v })} options={developers} placeholder="Developer" className={inp} /><SelectWithOther value={f.zona} onChange={(v) => setF({ ...f, zona: v })} options={zones} placeholder="Zona" className={inp} /><input type="text" placeholder="Progetto" value={f.progetto} onChange={(e) => setF({ ...f, progetto: e.target.value })} className={inp} /><input type="number" placeholder="Valore" value={f.valore} onChange={(e) => setF({ ...f, valore: e.target.value })} className={inp} /></div></div><div className="bg-slate-800/50 rounded-xl p-4"><h4 className="text-white font-medium mb-3">Stato</h4><div className="flex flex-wrap gap-2">{pipelineStati.slice(0, 4).map(st => <button key={st} type="button" onClick={() => setF({ ...f, stato: st })} className={`px-4 py-2 rounded-lg text-sm font-medium ${f.stato === st ? `${pipelineColors[st]} text-white` : 'bg-slate-700 text-slate-400'}`}>{st}</button>)}</div></div></div><button type="submit" id="submitBtn" className="hidden">Submit</button></form>;
+  
+  return (
+    <form onSubmit={sub}>
+      <div className="space-y-4">
+        {/* CLIENTE SEARCH */}
+        <div className="bg-slate-800/50 rounded-xl p-4">
+          <h4 className="text-white font-medium mb-3 flex items-center gap-2"><User className="w-4 h-4" /> Cliente</h4>
+          <ClientSearch 
+            clienti={clienti} 
+            selectedClient={selectedClient}
+            onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }}
+            onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }}
+          />
+          
+          {/* New client form */}
+          {showNewClient && !selectedClient && (
+            <div className="mt-4 pt-4 border-t border-slate-700 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <input type="text" placeholder="Nome *" value={f.cliente_nome} onChange={(e) => setF({ ...f, cliente_nome: e.target.value })} className={inp} required />
+                <input type="text" placeholder="Cognome" value={f.cliente_cognome} onChange={(e) => setF({ ...f, cliente_cognome: e.target.value })} className={inp} />
+                <input type="tel" placeholder="Telefono" value={f.cliente_telefono} onChange={(e) => setF({ ...f, cliente_telefono: e.target.value })} className={inp} />
+                <input type="email" placeholder="Email" value={f.cliente_email} onChange={(e) => setF({ ...f, cliente_email: e.target.value })} className={inp} />
+                <input type="tel" placeholder="WhatsApp" value={f.cliente_whatsapp} onChange={(e) => setF({ ...f, cliente_whatsapp: e.target.value })} className={inp} />
+                <input type="text" placeholder="Nazionalità" value={f.cliente_nazionalita} onChange={(e) => setF({ ...f, cliente_nazionalita: e.target.value })} className={inp} />
+                <input type="number" placeholder="Budget Min" value={f.cliente_budget_min} onChange={(e) => setF({ ...f, cliente_budget_min: e.target.value })} className={inp} />
+                <input type="number" placeholder="Budget Max" value={f.cliente_budget_max} onChange={(e) => setF({ ...f, cliente_budget_max: e.target.value })} className={inp} />
+              </div>
+              <textarea placeholder="Note cliente..." value={f.cliente_note} onChange={(e) => setF({ ...f, cliente_note: e.target.value })} className={`${inp} h-16`} />
+            </div>
+          )}
+        </div>
+        
+        {/* INTERESSE */}
+        <div className="bg-slate-800/50 rounded-xl p-4">
+          <h4 className="text-white font-medium mb-3">🏠 Interesse</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <SelectWithOther value={f.developer} onChange={(v) => setF({ ...f, developer: v })} options={developers} placeholder="Developer" className={inp} />
+            <SelectWithOther value={f.zona} onChange={(v) => setF({ ...f, zona: v })} options={zones} placeholder="Zona" className={inp} />
+            <input type="text" placeholder="Progetto" value={f.progetto} onChange={(e) => setF({ ...f, progetto: e.target.value })} className={inp} />
+            <input type="number" placeholder="Valore stimato" value={f.valore} onChange={(e) => setF({ ...f, valore: e.target.value })} className={inp} />
+          </div>
+        </div>
+        
+        {/* STATO */}
+        <div className="bg-slate-800/50 rounded-xl p-4">
+          <h4 className="text-white font-medium mb-3">Stato Pipeline</h4>
+          <div className="flex flex-wrap gap-2">
+            {pipelineStati.slice(0, 4).map(st => (
+              <button key={st} type="button" onClick={() => setF({ ...f, stato: st })} className={`px-4 py-2 rounded-lg text-sm font-medium ${f.stato === st ? `${pipelineColors[st]} text-white` : 'bg-slate-700 text-slate-400'}`}>{st}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <button type="submit" id="submitBtn" className="hidden">Submit</button>
+    </form>
+  );
 }
 
-function SaleFormClean({ type, userName, onSubmit }) {
-  const [f, setF] = useState({ data: new Date().toISOString().split('T')[0], developer: '', progetto: '', zona: '', valore: '' });
-  const sub = (e) => { e?.preventDefault(); if (!f.developer || !f.progetto || !f.zona || !f.valore) { alert('Compila tutti i campi'); return; } onSubmit({ ...f, valore: parseFloat(f.valore), agente: type === 'agente' ? userName : null, segnalatore: type === 'segnalatore' ? userName : null }); };
+// SALE FORM - con ricerca cliente o creazione
+function SaleFormClean({ type, userName, clienti, onSubmit }) {
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [f, setF] = useState({ 
+    data: new Date().toISOString().split('T')[0], 
+    developer: '', progetto: '', zona: '', valore: '',
+    cliente_nome: '', cliente_cognome: '', cliente_telefono: '', cliente_email: ''
+  });
+  
+  const sub = (e) => { 
+    e?.preventDefault(); 
+    if (!selectedClient && !f.cliente_nome) { alert('Seleziona o inserisci il cliente'); return; }
+    if (!f.developer || !f.progetto || !f.zona || !f.valore) { alert('Compila tutti i campi obbligatori'); return; } 
+    onSubmit({ 
+      ...f, 
+      cliente_id: selectedClient?.id || null,
+      cliente_nome: selectedClient?.nome || f.cliente_nome,
+      cliente_cognome: selectedClient?.cognome || f.cliente_cognome,
+      cliente_telefono: selectedClient?.telefono || f.cliente_telefono,
+      cliente_email: selectedClient?.email || f.cliente_email,
+      valore: parseFloat(f.valore), 
+      agente: type === 'agente' ? userName : null, 
+      segnalatore: type === 'segnalatore' ? userName : null 
+    }); 
+  };
+  
   const inp = "w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm";
-  return <form onSubmit={sub}><div className="space-y-4"><div className="bg-slate-800/50 rounded-xl p-4"><h4 className="text-white font-medium mb-3">💰 Vendita</h4><div className="space-y-3"><input type="date" value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} className={inp} /><SelectWithOther value={f.developer} onChange={(v) => setF({ ...f, developer: v })} options={developers} placeholder="Developer *" className={inp} /><input type="text" placeholder="Progetto *" value={f.progetto} onChange={(e) => setF({ ...f, progetto: e.target.value })} className={inp} required /><SelectWithOther value={f.zona} onChange={(v) => setF({ ...f, zona: v })} options={zones} placeholder="Zona *" className={inp} /><input type="number" placeholder="Valore (AED) *" value={f.valore} onChange={(e) => setF({ ...f, valore: e.target.value })} className={inp} required /></div></div></div><button type="submit" id="submitBtn" className="hidden">Submit</button></form>;
+  
+  return (
+    <form onSubmit={sub}>
+      <div className="space-y-4">
+        {/* CLIENTE */}
+        <div className="bg-slate-800/50 rounded-xl p-4">
+          <h4 className="text-white font-medium mb-3 flex items-center gap-2"><User className="w-4 h-4" /> Cliente Acquirente</h4>
+          <ClientSearch 
+            clienti={clienti} 
+            selectedClient={selectedClient}
+            onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }}
+            onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }}
+          />
+          
+          {showNewClient && !selectedClient && (
+            <div className="mt-4 pt-4 border-t border-slate-700 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <input type="text" placeholder="Nome *" value={f.cliente_nome} onChange={(e) => setF({ ...f, cliente_nome: e.target.value })} className={inp} required />
+                <input type="text" placeholder="Cognome *" value={f.cliente_cognome} onChange={(e) => setF({ ...f, cliente_cognome: e.target.value })} className={inp} />
+                <input type="tel" placeholder="Telefono" value={f.cliente_telefono} onChange={(e) => setF({ ...f, cliente_telefono: e.target.value })} className={inp} />
+                <input type="email" placeholder="Email" value={f.cliente_email} onChange={(e) => setF({ ...f, cliente_email: e.target.value })} className={inp} />
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* VENDITA */}
+        <div className="bg-slate-800/50 rounded-xl p-4">
+          <h4 className="text-white font-medium mb-3">💰 Dettagli Vendita</h4>
+          <div className="space-y-3">
+            <input type="date" value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} className={inp} />
+            <SelectWithOther value={f.developer} onChange={(v) => setF({ ...f, developer: v })} options={developers} placeholder="Developer *" className={inp} />
+            <input type="text" placeholder="Progetto *" value={f.progetto} onChange={(e) => setF({ ...f, progetto: e.target.value })} className={inp} required />
+            <SelectWithOther value={f.zona} onChange={(v) => setF({ ...f, zona: v })} options={zones} placeholder="Zona *" className={inp} />
+            <input type="number" placeholder="Valore (AED) *" value={f.valore} onChange={(e) => setF({ ...f, valore: e.target.value })} className={inp} required />
+          </div>
+        </div>
+      </div>
+      <button type="submit" id="submitBtn" className="hidden">Submit</button>
+    </form>
+  );
 }
 
 function ConvertModal({ sale, onConvert, onCancel }) {
   const [v, setV] = useState(sale.valore || '');
-  return <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"><div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full border border-slate-700"><h3 className="text-lg font-semibold text-white mb-4">🎉 Registra Vendita</h3><div className="bg-slate-700/50 rounded-xl p-3 mb-4"><div className="text-white font-medium text-sm">{sale.progetto}</div><div className="text-slate-400 text-xs">{sale.developer}</div></div><input type="number" placeholder="Valore (AED)" value={v} onChange={(e) => setV(e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white mb-4" autoFocus /><div className="flex gap-3"><button onClick={onCancel} className="flex-1 bg-slate-700 text-white rounded-xl py-3 text-sm">Annulla</button><button onClick={() => v && onConvert(sale.id, parseFloat(v))} disabled={!v} className="flex-1 bg-emerald-500 disabled:bg-slate-600 text-white rounded-xl py-3 font-semibold text-sm">Conferma</button></div></div></div>;
+  return <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"><div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full border border-slate-700"><h3 className="text-lg font-semibold text-white mb-4">🎉 Registra Vendita</h3><div className="bg-slate-700/50 rounded-xl p-3 mb-4"><div className="text-white font-medium text-sm">{sale.progetto}</div><div className="text-slate-400 text-xs">{sale.developer}</div>{sale.cliente_nome && <div className="text-blue-400 text-xs mt-1">👤 {sale.cliente_nome}</div>}</div><input type="number" placeholder="Valore (AED)" value={v} onChange={(e) => setV(e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white mb-4" autoFocus /><div className="flex gap-3"><button onClick={onCancel} className="flex-1 bg-slate-700 text-white rounded-xl py-3 text-sm">Annulla</button><button onClick={() => v && onConvert(sale.id, parseFloat(v))} disabled={!v} className="flex-1 bg-emerald-500 disabled:bg-slate-600 text-white rounded-xl py-3 font-semibold text-sm">Conferma</button></div></div></div>;
 }
 
 function DashboardTab({ totals, sales, vendite, byStato, byMonth, byAgente, byZona, fmt, pipelineColors }) {
@@ -320,12 +648,12 @@ function DashboardTab({ totals, sales, vendite, byStato, byMonth, byAgente, byZo
 function VenditeTab({ sales, loading, filters, setFilters, updateSale, deleteSale, loadSales, exportToCSV, totals, fmt, selectedSales, toggleSelectSale, selectAllSales, deleteSelectedSales }) {
   return <>
     <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4"><div className="flex flex-wrap gap-2 items-center"><button onClick={loadSales} className="bg-slate-700 text-white rounded-lg px-3 py-2"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button><button onClick={exportToCSV} className="bg-emerald-500 text-white rounded-lg px-3 py-2"><Download className="w-4 h-4" /></button>{selectedSales.length > 0 && <button onClick={deleteSelectedSales} className="bg-red-500 text-white rounded-lg px-3 py-2 flex items-center gap-1 text-sm"><Trash2 className="w-4 h-4" />{selectedSales.length}</button>}<div className="flex-1" /><div className="relative"><Search className="w-4 h-4 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" /><input type="text" placeholder="Cerca..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="bg-slate-700 border border-slate-600 rounded-lg pl-8 pr-3 py-2 text-white text-sm w-28" /></div><select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-slate-700 border border-slate-600 rounded-lg px-2 py-2 text-white text-sm"><option value="">Stato</option>{pipelineStati.map(s => <option key={s} value={s}>{s}</option>)}</select>{(filters.search || filters.stato) && <button onClick={() => setFilters({ search: '', stato: '', agente: '', pagato: '' })} className="text-slate-400"><X className="w-5 h-5" /></button>}</div></div>
-    <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="bg-slate-700/50 text-left"><th className="px-2 py-2"><button onClick={selectAllSales}>{selectedSales.length === sales.length && sales.length > 0 ? <CheckSquare className="w-4 h-4 text-amber-400" /> : <Square className="w-4 h-4 text-slate-400" />}</button></th><th className="text-slate-300 px-2 py-2 text-xs">Data</th><th className="text-slate-300 px-2 py-2 text-xs">Progetto</th><th className="text-slate-300 px-2 py-2 text-xs">Agente</th><th className="text-slate-300 px-2 py-2 text-right text-xs">Valore</th><th className="text-slate-300 px-2 py-2 text-center text-xs">%</th><th className="text-slate-300 px-2 py-2 text-center text-xs">Stato</th><th className="text-slate-300 px-2 py-2 text-center text-xs">Ref</th><th className="text-slate-300 px-2 py-2 text-center text-xs">💰</th><th className="text-slate-300 px-2 py-2 text-center text-xs">🗑️</th></tr></thead><tbody>{sales.map(s => <tr key={s.id} className={`border-t border-slate-700 hover:bg-slate-700/30 ${selectedSales.includes(s.id) ? 'bg-amber-500/10' : ''}`}><td className="px-2 py-2"><button onClick={() => toggleSelectSale(s.id)}>{selectedSales.includes(s.id) ? <CheckSquare className="w-4 h-4 text-amber-400" /> : <Square className="w-4 h-4 text-slate-400" />}</button></td><td className="px-2 py-2 text-white text-xs">{s.data?.substring(5,10)}</td><td className="px-2 py-2 text-white text-xs truncate max-w-[80px]">{s.progetto}</td><td className="px-2 py-2 text-blue-400 text-xs truncate max-w-[60px]">{s.agente || '-'}</td><td className="px-2 py-2 text-amber-400 text-right text-xs">{s.valore > 0 ? fmt(s.valore) : '-'}</td><td className="px-2 py-2 text-center"><select value={s.commission_pct || 5} onChange={(e) => updateSale(s.id, { commission_pct: parseInt(e.target.value) })} className="bg-slate-700 border-0 rounded px-1 py-0.5 text-white text-xs w-12">{commissions.map(c => <option key={c} value={c}>{c}%</option>)}</select></td><td className="px-2 py-2 text-center"><select value={s.stato || 'lead'} onChange={(e) => updateSale(s.id, { stato: e.target.value })} className={`${pipelineColors[s.stato || 'lead']} border-0 rounded px-1 py-0.5 text-white text-xs w-16`}>{pipelineStati.map(st => <option key={st} value={st} className="bg-slate-800">{st}</option>)}</select></td><td className="px-2 py-2 text-center"><select value={s.referente || ''} onChange={(e) => updateSale(s.id, { referente: e.target.value || null })} className={`bg-slate-700 border rounded px-1 py-0.5 text-xs w-10 ${s.referente ? 'border-emerald-500 text-emerald-400' : 'border-red-500 text-red-400'}`}><option value="">-</option><option value="Pellegrino">P</option><option value="Giovanni">G</option></select></td><td className="px-2 py-2 text-center"><button onClick={() => updateSale(s.id, { pagato: !s.pagato })} className={`px-1.5 py-0.5 rounded text-xs ${s.pagato ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{s.pagato ? '✓' : '✗'}</button></td><td className="px-2 py-2 text-center"><button onClick={() => deleteSale(s.id)} className="text-red-400"><Trash2 className="w-3 h-3" /></button></td></tr>)}</tbody></table></div></div>
+    <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="bg-slate-700/50 text-left"><th className="px-2 py-2"><button onClick={selectAllSales}>{selectedSales.length === sales.length && sales.length > 0 ? <CheckSquare className="w-4 h-4 text-amber-400" /> : <Square className="w-4 h-4 text-slate-400" />}</button></th><th className="text-slate-300 px-2 py-2 text-xs">Data</th><th className="text-slate-300 px-2 py-2 text-xs">Progetto</th><th className="text-slate-300 px-2 py-2 text-xs">Cliente</th><th className="text-slate-300 px-2 py-2 text-xs">Agente</th><th className="text-slate-300 px-2 py-2 text-right text-xs">Valore</th><th className="text-slate-300 px-2 py-2 text-center text-xs">%</th><th className="text-slate-300 px-2 py-2 text-center text-xs">Stato</th><th className="text-slate-300 px-2 py-2 text-center text-xs">Ref</th><th className="text-slate-300 px-2 py-2 text-center text-xs">💰</th><th className="text-slate-300 px-2 py-2 text-center text-xs">🗑️</th></tr></thead><tbody>{sales.map(s => <tr key={s.id} className={`border-t border-slate-700 hover:bg-slate-700/30 ${selectedSales.includes(s.id) ? 'bg-amber-500/10' : ''}`}><td className="px-2 py-2"><button onClick={() => toggleSelectSale(s.id)}>{selectedSales.includes(s.id) ? <CheckSquare className="w-4 h-4 text-amber-400" /> : <Square className="w-4 h-4 text-slate-400" />}</button></td><td className="px-2 py-2 text-white text-xs">{s.data?.substring(5,10)}</td><td className="px-2 py-2 text-white text-xs truncate max-w-[80px]">{s.progetto}</td><td className="px-2 py-2 text-blue-400 text-xs truncate max-w-[60px]">{s.cliente_nome || '-'}</td><td className="px-2 py-2 text-slate-400 text-xs truncate max-w-[60px]">{s.agente || '-'}</td><td className="px-2 py-2 text-amber-400 text-right text-xs">{s.valore > 0 ? fmt(s.valore) : '-'}</td><td className="px-2 py-2 text-center"><select value={s.commission_pct || 5} onChange={(e) => updateSale(s.id, { commission_pct: parseInt(e.target.value) })} className="bg-slate-700 border-0 rounded px-1 py-0.5 text-white text-xs w-12">{commissions.map(c => <option key={c} value={c}>{c}%</option>)}</select></td><td className="px-2 py-2 text-center"><select value={s.stato || 'lead'} onChange={(e) => updateSale(s.id, { stato: e.target.value })} className={`${pipelineColors[s.stato || 'lead']} border-0 rounded px-1 py-0.5 text-white text-xs w-16`}>{pipelineStati.map(st => <option key={st} value={st} className="bg-slate-800">{st}</option>)}</select></td><td className="px-2 py-2 text-center"><select value={s.referente || ''} onChange={(e) => updateSale(s.id, { referente: e.target.value || null })} className={`bg-slate-700 border rounded px-1 py-0.5 text-xs w-10 ${s.referente ? 'border-emerald-500 text-emerald-400' : 'border-red-500 text-red-400'}`}><option value="">-</option><option value="Pellegrino">P</option><option value="Giovanni">G</option></select></td><td className="px-2 py-2 text-center"><button onClick={() => updateSale(s.id, { pagato: !s.pagato })} className={`px-1.5 py-0.5 rounded text-xs ${s.pagato ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{s.pagato ? '✓' : '✗'}</button></td><td className="px-2 py-2 text-center"><button onClick={() => deleteSale(s.id)} className="text-red-400"><Trash2 className="w-3 h-3" /></button></td></tr>)}</tbody></table></div></div>
   </>;
 }
 
 function PipelineTab({ byStato, fmt, pipelineColors, pipelineLabels }) {
-  return <div className="grid grid-cols-2 md:grid-cols-5 gap-2">{pipelineStati.map(st => <div key={st} className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden"><div className={`${pipelineColors[st]} px-2 py-1.5 text-white text-xs flex justify-between`}><span>{pipelineLabels[st]}</span><span className="bg-white/20 px-1.5 rounded">{byStato[st]?.length || 0}</span></div><div className="p-2 space-y-2 max-h-[50vh] overflow-y-auto">{byStato[st]?.map(s => <div key={s.id} className="bg-slate-700/50 rounded-lg p-2"><div className="text-white text-xs truncate">{s.progetto}</div><div className="text-slate-400 text-xs truncate">{s.agente || s.segnalatore || '-'}</div>{s.valore > 0 && <div className="text-amber-400 text-xs mt-1">{fmt(s.valore)}</div>}</div>)}{(!byStato[st] || !byStato[st].length) && <div className="text-slate-500 text-xs text-center py-3">-</div>}</div></div>)}</div>;
+  return <div className="grid grid-cols-2 md:grid-cols-5 gap-2">{pipelineStati.map(st => <div key={st} className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden"><div className={`${pipelineColors[st]} px-2 py-1.5 text-white text-xs flex justify-between`}><span>{pipelineLabels[st]}</span><span className="bg-white/20 px-1.5 rounded">{byStato[st]?.length || 0}</span></div><div className="p-2 space-y-2 max-h-[50vh] overflow-y-auto">{byStato[st]?.map(s => <div key={s.id} className="bg-slate-700/50 rounded-lg p-2"><div className="text-white text-xs truncate">{s.progetto}</div><div className="text-blue-400 text-xs truncate">{s.cliente_nome || '-'}</div><div className="text-slate-400 text-xs truncate">{s.agente || s.segnalatore || '-'}</div>{s.valore > 0 && <div className="text-amber-400 text-xs mt-1">{fmt(s.valore)}</div>}</div>)}{(!byStato[st] || !byStato[st].length) && <div className="text-slate-500 text-xs text-center py-3">-</div>}</div></div>)}</div>;
 }
 
 function NotificheTab({ notifications, setNotifications }) {
