@@ -131,19 +131,53 @@ export default function App() {
 
   const handleLogout = () => { setUser(null); localStorage.removeItem('keyprime_user'); setView('login'); window.history.replaceState({}, document.title, window.location.pathname); };
 
-  // Add Lead (without value - just tracking)
+  // Add Lead (with client data)
   const addLead = async (leadData) => {
     setSaveStatus('Salvataggio...');
+    
+    // Prima crea il cliente se ha dati
+    let cliente_id = null;
+    if (leadData.cliente_nome) {
+      const { data: clienteData, error: clienteError } = await supabase.from('clienti').insert([{
+        nome: leadData.cliente_nome,
+        cognome: leadData.cliente_cognome || null,
+        email: leadData.cliente_email || null,
+        telefono: leadData.cliente_telefono || null,
+        whatsapp: leadData.cliente_whatsapp || null,
+        nazionalita: leadData.cliente_nazionalita || null,
+        budget_min: leadData.cliente_budget_min ? parseFloat(leadData.cliente_budget_min) : null,
+        budget_max: leadData.cliente_budget_max ? parseFloat(leadData.cliente_budget_max) : null,
+        note: leadData.cliente_note || null,
+        stato: 'nuovo',
+        fonte: 'Agente',
+        agente_riferimento: user?.nome,
+        created_by: user?.nome,
+        referente: user?.referente
+      }]).select().single();
+      
+      if (!clienteError && clienteData) {
+        cliente_id = clienteData.id;
+      }
+    }
+    
+    // Poi crea il lead/sale
     const { error: err } = await supabase.from('sales').insert([{
-      ...leadData,
+      data: leadData.data,
+      developer: leadData.developer,
+      progetto: leadData.progetto,
+      zona: leadData.zona,
       valore: leadData.valore || 0,
+      agente: leadData.agente,
+      segnalatore: leadData.segnalatore,
       referente: user?.referente || null,
       commission_pct: 5,
       inserted_by: user?.nome,
       inserted_as: user?.ruolo,
       pagato: false,
-      stato: 'lead'
+      stato: leadData.stato || 'lead',
+      cliente_id: cliente_id
     }]);
+    
     if (err) { setSaveStatus('Errore!'); setError(err.message); }
     else { setSaveStatus('Lead salvato!'); setShowForm(null); loadSales(); setTimeout(() => setSaveStatus(''), 2000); }
   };
@@ -276,6 +310,7 @@ export default function App() {
     const totalComm = myVendite.reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * rate), 0);
     const pagate = myVendite.filter(s => s.pagato).reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * rate), 0);
     const byStato = pipelineStati.reduce((acc, stato) => { acc[stato] = mySales.filter(s => (s.stato || 'lead') === stato); return acc; }, {});
+    const [agentTab, setAgentTab] = useState('lista');
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
@@ -298,21 +333,6 @@ export default function App() {
             <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4"><div className="text-slate-400 text-sm">Vendite Chiuse</div><div className="text-2xl font-bold text-emerald-400">{myVendite.length}</div></div>
             <div className="bg-emerald-900/30 border border-emerald-700/50 rounded-2xl p-4"><div className="text-emerald-300 text-sm">✓ Pagate</div><div className="text-xl font-bold text-emerald-400">{fmt(pagate)} AED</div></div>
             <div className="bg-red-900/30 border border-red-700/50 rounded-2xl p-4"><div className="text-red-300 text-sm">⏳ Da Pagare</div><div className="text-xl font-bold text-red-400">{fmt(totalComm - pagate)} AED</div></div>
-          </div>
-
-          {/* Pipeline mini view */}
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 mb-6">
-            <h3 className="text-white font-medium mb-3">La tua Pipeline</h3>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {pipelineStati.map(stato => (
-                <div key={stato} className="flex-shrink-0 text-center min-w-[80px]">
-                  <div className={`w-12 h-12 mx-auto ${pipelineColors[stato]} rounded-full flex items-center justify-center text-white font-bold mb-1`}>
-                    {byStato[stato]?.length || 0}
-                  </div>
-                  <div className="text-slate-400 text-xs capitalize">{stato}</div>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Action Buttons */}
@@ -346,93 +366,142 @@ export default function App() {
             />
           )}
 
-          {/* My Pipeline */}
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-white">I tuoi Lead & Vendite</h3>
-            <button onClick={loadSales} className="text-slate-400 hover:text-white"><RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} /></button>
+          {/* Tabs */}
+          <div className="flex gap-2 mb-4">
+            <button onClick={() => setAgentTab('lista')} className={`px-4 py-2 rounded-xl font-medium ${agentTab === 'lista' ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-white'}`}>📋 Lista</button>
+            <button onClick={() => setAgentTab('pipeline')} className={`px-4 py-2 rounded-xl font-medium ${agentTab === 'pipeline' ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-white'}`}>🎯 Pipeline</button>
+            <div className="flex-1" />
+            <button onClick={loadSales} className="bg-slate-700 text-white rounded-xl px-3 py-2"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>
           </div>
 
-          {mySales.length === 0 ? (
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center text-slate-500">Nessun lead o vendita</div>
-          ) : (
-            <div className="space-y-3">
-              {mySales.map(sale => {
-                const myComm = sale.stato === 'venduto' || sale.stato === 'incassato' 
-                  ? Number(sale.valore) * (sale.commission_pct || 5) / 100 * rate 
-                  : 0;
-                const canConvert = sale.stato === 'venduto' && !sale.valore;
-                const showConvertButton = (sale.stato === 'prenotato' || sale.stato === 'trattativa') || (sale.stato === 'venduto' && sale.valore === 0);
-                
-                return (
-                  <div key={sale.id} className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-white font-medium">{sale.progetto}</span>
-                          <span className={`px-2 py-0.5 rounded text-xs text-white ${pipelineColors[sale.stato || 'lead']}`}>
-                            {pipelineLabels[sale.stato || 'lead']}
-                          </span>
-                        </div>
-                        <div className="text-slate-400 text-sm">{sale.developer} • {sale.zona}</div>
-                        {sale.cliente_nome && <div className="text-slate-500 text-xs mt-1">👤 {sale.cliente_nome}</div>}
-                      </div>
-                      <div className="text-right">
-                        {sale.valore > 0 ? (
-                          <div className="text-amber-400 font-semibold">{fmt(sale.valore)} AED</div>
-                        ) : (
-                          <div className="text-slate-500 text-sm">Valore TBD</div>
-                        )}
-                        <div className="text-slate-500 text-sm">{new Date(sale.data).toLocaleDateString('it-IT')}</div>
-                      </div>
-                    </div>
+          {/* LISTA VIEW */}
+          {agentTab === 'lista' && (
+            <>
+              {mySales.length === 0 ? (
+                <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center text-slate-500">Nessun lead o vendita</div>
+              ) : (
+                <div className="space-y-3">
+                  {mySales.map(sale => {
+                    const myComm = sale.stato === 'venduto' || sale.stato === 'incassato' 
+                      ? Number(sale.valore) * (sale.commission_pct || 5) / 100 * rate 
+                      : 0;
+                    const showConvertButton = (sale.stato === 'prenotato' || sale.stato === 'trattativa') || (sale.stato === 'venduto' && sale.valore === 0);
                     
-                    {/* Pipeline Status Changer */}
-                    <div className="flex items-center gap-2 py-2 border-t border-b border-slate-700 my-2 overflow-x-auto">
-                      <span className="text-slate-400 text-xs whitespace-nowrap">Stato:</span>
-                      {pipelineStati.slice(0, -1).map(stato => ( // Exclude 'incassato' - only admin
-                        <button
-                          key={stato}
-                          onClick={() => updateSale(sale.id, { stato })}
-                          className={`px-2 py-1 rounded text-xs whitespace-nowrap transition-all ${
-                            sale.stato === stato 
-                              ? `${pipelineColors[stato]} text-white` 
-                              : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
-                          }`}
-                        >
-                          {stato}
-                        </button>
-                      ))}
-                    </div>
+                    return (
+                      <div key={sale.id} className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-white font-medium">{sale.progetto}</span>
+                              <span className={`px-2 py-0.5 rounded text-xs text-white ${pipelineColors[sale.stato || 'lead']}`}>
+                                {pipelineLabels[sale.stato || 'lead']}
+                              </span>
+                            </div>
+                            <div className="text-slate-400 text-sm">{sale.developer} • {sale.zona}</div>
+                            {sale.cliente_nome && <div className="text-blue-400 text-xs mt-1">👤 {sale.cliente_nome} {sale.cliente_cognome || ''}</div>}
+                          </div>
+                          <div className="text-right">
+                            {sale.valore > 0 ? (
+                              <div className="text-amber-400 font-semibold">{fmt(sale.valore)} AED</div>
+                            ) : (
+                              <div className="text-slate-500 text-sm">Valore TBD</div>
+                            )}
+                            <div className="text-slate-500 text-sm">{new Date(sale.data).toLocaleDateString('it-IT')}</div>
+                          </div>
+                        </div>
+                        
+                        {/* Pipeline Status Changer */}
+                        <div className="flex items-center gap-2 py-2 border-t border-b border-slate-700 my-2 overflow-x-auto">
+                          <span className="text-slate-400 text-xs whitespace-nowrap">Stato:</span>
+                          {pipelineStati.slice(0, -1).map(stato => (
+                            <button
+                              key={stato}
+                              onClick={() => updateSale(sale.id, { stato })}
+                              className={`px-2 py-1 rounded text-xs whitespace-nowrap transition-all ${
+                                sale.stato === stato 
+                                  ? `${pipelineColors[stato]} text-white` 
+                                  : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                              }`}
+                            >
+                              {stato}
+                            </button>
+                          ))}
+                        </div>
 
-                    {/* Commission & Actions */}
-                    <div className="flex justify-between items-center">
-                      <div className="text-sm">
-                        {myComm > 0 ? (
-                          <>
-                            <span className="text-slate-400">Commissione: </span>
-                            <span className="text-amber-300 font-medium">{fmt(myComm)} AED</span>
-                            <span className={`ml-2 px-2 py-0.5 rounded text-xs ${sale.pagato ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                              {sale.pagato ? '✓ Pagata' : '⏳ Pending'}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-slate-500">Commissione da calcolare</span>
-                        )}
+                        {/* Commission & Actions */}
+                        <div className="flex justify-between items-center">
+                          <div className="text-sm">
+                            {myComm > 0 ? (
+                              <>
+                                <span className="text-slate-400">Commissione: </span>
+                                <span className="text-amber-300 font-medium">{fmt(myComm)} AED</span>
+                                <span className={`ml-2 px-2 py-0.5 rounded text-xs ${sale.pagato ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                  {sale.pagato ? '✓ Pagata' : '⏳ Pending'}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-slate-500">Commissione da calcolare</span>
+                            )}
+                          </div>
+                          
+                          {showConvertButton && (
+                            <button 
+                              onClick={() => setConvertingSale(sale)}
+                              className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm flex items-center gap-1"
+                            >
+                              <FileText className="w-4 h-4" /> Registra Vendita
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      
-                      {/* Convert to Sale button */}
-                      {showConvertButton && (
-                        <button 
-                          onClick={() => setConvertingSale(sale)}
-                          className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm flex items-center gap-1"
-                        >
-                          <FileText className="w-4 h-4" /> Registra Vendita
-                        </button>
-                      )}
-                    </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* PIPELINE VIEW */}
+          {agentTab === 'pipeline' && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {pipelineStati.slice(0, -1).map(stato => (
+                <div key={stato} className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                  <div className={`${pipelineColors[stato]} px-3 py-2 text-white font-semibold text-sm flex justify-between items-center`}>
+                    <span>{pipelineLabels[stato]}</span>
+                    <span className="bg-white/20 px-2 py-0.5 rounded text-xs">{byStato[stato]?.length || 0}</span>
                   </div>
-                );
-              })}
+                  <div className="p-2 space-y-2 max-h-[50vh] overflow-y-auto">
+                    {byStato[stato]?.map(sale => (
+                      <div key={sale.id} className="bg-slate-700/50 rounded-lg p-3">
+                        <div className="text-white font-medium text-sm truncate">{sale.progetto || 'Da definire'}</div>
+                        <div className="text-slate-400 text-xs truncate">{sale.developer}</div>
+                        {sale.cliente_nome && <div className="text-blue-400 text-xs mt-1">👤 {sale.cliente_nome}</div>}
+                        {sale.valore > 0 && <div className="text-amber-400 font-semibold text-sm mt-1">{fmt(sale.valore)} AED</div>}
+                        <div className="flex gap-1 mt-2 flex-wrap">
+                          {pipelineStati.slice(0, -1).map((st, i) => {
+                            const currentIndex = pipelineStati.indexOf(sale.stato || 'lead');
+                            const canMoveTo = Math.abs(i - currentIndex) === 1;
+                            if (!canMoveTo || st === sale.stato) return null;
+                            return (
+                              <button key={st} onClick={() => updateSale(sale.id, { stato: st })} className={`text-xs px-2 py-1 rounded ${pipelineColors[st]} text-white opacity-80 hover:opacity-100`}>
+                                {i > currentIndex ? '→' : '←'}
+                              </button>
+                            );
+                          })}
+                          {(sale.stato === 'prenotato' || sale.stato === 'trattativa' || (sale.stato === 'venduto' && !sale.valore)) && (
+                            <button onClick={() => setConvertingSale(sale)} className="text-xs px-2 py-1 rounded bg-emerald-500 text-white opacity-80 hover:opacity-100">
+                              💰
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {(!byStato[stato] || byStato[stato].length === 0) && (
+                      <div className="text-slate-500 text-xs text-center py-4">Vuoto</div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -496,7 +565,7 @@ export default function App() {
   return null;
 }
 
-// ==================== LEAD FORM ====================
+// ==================== LEAD FORM (COMPLETO) ====================
 function LeadForm({ type, userName, onSubmit, onCancel }) {
   const [form, setForm] = useState({ 
     data: new Date().toISOString().split('T')[0], 
@@ -505,39 +574,122 @@ function LeadForm({ type, userName, onSubmit, onCancel }) {
     zona: '', 
     valore: '',
     altroNome: '',
-    note: ''
+    stato: 'lead',
+    // Dati cliente
+    cliente_nome: '',
+    cliente_cognome: '',
+    cliente_email: '',
+    cliente_telefono: '',
+    cliente_whatsapp: '',
+    cliente_nazionalita: '',
+    cliente_budget_min: '',
+    cliente_budget_max: '',
+    cliente_note: ''
   });
   
   const handleSubmit = () => { 
-    if (!form.developer || !form.progetto || !form.zona) { alert('Compila Developer, Progetto e Zona'); return; } 
+    if (!form.cliente_nome) { alert('Inserisci almeno il nome del cliente'); return; }
+    if (!form.progetto && !form.developer) { alert('Inserisci almeno progetto o developer di interesse'); return; } 
     onSubmit({ 
       data: form.data, 
-      developer: form.developer, 
-      progetto: form.progetto, 
-      zona: form.zona, 
+      developer: form.developer || 'Da definire', 
+      progetto: form.progetto || 'Da definire', 
+      zona: form.zona || 'Da definire', 
       valore: form.valore ? parseFloat(form.valore) : 0,
       agente: type === 'agente' ? userName : (form.altroNome || null), 
-      segnalatore: type === 'segnalatore' ? userName : (form.altroNome || null)
+      segnalatore: type === 'segnalatore' ? userName : (form.altroNome || null),
+      stato: form.stato,
+      // Passa dati cliente per creare anagrafica
+      cliente_nome: form.cliente_nome,
+      cliente_cognome: form.cliente_cognome,
+      cliente_email: form.cliente_email,
+      cliente_telefono: form.cliente_telefono,
+      cliente_whatsapp: form.cliente_whatsapp,
+      cliente_nazionalita: form.cliente_nazionalita,
+      cliente_budget_min: form.cliente_budget_min,
+      cliente_budget_max: form.cliente_budget_max,
+      cliente_note: form.cliente_note
     }); 
   };
   
   const inp = "w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white";
   
   return (
-    <div className="bg-blue-900/20 border border-blue-500/30 rounded-2xl p-6 mb-6">
+    <div className="bg-blue-900/20 border border-blue-500/30 rounded-2xl p-6 mb-6 max-h-[80vh] overflow-y-auto">
       <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2"><Target className="w-5 h-5 text-blue-400" /> Nuovo Lead</h3>
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div><label className="block text-slate-300 text-sm mb-2">Data</label><input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} className={inp} /></div>
-          <div><label className="block text-slate-300 text-sm mb-2">Developer *</label><select value={form.developer} onChange={(e) => setForm({ ...form, developer: e.target.value })} className={inp}><option value="">Seleziona</option>{developers.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
+      
+      {/* SEZIONE CLIENTE */}
+      <div className="bg-slate-800/50 rounded-xl p-4 mb-4">
+        <h4 className="text-white font-medium mb-3 flex items-center gap-2"><Users className="w-4 h-4 text-blue-400" /> Dati Cliente</h4>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-slate-400 text-xs mb-1">Nome *</label><input type="text" value={form.cliente_nome} onChange={(e) => setForm({ ...form, cliente_nome: e.target.value })} className={inp} placeholder="Mario" /></div>
+            <div><label className="block text-slate-400 text-xs mb-1">Cognome</label><input type="text" value={form.cliente_cognome} onChange={(e) => setForm({ ...form, cliente_cognome: e.target.value })} className={inp} placeholder="Rossi" /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-slate-400 text-xs mb-1">Email</label><input type="email" value={form.cliente_email} onChange={(e) => setForm({ ...form, cliente_email: e.target.value })} className={inp} placeholder="mario@email.com" /></div>
+            <div><label className="block text-slate-400 text-xs mb-1">Telefono</label><input type="tel" value={form.cliente_telefono} onChange={(e) => setForm({ ...form, cliente_telefono: e.target.value })} className={inp} placeholder="+39 333..." /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-slate-400 text-xs mb-1">WhatsApp</label><input type="tel" value={form.cliente_whatsapp} onChange={(e) => setForm({ ...form, cliente_whatsapp: e.target.value })} className={inp} placeholder="+39 333..." /></div>
+            <div><label className="block text-slate-400 text-xs mb-1">Nazionalità</label><input type="text" value={form.cliente_nazionalita} onChange={(e) => setForm({ ...form, cliente_nazionalita: e.target.value })} className={inp} placeholder="Italiana" /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-slate-400 text-xs mb-1">Budget Min (AED)</label><input type="number" value={form.cliente_budget_min} onChange={(e) => setForm({ ...form, cliente_budget_min: e.target.value })} className={inp} placeholder="1000000" /></div>
+            <div><label className="block text-slate-400 text-xs mb-1">Budget Max (AED)</label><input type="number" value={form.cliente_budget_max} onChange={(e) => setForm({ ...form, cliente_budget_max: e.target.value })} className={inp} placeholder="2000000" /></div>
+          </div>
+          <div><label className="block text-slate-400 text-xs mb-1">Note Cliente</label><textarea value={form.cliente_note} onChange={(e) => setForm({ ...form, cliente_note: e.target.value })} className={`${inp} h-20`} placeholder="Interessi, preferenze, tempistiche..." /></div>
         </div>
-        <div><label className="block text-slate-300 text-sm mb-2">Progetto *</label><input type="text" value={form.progetto} onChange={(e) => setForm({ ...form, progetto: e.target.value })} className={inp} placeholder="Nome progetto" /></div>
-        <div className="grid grid-cols-2 gap-4">
-          <div><label className="block text-slate-300 text-sm mb-2">Zona *</label><select value={form.zona} onChange={(e) => setForm({ ...form, zona: e.target.value })} className={inp}><option value="">Seleziona</option>{zones.map(z => <option key={z} value={z}>{z}</option>)}</select></div>
-          <div><label className="block text-slate-300 text-sm mb-2">Valore stimato (AED)</label><input type="number" value={form.valore} onChange={(e) => setForm({ ...form, valore: e.target.value })} className={inp} placeholder="Opzionale" /></div>
+      </div>
+
+      {/* SEZIONE IMMOBILE */}
+      <div className="bg-slate-800/50 rounded-xl p-4 mb-4">
+        <h4 className="text-white font-medium mb-3 flex items-center gap-2"><Target className="w-4 h-4 text-amber-400" /> Interesse Immobile</h4>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-slate-400 text-xs mb-1">Developer</label><select value={form.developer} onChange={(e) => setForm({ ...form, developer: e.target.value })} className={inp}><option value="">Seleziona</option>{developers.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
+            <div><label className="block text-slate-400 text-xs mb-1">Zona</label><select value={form.zona} onChange={(e) => setForm({ ...form, zona: e.target.value })} className={inp}><option value="">Seleziona</option>{zones.map(z => <option key={z} value={z}>{z}</option>)}</select></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-slate-400 text-xs mb-1">Progetto</label><input type="text" value={form.progetto} onChange={(e) => setForm({ ...form, progetto: e.target.value })} className={inp} placeholder="Nome progetto" /></div>
+            <div><label className="block text-slate-400 text-xs mb-1">Valore stimato (AED)</label><input type="number" value={form.valore} onChange={(e) => setForm({ ...form, valore: e.target.value })} className={inp} placeholder="Opzionale" /></div>
+          </div>
         </div>
-        <div><label className="block text-slate-300 text-sm mb-2">{type === 'agente' ? 'Segnalatore' : 'Agente'} (opzionale)</label><input type="text" value={form.altroNome} onChange={(e) => setForm({ ...form, altroNome: e.target.value })} className={inp} /></div>
-        <div className="flex gap-3 pt-4"><button onClick={onCancel} className="flex-1 bg-slate-700 text-white rounded-xl py-3">Annulla</button><button onClick={handleSubmit} className="flex-1 bg-blue-500 text-white rounded-xl py-3 font-semibold">Salva Lead</button></div>
+      </div>
+
+      {/* SEZIONE STATO PIPELINE */}
+      <div className="bg-slate-800/50 rounded-xl p-4 mb-4">
+        <h4 className="text-white font-medium mb-3">Stato Pipeline</h4>
+        <div className="flex flex-wrap gap-2">
+          {pipelineStati.slice(0, 4).map(stato => (
+            <button
+              key={stato}
+              type="button"
+              onClick={() => setForm({ ...form, stato })}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                form.stato === stato 
+                  ? `${pipelineColors[stato]} text-white` 
+                  : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+              }`}
+            >
+              {pipelineLabels[stato]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ALTRI CAMPI */}
+      <div className="space-y-3 mb-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="block text-slate-400 text-xs mb-1">Data</label><input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} className={inp} /></div>
+          <div><label className="block text-slate-400 text-xs mb-1">{type === 'agente' ? 'Segnalatore' : 'Agente'}</label><input type="text" value={form.altroNome} onChange={(e) => setForm({ ...form, altroNome: e.target.value })} className={inp} placeholder="Opzionale" /></div>
+        </div>
+      </div>
+
+      {/* BOTTONI */}
+      <div className="flex gap-3 pt-4 border-t border-slate-700">
+        <button onClick={onCancel} className="flex-1 bg-slate-700 text-white rounded-xl py-3">Annulla</button>
+        <button onClick={handleSubmit} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-3 font-semibold">Salva Lead</button>
       </div>
     </div>
   );
