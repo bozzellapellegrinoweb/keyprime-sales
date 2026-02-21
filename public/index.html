@@ -2,15 +2,53 @@
 <html lang="it">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#1e293b" />
-    <meta name="description" content="KeyPrime Sales Management System" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#f59e0b" />
+    <meta name="description" content="KeyPrime Real Estate Sales Management System" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="KeyPrime" />
+    
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    
     <title>KeyPrime - Sales Management</title>
+    
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 80'><rect x='0' y='20' width='12' height='60' fill='%23C9B99A'/><rect x='16' y='0' width='14' height='80' fill='%232C3E50' rx='2'/><rect x='34' y='10' width='14' height='70' fill='%233D5A6C' rx='2'/></svg>" />
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+      /* PWA install banner hide */
+      @media all and (display-mode: standalone) {
+        body { padding-top: env(safe-area-inset-top); }
+      }
+      
+      /* Smooth scrolling */
+      html { scroll-behavior: smooth; }
+      
+      /* Hide scrollbar but allow scroll */
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
   </head>
   <body class="bg-slate-900">
     <noscript>Devi abilitare JavaScript per usare questa app.</noscript>
     <div id="root"></div>
+    
+    <script>
+      // Register Service Worker for PWA
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered:', registration.scope);
+            })
+            .catch((error) => {
+              console.log('SW registration failed:', error);
+            });
+        });
+      }
+    </script>
   </body>
 </html>
