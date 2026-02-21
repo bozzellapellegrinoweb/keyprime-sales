@@ -81,6 +81,7 @@ export default function App() {
   const [adminTab, setAdminTab] = useState('dashboard');
   const [filters, setFilters] = useState({ search: '', stato: '', agente: '', zona: '', pagato: '' });
   const [convertingSale, setConvertingSale] = useState(null);
+  const [agentTab, setAgentTab] = useState('lista');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -310,7 +311,6 @@ export default function App() {
     const totalComm = myVendite.reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * rate), 0);
     const pagate = myVendite.filter(s => s.pagato).reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * rate), 0);
     const byStato = pipelineStati.reduce((acc, stato) => { acc[stato] = mySales.filter(s => (s.stato || 'lead') === stato); return acc; }, {});
-    const [agentTab, setAgentTab] = useState('lista');
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
