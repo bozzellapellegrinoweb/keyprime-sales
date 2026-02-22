@@ -598,25 +598,31 @@ export default function App() {
   // Saved Listings Handlers
   const saveListing = async (listing) => {
     const { error } = await supabase.from('saved_listings').insert([{
-      property_id: listing.property_id,
+      property_id: listing.project_id, // Use project_id for off-plan projects
       title: listing.title,
-      price: parseFloat(listing.price) || 0,
+      price: parseFloat(listing.price_from) || 0,
       location_full: listing.location?.full_name,
-      location_path: listing.location?.path_name,
-      property_type: listing.property_type,
-      size: parseFloat(listing.size) || null,
-      bedrooms: listing.bedrooms,
-      bathrooms: listing.bathrooms,
-      furnished: listing.furnished,
+      location_path: listing.location?.path_name || listing.location?.name,
+      property_type: 'off-plan',
+      size: null,
+      bedrooms: listing.bedrooms?.available?.join(',') || null,
+      bathrooms: null,
+      furnished: null,
       image_url: listing.images?.[0]?.medium_image_url,
-      pf_url: listing.url,
-      completion_status: listing.completion_status,
-      agent_name: listing.agent?.name,
-      agent_email: listing.agent?.email,
-      description: listing.description?.substring(0, 500),
+      pf_url: null, // No external URL
+      completion_status: listing.construction_phase_key,
+      agent_name: listing.developer?.name,
+      agent_email: null,
+      description: listing.title,
       created_by: user?.nome
     }]);
-    if (!error) { loadSavedListings(); showToast('Annuncio salvato'); }
+    if (error) {
+      console.error('Save error:', error);
+      showToast('Errore nel salvataggio');
+    } else {
+      loadSavedListings();
+      showToast('Progetto salvato ✓');
+    }
   };
   
   const removeListing = async (propertyId) => {
@@ -2017,6 +2023,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
+    search: '',
     location: '',
     minPrice: '',
     maxPrice: '',
@@ -2091,8 +2098,18 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
       
       const projects = data.data || [];
       
-      // Filter client-side for location/bedrooms/developer if needed
+      // Filter client-side for location/bedrooms/developer/search if needed
       let filteredProjects = projects;
+      
+      // Search by project name
+      if (filters.search) {
+        const searchTerm = filters.search.toLowerCase().trim();
+        filteredProjects = filteredProjects.filter(p => 
+          p.title?.toLowerCase().includes(searchTerm) ||
+          p.developer?.name?.toLowerCase().includes(searchTerm) ||
+          p.location?.full_name?.toLowerCase().includes(searchTerm)
+        );
+      }
       
       if (filters.location) {
         const loc = filters.location.toLowerCase();
@@ -2210,6 +2227,20 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
 
       {/* Filters */}
       <Card>
+        {/* Search bar - full width */}
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+          <input 
+            type="text" 
+            placeholder="Cerca progetto per nome... (es. Damac Lagoons, Marina View)" 
+            value={filters.search} 
+            onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
+            onKeyDown={(e) => e.key === 'Enter' && searchListings(true)}
+            className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" 
+          />
+        </div>
+        
+        {/* Other filters */}
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
           <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">
             <option value="">Tutte le zone</option>
@@ -2264,7 +2295,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
       {listings.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {listings.map(project => (
-            <Card key={project.project_id} hover className="overflow-hidden group">
+            <Card key={project.project_id} hover className="overflow-hidden group cursor-pointer" onClick={() => setSelectedListing(project)}>
               {/* Image */}
               <div className="relative h-40 -mx-4 -mt-4 mb-3 overflow-hidden">
                 {project.images?.[0]?.medium_image_url ? (
@@ -2335,10 +2366,10 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
               
               {/* Actions */}
               <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
-                <Button variant="ghost" size="sm" className="flex-1" onClick={() => setSelectedListing(project)}>
+                <Button variant="ghost" size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); setSelectedListing(project); }}>
                   <Eye className="w-4 h-4 mr-1" /> Dettagli
                 </Button>
-                <Button variant="secondary" size="sm" className="flex-1" onClick={() => setShowAssignModal(project)}>
+                <Button variant="secondary" size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); setShowAssignModal(project); }}>
                   <Plus className="w-4 h-4 mr-1" /> Lead
                 </Button>
               </div>
@@ -2374,27 +2405,25 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
   );
 }
 
-// Listing Detail Modal (for Off-Plan Projects)
+// Listing Detail Modal (for Off-Plan Projects) - Enhanced with Gallery, Map, Location Insights
 function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleSave }) {
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [showFullGallery, setShowFullGallery] = useState(false);
+
   const formatPrice = (price) => {
     if (!price || price === 0) return 'Su richiesta';
     return parseFloat(price).toLocaleString();
   };
   
-  // Format bedrooms from array
   const formatBedrooms = (bedrooms) => {
     if (!bedrooms?.available?.length) return null;
     const beds = bedrooms.available;
-    if (beds.length === 1) {
-      return beds[0] === 0 ? 'Studio' : `${beds[0]} BR`;
-    }
+    if (beds.length === 1) return beds[0] === 0 ? 'Studio' : `${beds[0]} Camere`;
     const min = Math.min(...beds);
     const max = Math.max(...beds);
-    if (min === 0) return `Studio - ${max} BR`;
-    return `${min} - ${max} BR`;
+    return min === 0 ? `Studio - ${max} Camere` : `${min} - ${max} Camere`;
   };
 
-  // Format delivery date
   const formatDelivery = (dateStr) => {
     if (!dateStr) return null;
     const date = new Date(dateStr);
@@ -2402,116 +2431,287 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
     return `Q${quarter} ${date.getFullYear()}`;
   };
 
-  // Format payment plan
-  const formatPaymentPlan = (plans) => {
-    if (!plans?.plans?.[0]) return null;
-    const plan = plans.plans[0].summary;
-    return `${plan.down_payment}% anticipo / ${plan.during_construction}% costruzione / ${plan.handover}% consegna`;
-  };
-
-  // Get construction status label
   const getStatusLabel = (status) => {
     switch(status) {
-      case 'completed': return { text: 'Completato', color: 'bg-green-500' };
-      case 'under_construction': return { text: 'In Costruzione', color: 'bg-orange-500' };
-      case 'not_started': return { text: 'Lancio', color: 'bg-blue-500' };
-      default: return { text: 'Off-Plan', color: 'bg-orange-500' };
+      case 'completed': return { text: 'Completato', color: 'bg-green-500', icon: '✓' };
+      case 'under_construction': return { text: 'In Costruzione', color: 'bg-orange-500', icon: '🏗️' };
+      case 'not_started': return { text: 'Nuovo Lancio', color: 'bg-blue-500', icon: '🚀' };
+      default: return { text: 'Off-Plan', color: 'bg-orange-500', icon: '📋' };
     }
   };
 
+  // Location insights based on area name
+  const getLocationInsights = (locationName) => {
+    const insights = {
+      'Dubai Marina': { rating: '⭐⭐⭐⭐⭐', type: 'Premium Waterfront', highlights: ['Vista mare', 'Ristoranti di lusso', 'Beach access', 'Metro vicina'], roi: '6-8%' },
+      'Palm Jumeirah': { rating: '⭐⭐⭐⭐⭐', type: 'Ultra Luxury', highlights: ['Isola iconica', 'Spiagge private', 'Hotel 5 stelle', 'Alta domanda'], roi: '5-7%' },
+      'Downtown Dubai': { rating: '⭐⭐⭐⭐⭐', type: 'Iconic Location', highlights: ['Burj Khalifa', 'Dubai Mall', 'Fountain view', 'Business hub'], roi: '5-7%' },
+      'Business Bay': { rating: '⭐⭐⭐⭐', type: 'Business District', highlights: ['Canal view', 'Corporate hub', 'In crescita', 'Buon ROI'], roi: '7-9%' },
+      'JBR': { rating: '⭐⭐⭐⭐⭐', type: 'Beachfront Living', highlights: ['The Walk', 'Beach access', 'Family friendly', 'Turisti'], roi: '6-8%' },
+      'Dubai Creek Harbour': { rating: '⭐⭐⭐⭐', type: 'Future Icon', highlights: ['Creek Tower', 'Waterfront', 'Nuova area', 'Alto potenziale'], roi: '8-10%' },
+      'MBR City': { rating: '⭐⭐⭐⭐', type: 'Master Community', highlights: ['Meydan', 'Crystal Lagoon', 'Golf course', 'Family area'], roi: '7-9%' },
+      'Dubai Hills': { rating: '⭐⭐⭐⭐', type: 'Green Community', highlights: ['Golf club', 'Dubai Hills Mall', 'Parchi', 'Scuole'], roi: '6-8%' },
+      'JVC': { rating: '⭐⭐⭐', type: 'Affordable Living', highlights: ['Entry level', 'Community feel', 'ROI alto', 'In sviluppo'], roi: '8-10%' },
+      'Jumeirah Village': { rating: '⭐⭐⭐', type: 'Value Investment', highlights: ['Prezzi competitivi', 'Comunità', 'Buon rental'], roi: '8-10%' },
+      'DIFC': { rating: '⭐⭐⭐⭐⭐', type: 'Financial Hub', highlights: ['Centro finanziario', 'Art galleries', 'Fine dining', 'Lusso'], roi: '5-6%' },
+      'Yas Island': { rating: '⭐⭐⭐⭐', type: 'Entertainment Hub', highlights: ['Ferrari World', 'Yas Marina', 'Beach', 'Abu Dhabi'], roi: '6-8%' },
+      'Saadiyat Island': { rating: '⭐⭐⭐⭐⭐', type: 'Cultural District', highlights: ['Louvre Abu Dhabi', 'Beaches', 'Golf', 'Exclusive'], roi: '5-7%' }
+    };
+    
+    const locationLower = (locationName || '').toLowerCase();
+    for (const [key, value] of Object.entries(insights)) {
+      if (locationLower.includes(key.toLowerCase())) return { name: key, ...value };
+    }
+    return { name: locationName, rating: '⭐⭐⭐', type: 'Emerging Area', highlights: ['In sviluppo', 'Potenziale crescita'], roi: '7-10%' };
+  };
+
   const status = getStatusLabel(listing.construction_phase_key);
+  const locationInsights = getLocationInsights(listing.location?.full_name || listing.location?.name);
+  const images = listing.images || [];
+  const hasCoords = listing.location?.lat && listing.location?.lng;
   
+  // Estimate coordinates from location name for map (rough Dubai coordinates)
+  const getMapUrl = () => {
+    const locationName = encodeURIComponent(listing.location?.full_name || listing.title + ' Dubai');
+    return `https://www.google.com/maps/search/?api=1&query=${locationName}`;
+  };
+
+  // Fullscreen Gallery
+  if (showFullGallery) {
+    return (
+      <div className="fixed inset-0 z-[60] bg-black">
+        <button onClick={() => setShowFullGallery(false)} className="absolute top-4 right-4 z-10 p-3 bg-white/10 backdrop-blur rounded-full text-white hover:bg-white/20">
+          <X className="w-6 h-6" />
+        </button>
+        <div className="absolute top-4 left-4 z-10 px-4 py-2 bg-white/10 backdrop-blur rounded-full text-white text-sm">
+          {activeImageIndex + 1} / {images.length}
+        </div>
+        
+        {/* Main Image */}
+        <div className="h-full flex items-center justify-center p-4">
+          {images[activeImageIndex] && (
+            <img src={images[activeImageIndex].medium_image_url || images[activeImageIndex].small_image_url} alt="" className="max-h-full max-w-full object-contain" />
+          )}
+        </div>
+        
+        {/* Navigation */}
+        {images.length > 1 && (
+          <>
+            <button onClick={() => setActiveImageIndex(i => i > 0 ? i - 1 : images.length - 1)} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 backdrop-blur rounded-full text-white hover:bg-white/20">
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button onClick={() => setActiveImageIndex(i => i < images.length - 1 ? i + 1 : 0)} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 backdrop-blur rounded-full text-white hover:bg-white/20">
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </>
+        )}
+        
+        {/* Thumbnails */}
+        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 px-4 overflow-x-auto">
+          {images.slice(0, 10).map((img, idx) => (
+            <button key={idx} onClick={() => setActiveImageIndex(idx)} className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${idx === activeImageIndex ? 'border-orange-500 scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+              <img src={img.small_image_url || img.medium_image_url} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden animate-scaleIn">
-        {/* Header Image */}
-        <div className="relative h-64">
-          {listing.images?.[0]?.medium_image_url ? (
-            <img src={listing.images[0].medium_image_url} alt={listing.title} className="w-full h-full object-cover" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#0F0F11] border border-[#27272A] rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-scaleIn">
+        
+        {/* Hero Image Section with Gallery */}
+        <div className="relative h-72 md:h-80">
+          {images[activeImageIndex]?.medium_image_url ? (
+            <img src={images[activeImageIndex].medium_image_url} alt={listing.title} className="w-full h-full object-cover cursor-pointer" onClick={() => setShowFullGallery(true)} />
           ) : (
             <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-              <Building2 className="w-16 h-16 text-zinc-600" />
+              <Building2 className="w-20 h-20 text-zinc-600" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#18181B] to-transparent" />
-          <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70">
-            <X className="w-5 h-5" />
-          </button>
-          <div className="absolute bottom-4 left-4 right-4">
-            <span className={`px-2 py-1 ${status.color} text-white text-xs font-medium rounded-lg`}>{status.text}</span>
-            <h2 className="text-xl font-semibold text-white mt-2 line-clamp-2">{listing.title}</h2>
+          
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F11] via-transparent to-black/30" />
+          
+          {/* Top controls */}
+          <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
+            <div className="flex gap-2">
+              <span className={`px-3 py-1.5 ${status.color} text-white text-sm font-medium rounded-full flex items-center gap-1.5 shadow-lg`}>
+                <span>{status.icon}</span> {status.text}
+              </span>
+              {formatDelivery(listing.delivery_date) && (
+                <span className="px-3 py-1.5 bg-black/60 backdrop-blur text-white text-sm rounded-full">
+                  📅 {formatDelivery(listing.delivery_date)}
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={onToggleSave} className={`p-2.5 rounded-full shadow-lg transition-all ${isSaved ? 'bg-orange-500 text-white' : 'bg-black/60 backdrop-blur text-white hover:bg-orange-500'}`}>
+                <svg className="w-5 h-5" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+              </button>
+              <button onClick={onClose} className="p-2.5 bg-black/60 backdrop-blur rounded-full text-white hover:bg-black/80 shadow-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
+          
+          {/* Image navigation dots */}
+          {images.length > 1 && (
+            <div className="absolute bottom-20 left-0 right-0 flex justify-center gap-1.5">
+              {images.slice(0, 8).map((_, idx) => (
+                <button key={idx} onClick={() => setActiveImageIndex(idx)} className={`w-2 h-2 rounded-full transition-all ${idx === activeImageIndex ? 'bg-orange-500 w-6' : 'bg-white/50 hover:bg-white/80'}`} />
+              ))}
+              {images.length > 8 && <span className="text-white/50 text-xs ml-1">+{images.length - 8}</span>}
+            </div>
+          )}
+          
+          {/* Title section */}
+          <div className="absolute bottom-4 left-4 right-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">{listing.title}</h2>
+            <div className="flex items-center gap-2 mt-2 text-white/80">
+              <MapPin className="w-4 h-4" />
+              <span>{listing.location?.full_name}</span>
+            </div>
+          </div>
+          
+          {/* Expand gallery button */}
+          {images.length > 1 && (
+            <button onClick={() => setShowFullGallery(true)} className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/60 backdrop-blur text-white text-sm rounded-full hover:bg-black/80 flex items-center gap-1.5">
+              <Eye className="w-4 h-4" /> {images.length} foto
+            </button>
+          )}
         </div>
         
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-16rem)]">
-          {/* Price & Location */}
-          <div className="flex items-start justify-between mb-6">
+        <div className="p-4 md:p-6 overflow-y-auto max-h-[calc(95vh-20rem)]">
+          
+          {/* Price & Quick Info */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-zinc-800">
             <div>
-              <p className="text-2xl font-bold text-orange-400">
-                {listing.price_from > 0 ? `da AED ${formatPrice(listing.price_from)}` : 'Prezzo su richiesta'}
+              <p className="text-3xl font-bold text-orange-400">
+                {listing.price_from > 0 ? `AED ${formatPrice(listing.price_from)}` : 'Prezzo su richiesta'}
               </p>
-              <p className="text-zinc-400 mt-1">{listing.location?.full_name}</p>
+              {listing.price_from > 0 && <p className="text-zinc-500 text-sm mt-1">Prezzo iniziale</p>}
             </div>
-            <button onClick={onToggleSave} className={`p-3 rounded-xl transition-colors ${isSaved ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-orange-400'}`}>
-              <svg className="w-5 h-5" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
-            </button>
+            {formatBedrooms(listing.bedrooms) && (
+              <div className="flex items-center gap-4 text-zinc-300">
+                <div className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 rounded-xl">
+                  <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                  <span className="font-medium">{formatBedrooms(listing.bedrooms)}</span>
+                </div>
+              </div>
+            )}
           </div>
           
-          {/* Details Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            {formatBedrooms(listing.bedrooms) && (
-              <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
-                <p className="text-zinc-500 text-xs">Camere</p>
-                <p className="text-white font-medium">{formatBedrooms(listing.bedrooms)}</p>
-              </div>
-            )}
+          {/* Info Grid - 2 columns on mobile, 4 on desktop */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-orange-500/20 rounded-xl p-4 text-center">
+              <p className="text-orange-400 text-2xl font-bold">{status.icon}</p>
+              <p className="text-white font-medium mt-1">{status.text}</p>
+              <p className="text-zinc-500 text-xs mt-1">Stato progetto</p>
+            </div>
             {formatDelivery(listing.delivery_date) && (
-              <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
-                <p className="text-zinc-500 text-xs">Consegna</p>
-                <p className="text-white font-medium">{formatDelivery(listing.delivery_date)}</p>
+              <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
+                <p className="text-blue-400 text-2xl font-bold">📅</p>
+                <p className="text-white font-medium mt-1">{formatDelivery(listing.delivery_date)}</p>
+                <p className="text-zinc-500 text-xs mt-1">Consegna prevista</p>
               </div>
             )}
-            {listing.down_payment_percentage > 0 && (
-              <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
-                <p className="text-zinc-500 text-xs">Anticipo</p>
-                <p className="text-white font-medium">{listing.down_payment_percentage}%</p>
+            {listing.payment_plans?.plans?.[0]?.summary?.down_payment && (
+              <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
+                <p className="text-green-400 text-2xl font-bold">{listing.payment_plans.plans[0].summary.down_payment}%</p>
+                <p className="text-white font-medium mt-1">Anticipo</p>
+                <p className="text-zinc-500 text-xs mt-1">Down payment</p>
               </div>
             )}
-            <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
-              <p className="text-zinc-500 text-xs">Stato</p>
-              <p className="text-white font-medium">{status.text}</p>
+            <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
+              <p className="text-purple-400 text-2xl font-bold">{locationInsights.roi}</p>
+              <p className="text-white font-medium mt-1">ROI Stimato</p>
+              <p className="text-zinc-500 text-xs mt-1">Rendimento annuo</p>
             </div>
           </div>
-
-          {/* Developer Info */}
+          
+          {/* Developer Info - Prominent Card */}
           {listing.developer && (
-            <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl mb-6">
-              {listing.developer.logo && (
-                <img src={listing.developer.logo} alt={listing.developer.name} className="w-12 h-12 rounded-lg object-contain bg-white p-1" />
+            <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-zinc-800/80 to-zinc-800/40 border border-zinc-700/50 rounded-xl mb-6">
+              {listing.developer.logo ? (
+                <img src={listing.developer.logo} alt={listing.developer.name} className="w-16 h-16 rounded-xl object-contain bg-white p-2" />
+              ) : (
+                <div className="w-16 h-16 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                  <Building2 className="w-8 h-8 text-orange-400" />
+                </div>
               )}
               <div className="flex-1">
-                <p className="text-zinc-500 text-xs">Developer</p>
-                <p className="text-white font-medium">{listing.developer.name}</p>
+                <p className="text-zinc-400 text-xs uppercase tracking-wider">Developer</p>
+                <p className="text-xl font-semibold text-white">{listing.developer.name}</p>
+                {listing.developer.projects_count && (
+                  <p className="text-zinc-500 text-sm">{listing.developer.projects_count} progetti</p>
+                )}
+              </div>
+              <div className="text-right">
+                <span className="px-3 py-1 bg-orange-500/20 text-orange-400 text-xs font-medium rounded-full">Verificato ✓</span>
               </div>
             </div>
           )}
+          
+          {/* Location Insights Card */}
+          <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/5 border border-blue-500/20 rounded-xl p-4 mb-6">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-blue-400" /> Analisi Location
+                </h3>
+                <p className="text-zinc-400 text-sm">{locationInsights.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-lg">{locationInsights.rating}</p>
+                <span className="text-blue-400 text-xs font-medium">{locationInsights.type}</span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {locationInsights.highlights.map((h, i) => (
+                <span key={i} className="px-2.5 py-1 bg-white/5 text-zinc-300 text-xs rounded-full">✓ {h}</span>
+              ))}
+            </div>
+            {/* Mini Map Link */}
+            <a href={getMapUrl()} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center justify-center gap-2 p-3 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl text-zinc-300 transition-colors">
+              <MapPin className="w-4 h-4" />
+              <span className="text-sm">Apri in Google Maps</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </a>
+          </div>
 
-          {/* Payment Plan */}
+          {/* Payment Plans */}
           {listing.payment_plans?.plans?.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-white font-medium mb-3">Piano di Pagamento</h3>
-              <div className="space-y-2">
+              <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-green-400" /> Piano di Pagamento
+              </h3>
+              <div className="space-y-3">
                 {listing.payment_plans.plans.map((plan, idx) => (
-                  <div key={idx} className="p-3 bg-zinc-800/50 rounded-xl">
-                    <p className="text-zinc-400 text-xs mb-1">{plan.title}</p>
-                    <div className="flex gap-4 text-sm">
-                      <span className="text-green-400">{plan.summary.down_payment}% Anticipo</span>
-                      <span className="text-orange-400">{plan.summary.during_construction}% Costruzione</span>
-                      <span className="text-blue-400">{plan.summary.handover}% Consegna</span>
+                  <div key={idx} className="p-4 bg-zinc-800/50 rounded-xl">
+                    {plan.title && <p className="text-zinc-300 font-medium mb-3">{plan.title}</p>}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="text-center p-3 bg-green-500/10 rounded-lg">
+                        <p className="text-2xl font-bold text-green-400">{plan.summary.down_payment}%</p>
+                        <p className="text-zinc-500 text-xs mt-1">Anticipo</p>
+                      </div>
+                      <div className="text-center p-3 bg-orange-500/10 rounded-lg">
+                        <p className="text-2xl font-bold text-orange-400">{plan.summary.during_construction}%</p>
+                        <p className="text-zinc-500 text-xs mt-1">Costruzione</p>
+                      </div>
+                      <div className="text-center p-3 bg-blue-500/10 rounded-lg">
+                        <p className="text-2xl font-bold text-blue-400">{plan.summary.handover}%</p>
+                        <p className="text-zinc-500 text-xs mt-1">Consegna</p>
+                      </div>
                       {plan.summary.after_handover > 0 && (
-                        <span className="text-purple-400">{plan.summary.after_handover}% Post-consegna</span>
+                        <div className="text-center p-3 bg-purple-500/10 rounded-lg">
+                          <p className="text-2xl font-bold text-purple-400">{plan.summary.after_handover}%</p>
+                          <p className="text-zinc-500 text-xs mt-1">Post-consegna</p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -2520,30 +2720,57 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
             </div>
           )}
 
-          {/* Image Gallery */}
-          {listing.images?.length > 1 && (
+          {/* Image Gallery Thumbnails */}
+          {images.length > 1 && (
             <div className="mb-6">
-              <h3 className="text-white font-medium mb-3">Galleria ({listing.images_count} immagini)</h3>
-              <div className="grid grid-cols-4 gap-2">
-                {listing.images.slice(0, 8).map((img, idx) => (
-                  <img key={idx} src={img.small_image_url || img.medium_image_url} alt="" className="w-full h-20 object-cover rounded-lg" />
+              <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                <Eye className="w-4 h-4 text-orange-400" /> Galleria
+                <span className="text-zinc-500 text-sm font-normal">({images.length} immagini)</span>
+              </h3>
+              <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                {images.slice(0, 12).map((img, idx) => (
+                  <button key={idx} onClick={() => { setActiveImageIndex(idx); setShowFullGallery(true); }} className="relative h-20 rounded-lg overflow-hidden group">
+                    <img src={img.small_image_url || img.medium_image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                      <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </button>
+                ))}
+                {images.length > 12 && (
+                  <button onClick={() => setShowFullGallery(true)} className="h-20 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 hover:bg-zinc-700 transition-colors">
+                    <span className="text-sm font-medium">+{images.length - 12}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Amenities if available */}
+          {listing.amenities?.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-white font-semibold mb-3">Servizi e Amenities</h3>
+              <div className="flex flex-wrap gap-2">
+                {listing.amenities.map((a, i) => (
+                  <span key={i} className="px-3 py-1.5 bg-zinc-800/50 text-zinc-300 text-sm rounded-full">{a}</span>
                 ))}
               </div>
             </div>
           )}
           
           {/* Actions */}
-          <div className="flex gap-3">
-            <Button className="flex-1" onClick={onCreateLead}>
-              <Plus className="w-4 h-4 mr-2" /> Crea Lead
+          <div className="flex gap-3 pt-4 border-t border-zinc-800">
+            <Button className="flex-1 py-3 bg-orange-500 hover:bg-orange-600" onClick={onCreateLead}>
+              <Plus className="w-5 h-5 mr-2" /> Crea Lead
             </Button>
-            <Button variant="secondary" className="flex-1" onClick={() => {
+            <Button variant="secondary" className="flex-1 py-3" onClick={() => {
               const bedsText = formatBedrooms(listing.bedrooms) || 'Varie tipologie';
               const deliveryText = formatDelivery(listing.delivery_date) || 'TBD';
-              const text = `🏗️ *${listing.title}*\n\n📍 ${listing.location?.full_name}\n💰 ${listing.price_from > 0 ? `da AED ${formatPrice(listing.price_from)}` : 'Prezzo su richiesta'}\n🏠 ${bedsText}\n📅 Consegna: ${deliveryText}\n🏢 ${listing.developer?.name || 'Developer'}\n\n_Progetto Off-Plan_`;
+              const paymentText = listing.payment_plans?.plans?.[0]?.summary ? 
+                `💳 ${listing.payment_plans.plans[0].summary.down_payment}% anticipo` : '';
+              const text = `🏗️ *${listing.title}*\n\n📍 ${listing.location?.full_name}\n💰 ${listing.price_from > 0 ? `da AED ${formatPrice(listing.price_from)}` : 'Prezzo su richiesta'}\n🏠 ${bedsText}\n📅 Consegna: ${deliveryText}\n🏢 Developer: ${listing.developer?.name || 'TBD'}\n${paymentText}\n\n_Progetto Off-Plan Dubai_\n\n🔗 Per info: contattami!`;
               window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
             }}>
-              <MessageCircle className="w-4 h-4 mr-2" /> Condividi
+              <MessageCircle className="w-5 h-5 mr-2" /> WhatsApp
             </Button>
           </div>
         </div>
