@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, CheckSquare, Square, Bell, MapPin, Award, User, MessageCircle, Filter, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, Briefcase, ArrowUpRight, ArrowDownRight, MoreHorizontal, Sparkles } from 'lucide-react';
+import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, CheckSquare, Square, Bell, MapPin, Award, User, MessageCircle, Filter, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, Briefcase, ArrowUpRight, ArrowDownRight, MoreHorizontal, Sparkles, Command, Printer } from 'lucide-react';
 
 const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NjkyNjAsImV4cCI6MjA4NzI0NTI2MH0.oXUs9ITNi6lEFat_5FH0x-Exw5MDgRhwx6T0yL3xiWQ');
 
@@ -251,6 +251,256 @@ const QuickActions = ({ phone, whatsapp, email, clienteName }) => (
   </div>
 );
 
+// Global Search Modal (CMD+K)
+const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, onSelectCliente, onSelectTask, setActiveTab }) => {
+  const [query, setQuery] = useState('');
+  const inputRef = useRef(null);
+  
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+    if (!isOpen) setQuery('');
+  }, [isOpen]);
+  
+  if (!isOpen) return null;
+  
+  const q = query.toLowerCase();
+  const filteredSales = q.length >= 2 ? sales.filter(s => 
+    `${s.progetto} ${s.developer} ${s.zona} ${s.cliente_nome} ${s.agente}`.toLowerCase().includes(q)
+  ).slice(0, 5) : [];
+  const filteredClienti = q.length >= 2 ? clienti.filter(c => 
+    `${c.nome} ${c.cognome} ${c.telefono} ${c.email}`.toLowerCase().includes(q)
+  ).slice(0, 5) : [];
+  const filteredTasks = q.length >= 2 ? tasks.filter(t => 
+    `${t.titolo} ${t.descrizione}`.toLowerCase().includes(q)
+  ).slice(0, 3) : [];
+  
+  const hasResults = filteredSales.length > 0 || filteredClienti.length > 0 || filteredTasks.length > 0;
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-scaleIn">
+        {/* Search Input */}
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-[#27272A]">
+          <Search className="w-5 h-5 text-zinc-500" />
+          <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca lead, clienti, task..." className="flex-1 bg-transparent text-white text-lg placeholder:text-zinc-600 focus:outline-none" />
+          <kbd className="hidden sm:flex items-center gap-1 px-2 py-1 bg-zinc-800 rounded text-xs text-zinc-500">ESC</kbd>
+        </div>
+        
+        {/* Results */}
+        <div className="max-h-[50vh] overflow-y-auto">
+          {query.length < 2 ? (
+            <div className="p-8 text-center">
+              <Command className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
+              <p className="text-zinc-500">Digita almeno 2 caratteri per cercare</p>
+              <p className="text-zinc-600 text-sm mt-2">Premi <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded text-xs">⌘K</kbd> ovunque per aprire</p>
+            </div>
+          ) : !hasResults ? (
+            <div className="p-8 text-center text-zinc-500">Nessun risultato per "{query}"</div>
+          ) : (
+            <div className="p-2">
+              {/* Sales Results */}
+              {filteredSales.length > 0 && (
+                <div className="mb-2">
+                  <div className="px-3 py-2 text-xs font-medium text-zinc-500 uppercase tracking-wider">Lead / Vendite</div>
+                  {filteredSales.map(s => (
+                    <button key={s.id} onClick={() => { onSelectSale(s); onClose(); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 flex items-center gap-3 transition-colors">
+                      <div className="w-2 h-8 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">{s.progetto || 'TBD'}</p>
+                        <p className="text-zinc-500 text-xs truncate">{s.developer} • {s.cliente_nome || 'No cliente'}</p>
+                      </div>
+                      <StatusBadge status={s.stato || 'lead'} />
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {/* Clienti Results */}
+              {filteredClienti.length > 0 && (
+                <div className="mb-2">
+                  <div className="px-3 py-2 text-xs font-medium text-zinc-500 uppercase tracking-wider">Clienti</div>
+                  {filteredClienti.map(c => (
+                    <button key={c.id} onClick={() => { onSelectCliente(c); setActiveTab('crm'); onClose(); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 flex items-center gap-3 transition-colors">
+                      <Avatar nome={c.nome} cognome={c.cognome} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">{c.nome} {c.cognome}</p>
+                        <p className="text-zinc-500 text-xs truncate">{c.telefono || c.email || 'No contatto'}</p>
+                      </div>
+                      <span className="text-amber-400 text-xs">{c.stato}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {/* Tasks Results */}
+              {filteredTasks.length > 0 && (
+                <div>
+                  <div className="px-3 py-2 text-xs font-medium text-zinc-500 uppercase tracking-wider">Task</div>
+                  {filteredTasks.map(t => (
+                    <button key={t.id} onClick={() => { setActiveTab('tasks'); onClose(); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 flex items-center gap-3 transition-colors">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${t.stato === 'completato' ? 'bg-emerald-500/20' : 'bg-pink-500/20'}`}>
+                        <ListTodo className={`w-4 h-4 ${t.stato === 'completato' ? 'text-emerald-400' : 'text-pink-400'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-white text-sm font-medium truncate ${t.stato === 'completato' ? 'line-through opacity-50' : ''}`}>{t.titolo}</p>
+                        <p className="text-zinc-500 text-xs truncate">{t.assegnato_a || 'Non assegnato'}</p>
+                      </div>
+                      <StatusBadge status={t.priorita} type="priority" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-[#27272A] flex items-center justify-between text-xs text-zinc-600">
+          <span>KeyPrime Search</span>
+          <div className="flex items-center gap-2">
+            <span>Naviga con</span>
+            <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded">↑↓</kbd>
+            <span>Seleziona con</span>
+            <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded">↵</kbd>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Dashboard PDF Export
+const generateDashboardPDF = (totals, sales, vendite, byAgente, byZona) => {
+  const today = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
+  const topAgenti = Object.entries(byAgente).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topZone = Object.entries(byZona).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const conversionRate = sales.length > 0 ? ((vendite.length / sales.length) * 100).toFixed(1) : 0;
+  
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>KeyPrime Report - ${today}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; max-width: 900px; margin: 0 auto; color: #1a1a1a; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #f0f0f0; }
+    .logo { font-size: 28px; font-weight: 700; color: #18181B; }
+    .logo span { color: #A78BFA; }
+    .date { color: #666; font-size: 14px; }
+    h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+    h2 { font-size: 16px; font-weight: 600; color: #666; margin: 32px 0 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+    .stat { background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%); padding: 20px; border-radius: 12px; text-align: center; }
+    .stat-value { font-size: 28px; font-weight: 700; color: #18181B; }
+    .stat-value.purple { color: #A78BFA; }
+    .stat-value.green { color: #34D399; }
+    .stat-value.blue { color: #60A5FA; }
+    .stat-value.amber { color: #FBBF24; }
+    .stat-label { font-size: 12px; color: #666; margin-top: 4px; text-transform: uppercase; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .card { background: #f8f8f8; border-radius: 12px; padding: 20px; }
+    .card-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: #333; }
+    .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e5e5; }
+    .row:last-child { border-bottom: none; }
+    .row-label { color: #666; }
+    .row-value { font-weight: 600; }
+    .commission-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+    .commission-item { background: white; padding: 12px; border-radius: 8px; text-align: center; }
+    .commission-value { font-size: 18px; font-weight: 700; }
+    .commission-label { font-size: 11px; color: #666; margin-top: 2px; }
+    .footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #e5e5e5; text-align: center; color: #999; font-size: 12px; }
+    @media print { body { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="logo">Key<span>Prime</span></div>
+      <h1>Report Dashboard</h1>
+    </div>
+    <div class="date">${today}</div>
+  </div>
+  
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value purple">${fmt(totals.valore)}</div>
+      <div class="stat-label">Volume Totale AED</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value blue">${sales.length}</div>
+      <div class="stat-label">Lead Totali</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value green">${vendite.length}</div>
+      <div class="stat-label">Vendite Chiuse</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value amber">${conversionRate}%</div>
+      <div class="stat-label">Tasso Conversione</div>
+    </div>
+  </div>
+  
+  <h2>Commissioni</h2>
+  <div class="commission-grid">
+    <div class="commission-item">
+      <div class="commission-value" style="color: #34D399">${fmt(totals.comm)}</div>
+      <div class="commission-label">Totali</div>
+    </div>
+    <div class="commission-item">
+      <div class="commission-value" style="color: #60A5FA">${fmt(totals.ag)}</div>
+      <div class="commission-label">Agenti 70%</div>
+    </div>
+    <div class="commission-item">
+      <div class="commission-value" style="color: #22C55E">${fmt(totals.pell)}</div>
+      <div class="commission-label">Pellegrino</div>
+    </div>
+    <div class="commission-item">
+      <div class="commission-value" style="color: #F97316">${fmt(totals.giov)}</div>
+      <div class="commission-label">Giovanni</div>
+    </div>
+  </div>
+  
+  <div class="grid">
+    <div>
+      <h2>Top Agenti</h2>
+      <div class="card">
+        ${topAgenti.length > 0 ? topAgenti.map(([name, value], i) => `
+          <div class="row">
+            <span class="row-label">${i + 1}. ${name}</span>
+            <span class="row-value">${fmt(value)} AED</span>
+          </div>
+        `).join('') : '<p style="color: #999; text-align: center; padding: 20px;">Nessun dato</p>'}
+      </div>
+    </div>
+    <div>
+      <h2>Top Zone</h2>
+      <div class="card">
+        ${topZone.length > 0 ? topZone.map(([zone, value], i) => `
+          <div class="row">
+            <span class="row-label">${i + 1}. ${zone}</span>
+            <span class="row-value">${fmt(value)} AED</span>
+          </div>
+        `).join('') : '<p style="color: #999; text-align: center; padding: 20px;">Nessun dato</p>'}
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    KeyPrime Real Estate CRM • Report generato automaticamente • ${today}
+  </div>
+</body>
+</html>`;
+  
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 500);
+};
+
 // ==================== MAIN APP ====================
 export default function App() {
   const [view, setView] = useState('login');
@@ -280,6 +530,24 @@ export default function App() {
   // Filters
   const [filters, setFilters] = useState({ search: '', stato: '' });
   const [clienteFilters, setClienteFilters] = useState({ search: '', stato: '' });
+  
+  // Global Search
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+  
+  // Keyboard shortcut for global search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowGlobalSearch(true);
+      }
+      if (e.key === 'Escape') {
+        setShowGlobalSearch(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   
   // Notifications
   const [readNotificationIds, setReadNotificationIds] = useState(() => {
@@ -791,6 +1059,11 @@ export default function App() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
+                <button onClick={() => setShowGlobalSearch(true)} className="hidden lg:flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-zinc-400 text-sm transition-colors">
+                  <Search className="w-4 h-4" />
+                  <span>Cerca...</span>
+                  <kbd className="ml-2 px-1.5 py-0.5 bg-zinc-700 rounded text-xs">⌘K</kbd>
+                </button>
                 <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white transition-colors">
                   <Bell className="w-5 h-5" />
                   {notificationCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
@@ -802,6 +1075,13 @@ export default function App() {
             {/* DASHBOARD */}
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
+                {/* Export Button */}
+                <div className="flex justify-end">
+                  <Button variant="secondary" icon={Printer} onClick={() => generateDashboardPDF(totals, sales, vendite, byAgente, byZona)}>
+                    Esporta Report
+                  </Button>
+                </div>
+                
                 {/* Alerts */}
                 {(todayTasks.length > 0 || overdueTasks.length > 0) && (
                   <Card hover onClick={() => setActiveTab('tasks')} className="border-pink-500/20">
@@ -894,7 +1174,7 @@ export default function App() {
             {activeTab === 'vendite' && <VenditeTab sales={filteredSales} filters={filters} setFilters={setFilters} updateSale={updateSale} deleteSale={deleteSale} loading={loading} />}
 
             {/* PIPELINE */}
-            {activeTab === 'pipeline' && <PipelineTab byStato={byStato} onSelectLead={setShowLeadDetail} />}
+            {activeTab === 'pipeline' && <PipelineTab byStato={byStato} onSelectLead={setShowLeadDetail} onUpdateSaleStatus={(id, stato) => updateSale(id, { stato })} />}
 
             {/* CRM */}
             {activeTab === 'crm' && (showClienteDetail ? <ClienteDetailView cliente={showClienteDetail} sales={sales.filter(s => s.cliente_id === showClienteDetail.id)} tasks={tasks.filter(t => t.cliente_id === showClienteDetail.id)} onBack={() => setShowClienteDetail(null)} onEdit={() => setShowClienteModal(showClienteDetail)} onDelete={() => deleteCliente(showClienteDetail.id)} updateCliente={updateCliente} onAddTask={() => setShowTaskModal({ cliente_id: showClienteDetail.id })} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(showClienteDetail, sales.filter(s => s.cliente_id === showClienteDetail.id), tasks.filter(t => t.cliente_id === showClienteDetail.id))} /> : <CRMTab clienti={filteredClienti} filters={clienteFilters} setFilters={setClienteFilters} sales={sales} onSelect={setShowClienteDetail} onCreate={() => setShowClienteModal({})} />)}
@@ -935,6 +1215,7 @@ export default function App() {
         {showTaskModal && <TaskModal task={showTaskModal.id ? showTaskModal : null} clienti={clienti} users={users} onSave={showTaskModal.id ? (d) => updateTask(showTaskModal.id, d) : createTask} onClose={() => setShowTaskModal(null)} />}
         {showUserModal && <UserModal user={showUserModal.id ? showUserModal : null} onSave={showUserModal.id ? (d) => updateUser(showUserModal.id, d) : createUser} onClose={() => setShowUserModal(null)} />}
         {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} onClose={() => { setShowNotifications(false); markNotificationsAsRead(); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} />}
+        {showGlobalSearch && <GlobalSearch isOpen={showGlobalSearch} onClose={() => setShowGlobalSearch(false)} sales={sales} clienti={clienti} tasks={tasks} onSelectSale={setShowLeadDetail} onSelectCliente={setShowClienteDetail} onSelectTask={() => setActiveTab('tasks')} setActiveTab={setActiveTab} />}
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
     );
@@ -1022,31 +1303,72 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
 }
 
 // Pipeline Tab
-function PipelineTab({ byStato, onSelectLead }) {
+function PipelineTab({ byStato, onSelectLead, onUpdateSaleStatus }) {
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
+  
+  const handleDragStart = (e, sale) => {
+    setDraggedItem(sale);
+    e.dataTransfer.effectAllowed = 'move';
+    e.target.style.opacity = '0.5';
+  };
+  
+  const handleDragEnd = (e) => {
+    e.target.style.opacity = '1';
+    setDraggedItem(null);
+    setDragOverColumn(null);
+  };
+  
+  const handleDragOver = (e, stato) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverColumn(stato);
+  };
+  
+  const handleDragLeave = () => {
+    setDragOverColumn(null);
+  };
+  
+  const handleDrop = (e, newStato) => {
+    e.preventDefault();
+    if (draggedItem && draggedItem.stato !== newStato) {
+      onUpdateSaleStatus(draggedItem.id, newStato);
+    }
+    setDraggedItem(null);
+    setDragOverColumn(null);
+  };
+  
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-      {pipelineStati.map(st => (
-        <div key={st} className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ background: theme.status[st]?.color }} />
-              <span className="text-sm font-medium text-white capitalize">{st}</span>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-zinc-500 text-sm">Trascina le card per cambiare stato</p>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        {pipelineStati.map(st => (
+          <div key={st} className="space-y-3" onDragOver={(e) => handleDragOver(e, st)} onDragLeave={handleDragLeave} onDrop={(e) => handleDrop(e, st)}>
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ background: theme.status[st]?.color }} />
+                <span className="text-sm font-medium text-white capitalize">{st}</span>
+              </div>
+              <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{byStato[st]?.length || 0}</span>
             </div>
-            <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{byStato[st]?.length || 0}</span>
+            <div className={`space-y-2 min-h-[200px] rounded-xl p-2 transition-all ${dragOverColumn === st ? 'bg-white/5 ring-2 ring-violet-500/50' : ''}`}>
+              {byStato[st]?.map(s => (
+                <div key={s.id} draggable onDragStart={(e) => handleDragStart(e, s)} onDragEnd={handleDragEnd} className={`cursor-grab active:cursor-grabbing ${draggedItem?.id === s.id ? 'opacity-50' : ''}`}>
+                  <Card hover onClick={() => onSelectLead(s)} padding="p-3" className="border-l-2" style={{ borderLeftColor: theme.status[st]?.color }}>
+                    <p className="text-white text-sm font-medium truncate">{s.progetto || 'TBD'}</p>
+                    <p className="text-zinc-500 text-xs truncate">{s.developer}</p>
+                    {s.cliente_nome && <p className="text-blue-400 text-xs mt-1">{s.cliente_nome}</p>}
+                    {s.valore > 0 && <p className="text-emerald-400 text-sm font-medium mt-2">{fmt(s.valore)} AED</p>}
+                  </Card>
+                </div>
+              ))}
+              {!byStato[st]?.length && <div className="text-center py-8 text-zinc-600 text-sm border-2 border-dashed border-zinc-800 rounded-xl">Trascina qui</div>}
+            </div>
           </div>
-          <div className="space-y-2 min-h-[200px]">
-            {byStato[st]?.map(s => (
-              <Card key={s.id} hover onClick={() => onSelectLead(s)} padding="p-3" className="border-l-2" style={{ borderLeftColor: theme.status[st]?.color }}>
-                <p className="text-white text-sm font-medium truncate">{s.progetto || 'TBD'}</p>
-                <p className="text-zinc-500 text-xs truncate">{s.developer}</p>
-                {s.cliente_nome && <p className="text-blue-400 text-xs mt-1">{s.cliente_nome}</p>}
-                {s.valore > 0 && <p className="text-emerald-400 text-sm font-medium mt-2">{fmt(s.valore)} AED</p>}
-              </Card>
-            ))}
-            {!byStato[st]?.length && <div className="text-center py-8 text-zinc-600 text-sm">Vuoto</div>}
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
