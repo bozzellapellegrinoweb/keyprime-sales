@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, CheckSquare, Square, Bell, MapPin, Award, User, MessageCircle, Filter, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, Briefcase, ArrowUpRight, ArrowDownRight, MoreHorizontal, Sparkles, Command, Printer } from 'lucide-react';
+import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, CheckSquare, Square, Bell, MapPin, Award, User, MessageCircle, Filter, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, Briefcase, ArrowUpRight, ArrowDownRight, MoreHorizontal, Sparkles, Command, Printer, Map, List, Grid } from 'lucide-react';
 
 const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NjkyNjAsImV4cCI6MjA4NzI0NTI2MH0.oXUs9ITNi6lEFat_5FH0x-Exw5MDgRhwx6T0yL3xiWQ');
 
@@ -8,6 +8,67 @@ const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbG
 const RESEND_API_KEY = 're_jCpLJKfw_MfWu2jbSzPPgz6pLHQXMAXJb';
 const EMAIL_FROM = 'onboarding@resend.dev';
 const ADMIN_EMAIL = 'bozzellapellegrino@gmail.com';
+const MAPBOX_TOKEN = 'pk.eyJ1IjoibWFwc3Byb2plY3RrZXkiLCJhIjoiY21sdHl4aDM5MDRvbDNmczRtYXR6ZWp4cyJ9.HpQdRN36TYMnNCs1VtwtKA';
+
+// PropertyFinder API Config
+const PF_API_HOST = 'uae-real-estate-api-propertyfinder-ae-data.p.rapidapi.com';
+const PF_API_KEY = '726ac8a1f8msh5ec783ecc467b76p1e1338jsn88a853551916';
+
+// Dubai Areas with coordinates for map
+const DUBAI_AREAS_COORDS = {
+  'Dubai Marina': { lat: 25.0805, lng: 55.1403, zoom: 14 },
+  'Palm Jumeirah': { lat: 25.1124, lng: 55.1390, zoom: 13 },
+  'Downtown Dubai': { lat: 25.1972, lng: 55.2744, zoom: 14 },
+  'Business Bay': { lat: 25.1851, lng: 55.2628, zoom: 14 },
+  'JBR': { lat: 25.0780, lng: 55.1340, zoom: 15 },
+  'Dubai Hills Estate': { lat: 25.1026, lng: 55.2427, zoom: 13 },
+  'Dubai Hills': { lat: 25.1026, lng: 55.2427, zoom: 13 },
+  'Mohammed Bin Rashid City': { lat: 25.1695, lng: 55.3147, zoom: 13 },
+  'MBR City': { lat: 25.1695, lng: 55.3147, zoom: 13 },
+  'Dubai Creek Harbour': { lat: 25.2048, lng: 55.3461, zoom: 14 },
+  'Dubai Creek': { lat: 25.2048, lng: 55.3461, zoom: 14 },
+  'Jumeirah Village Circle': { lat: 25.0655, lng: 55.2094, zoom: 14 },
+  'JVC': { lat: 25.0655, lng: 55.2094, zoom: 14 },
+  'JLT': { lat: 25.0750, lng: 55.1550, zoom: 14 },
+  'Dubai South': { lat: 24.8966, lng: 55.1581, zoom: 12 },
+  'DAMAC Hills': { lat: 25.0285, lng: 55.2430, zoom: 13 },
+  'DAMAC Hills 2': { lat: 25.0050, lng: 55.2750, zoom: 13 },
+  'Arabian Ranches': { lat: 25.0597, lng: 55.2671, zoom: 13 },
+  'Meydan': { lat: 25.1606, lng: 55.2958, zoom: 13 },
+  'DIFC': { lat: 25.2104, lng: 55.2796, zoom: 15 },
+  'Al Marjan Island': { lat: 25.7955, lng: 55.7283, zoom: 13 },
+  'Dubai Islands': { lat: 25.2750, lng: 55.3150, zoom: 12 },
+  'Expo City': { lat: 24.9600, lng: 55.1580, zoom: 13 },
+  'Yas Island': { lat: 24.4957, lng: 54.6030, zoom: 13 },
+  'Saadiyat Island': { lat: 24.5465, lng: 54.4330, zoom: 13 },
+  'Al Reem Island': { lat: 24.4950, lng: 54.4050, zoom: 13 },
+  'Sobha Hartland': { lat: 25.1850, lng: 55.3250, zoom: 14 },
+  'Tilal Al Ghaf': { lat: 25.0350, lng: 55.2100, zoom: 13 },
+  'Emaar Beachfront': { lat: 25.0850, lng: 55.1350, zoom: 14 },
+  'Bluewaters Island': { lat: 25.0800, lng: 55.1200, zoom: 14 },
+  'City Walk': { lat: 25.2050, lng: 55.2600, zoom: 14 },
+  'Abu Dhabi': { lat: 24.4539, lng: 54.3773, zoom: 11 },
+  'Sharjah': { lat: 25.3463, lng: 55.4209, zoom: 11 },
+  'Ajman': { lat: 25.4052, lng: 55.5136, zoom: 11 },
+  'Ras Al Khaimah': { lat: 25.7895, lng: 55.9432, zoom: 11 },
+};
+
+const DUBAI_CENTER = { lat: 25.1972, lng: 55.2744 };
+const DEFAULT_ZOOM = 10;
+
+// Get coordinates for location name
+const getLocationCoords = (locationName) => {
+  if (!locationName) return null;
+  const locLower = locationName.toLowerCase();
+  for (const [area, coords] of Object.entries(DUBAI_AREAS_COORDS)) {
+    if (locLower.includes(area.toLowerCase())) return coords;
+  }
+  for (const [area, coords] of Object.entries(DUBAI_AREAS_COORDS)) {
+    const areaWords = area.toLowerCase().split(' ');
+    if (areaWords.some(word => word.length > 3 && locLower.includes(word))) return coords;
+  }
+  return null;
+};
 
 // Data
 const zones = ['Palm Jumeirah', 'Dubai Marina', 'Downtown', 'Dubai Creek', 'JBR', 'Business Bay', 'JLT', 'DIFC', 'MBR City', 'Dubai Hills', 'Altro'];
@@ -2013,337 +2074,259 @@ function AgentDetailView({ agent, sales, onBack }) {
 
 // ==================== MODALS & FORMS ====================
 
-// PropertyFinder API Config
-const PF_API_HOST = 'uae-real-estate-api-propertyfinder-ae-data.p.rapidapi.com';
-const PF_API_KEY = '726ac8a1f8msh5ec783ecc467b76p1e1338jsn88a853551916';
 
-// Off-Plan Tab Component
+// Mapbox Map Component
+function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) {
+  const mapContainer = useRef(null);
+  const map = useRef(null);
+  const markers = useRef([]);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapError, setMapError] = useState(null);
+
+  const projectsByLocation = React.useMemo(() => {
+    const grouped = {};
+    projects.forEach(p => {
+      const locName = p.location?.full_name || p.location?.name || 'Unknown';
+      const coords = getLocationCoords(locName);
+      if (coords) {
+        const key = `${coords.lat},${coords.lng}`;
+        if (!grouped[key]) grouped[key] = { coords, location: locName, projects: [] };
+        grouped[key].projects.push(p);
+      }
+    });
+    return Object.values(grouped);
+  }, [projects]);
+
+  useEffect(() => {
+    if (!mapContainer.current || map.current) return;
+    const script = document.createElement('script');
+    script.src = 'https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js';
+    script.async = true;
+    const link = document.createElement('link');
+    link.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    script.onload = () => {
+      try {
+        window.mapboxgl.accessToken = MAPBOX_TOKEN;
+        map.current = new window.mapboxgl.Map({
+          container: mapContainer.current,
+          style: 'mapbox://styles/mapbox/dark-v11',
+          center: [DUBAI_CENTER.lng, DUBAI_CENTER.lat],
+          zoom: DEFAULT_ZOOM,
+          attributionControl: false
+        });
+        map.current.addControl(new window.mapboxgl.NavigationControl(), 'top-right');
+        map.current.on('load', () => setMapLoaded(true));
+        map.current.on('error', () => setMapError('Errore caricamento mappa'));
+      } catch (err) { setMapError('Errore inizializzazione mappa'); }
+    };
+    script.onerror = () => setMapError('Errore caricamento Mapbox');
+    document.head.appendChild(script);
+    return () => { if (map.current) { map.current.remove(); map.current = null; } };
+  }, []);
+
+  useEffect(() => {
+    if (!map.current || !mapLoaded || !window.mapboxgl) return;
+    markers.current.forEach(m => m.remove());
+    markers.current = [];
+    projectsByLocation.forEach(group => {
+      const { coords, location, projects: groupProjects } = group;
+      const el = document.createElement('div');
+      el.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:pointer;transform:translate(-50%,-100%)';
+      const count = groupProjects.length;
+      const minPrice = Math.min(...groupProjects.filter(p => p.price_from > 0).map(p => p.price_from));
+      const priceText = minPrice > 0 && minPrice !== Infinity ? (minPrice/1000000).toFixed(1) + 'M' : '';
+      el.innerHTML = '<div style="background:linear-gradient(135deg,#F97316,#EA580C);color:white;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;box-shadow:0 4px 12px rgba(249,115,22,0.4);white-space:nowrap;display:flex;align-items:center;gap:6px"><span style="background:rgba(255,255,255,0.2);padding:2px 6px;border-radius:4px;font-size:10px">' + count + '</span>' + (priceText ? '<span>da ' + priceText + '</span>' : '<span>' + location.split(',')[0] + '</span>') + '</div><div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #EA580C"></div>';
+      el.addEventListener('click', () => {
+        if (onAreaClick) onAreaClick(groupProjects, location);
+        map.current.flyTo({ center: [coords.lng, coords.lat], zoom: coords.zoom || 14, duration: 1000 });
+      });
+      const marker = new window.mapboxgl.Marker({ element: el, anchor: 'bottom' }).setLngLat([coords.lng, coords.lat]).addTo(map.current);
+      markers.current.push(marker);
+    });
+  }, [mapLoaded, projectsByLocation, onAreaClick]);
+
+  useEffect(() => {
+    if (!map.current || !mapLoaded || !selectedProject) return;
+    const coords = getLocationCoords(selectedProject.location?.full_name || selectedProject.location?.name);
+    if (coords) map.current.flyTo({ center: [coords.lng, coords.lat], zoom: coords.zoom || 14, duration: 1000 });
+  }, [selectedProject, mapLoaded]);
+
+  if (mapError) return <div className="w-full h-full bg-zinc-900 flex items-center justify-center"><div className="text-center"><AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" /><p className="text-red-400">{mapError}</p></div></div>;
+  
+  return (
+    <div className="relative w-full h-full">
+      <div ref={mapContainer} className="absolute inset-0" />
+      {!mapLoaded && <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center"><RefreshCw className="w-8 h-8 text-orange-400 animate-spin" /></div>}
+      <div className="absolute top-4 left-4 z-10"><div className="bg-zinc-900/90 backdrop-blur border border-zinc-700 rounded-xl px-3 py-2"><p className="text-white text-sm font-medium">{projects.length} progetti</p><p className="text-zinc-400 text-xs">{projectsByLocation.length} zone</p></div></div>
+    </div>
+  );
+}
+
+// Project Card Compact for Split View
+function ProjectCardCompact({ project, isSelected, onClick }) {
+  const formatPrice = (price) => { if (!price || price === 0) return 'TBD'; const num = parseFloat(price); if (num >= 1000000) return (num/1000000).toFixed(1) + 'M'; return num.toLocaleString(); };
+  const formatBedrooms = (bedrooms) => { if (!bedrooms?.available?.length) return null; const beds = bedrooms.available; if (beds.length === 1) return beds[0] === 0 ? 'Studio' : beds[0] + 'BR'; const min = Math.min(...beds); const max = Math.max(...beds); return min === 0 ? 'Studio-' + max + 'BR' : min + '-' + max + 'BR'; };
+  return (
+    <div onClick={onClick} className={'p-3 rounded-xl cursor-pointer transition-all ' + (isSelected ? 'bg-orange-500/20 border border-orange-500/50' : 'bg-zinc-800/50 border border-transparent hover:bg-zinc-800')}>
+      <div className="flex gap-3">
+        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700">{project.images?.[0]?.medium_image_url ? <img src={project.images[0].medium_image_url} alt="" className="w-full h-full object-cover" /> : <Building2 className="w-6 h-6 text-zinc-600 m-auto" />}</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-white font-medium text-sm truncate">{project.title}</p>
+          <p className="text-zinc-500 text-xs truncate">{project.location?.full_name}</p>
+          <p className="text-orange-400 font-semibold text-sm mt-1">{project.price_from > 0 ? 'AED ' + formatPrice(project.price_from) : 'TBD'}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Off-Plan Tab with Map Integration
 function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRemoveListing, user }) {
+  const [viewMode, setViewMode] = useState('list');
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({
-    search: '',
-    location: '',
-    minPrice: '',
-    maxPrice: '',
-    bedrooms: '',
-    developer: ''
-  });
+  const [filters, setFilters] = useState({ search: '', location: '', minPrice: '', maxPrice: '', bedrooms: '', developer: '' });
   const [selectedListing, setSelectedListing] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(null);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [totalResults, setTotalResults] = useState(0);
+  const [selectedAreaProjects, setSelectedAreaProjects] = useState(null);
+  const [selectedAreaName, setSelectedAreaName] = useState('');
 
-  // Dubai areas for filter
-  const dubaiAreas = [
-    'Dubai Marina', 'Downtown Dubai', 'Business Bay', 'Palm Jumeirah', 
-    'JBR', 'Dubai Hills Estate', 'Mohammed Bin Rashid City', 'Dubai Creek Harbour', 
-    'Jumeirah Village Circle', 'Dubai South', 'DAMAC Hills', 'Arabian Ranches', 
-    'Meydan', 'DIFC', 'Al Marjan Island', 'Dubai Islands', 'Expo City'
-  ];
-
-  // Top developers
-  const topDevelopers = [
-    'Emaar Properties', 'Damac Properties', 'Sobha Realty', 'Nakheel', 
-    'Meraas', 'Aldar Properties', 'Azizi Developments', 'Binghatti', 
-    'Ellington', 'Omniyat Group', 'RAK Properties'
-  ];
-  
+  const dubaiAreas = ['Dubai Marina', 'Downtown Dubai', 'Business Bay', 'Palm Jumeirah', 'JBR', 'Dubai Hills Estate', 'Mohammed Bin Rashid City', 'Dubai Creek Harbour', 'Jumeirah Village Circle', 'Dubai South', 'DAMAC Hills', 'Arabian Ranches', 'Meydan', 'DIFC', 'Al Marjan Island', 'Dubai Islands', 'Expo City', 'Yas Island', 'Saadiyat Island'];
+  const topDevelopers = ['Emaar Properties', 'Damac Properties', 'Sobha Realty', 'Nakheel', 'Meraas', 'Aldar Properties', 'Azizi Developments', 'Binghatti', 'Ellington', 'Omniyat Group'];
   const bedroomOptions = ['Studio', '1', '2', '3', '4', '5+'];
 
-  // Search PropertyFinder Projects API
   const searchListings = async (resetPage = true) => {
-    setLoading(true);
-    setError(null);
-    
+    setLoading(true); setError(null);
     const currentOffset = resetPage ? 0 : offset;
     if (resetPage) setOffset(0);
-    
     try {
-      // Use search_projects endpoint for off-plan
       const params = new URLSearchParams();
-      
-      params.append('limit', '20');
+      params.append('limit', '50');
       params.append('offset', currentOffset.toString());
-      
-      // Apply filters - only use supported params
-      // Note: Check RapidAPI docs for exact supported params
       if (filters.minPrice) params.append('price_from', filters.minPrice);
       if (filters.maxPrice) params.append('price_to', filters.maxPrice);
-      
-      const url = `https://${PF_API_HOST}/projects?${params.toString()}`;
-      
-      console.log('Fetching:', url);
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'x-rapidapi-host': PF_API_HOST,
-          'x-rapidapi-key': PF_API_KEY
-        }
-      });
-      
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error:', errorText);
-        throw new Error(`API Error: ${response.status}`);
-      }
-      
+      const url = 'https://' + PF_API_HOST + '/projects?' + params.toString();
+      const response = await fetch(url, { method: 'GET', headers: { 'x-rapidapi-host': PF_API_HOST, 'x-rapidapi-key': PF_API_KEY } });
+      if (!response.ok) throw new Error('API Error: ' + response.status);
       const data = await response.json();
-      console.log('API Response:', data);
-      
-      const projects = data.data || [];
-      
-      // Filter client-side for location/bedrooms/developer/search if needed
-      let filteredProjects = projects;
-      
-      // Search by project name
-      if (filters.search) {
-        const searchTerm = filters.search.toLowerCase().trim();
-        filteredProjects = filteredProjects.filter(p => 
-          p.title?.toLowerCase().includes(searchTerm) ||
-          p.developer?.name?.toLowerCase().includes(searchTerm) ||
-          p.location?.full_name?.toLowerCase().includes(searchTerm)
-        );
-      }
-      
-      if (filters.location) {
-        const loc = filters.location.toLowerCase();
-        filteredProjects = filteredProjects.filter(p => 
-          p.location?.full_name?.toLowerCase().includes(loc) ||
-          p.location?.name?.toLowerCase().includes(loc) ||
-          p.title?.toLowerCase().includes(loc)
-        );
-      }
-      
-      if (filters.bedrooms) {
-        const targetBed = filters.bedrooms === 'Studio' ? 0 : 
-                          filters.bedrooms === '5+' ? 5 : 
-                          parseInt(filters.bedrooms);
-        filteredProjects = filteredProjects.filter(p => {
-          if (!p.bedrooms?.available) return true;
-          if (filters.bedrooms === '5+') {
-            return p.bedrooms.available.some(b => b >= 5);
-          }
-          return p.bedrooms.available.includes(targetBed);
-        });
-      }
-      
-      if (filters.developer) {
-        const dev = filters.developer.toLowerCase();
-        filteredProjects = filteredProjects.filter(p => 
-          p.developer?.name?.toLowerCase().includes(dev)
-        );
-      }
-      
-      if (resetPage) {
-        setListings(filteredProjects);
-      } else {
-        setListings(prev => [...prev, ...filteredProjects]);
-      }
-      
+      let filteredProjects = data.data || [];
+      if (filters.search) { const s = filters.search.toLowerCase(); filteredProjects = filteredProjects.filter(p => p.title?.toLowerCase().includes(s) || p.developer?.name?.toLowerCase().includes(s) || p.location?.full_name?.toLowerCase().includes(s)); }
+      if (filters.location) { const l = filters.location.toLowerCase(); filteredProjects = filteredProjects.filter(p => p.location?.full_name?.toLowerCase().includes(l) || p.location?.name?.toLowerCase().includes(l)); }
+      if (filters.bedrooms) { const tb = filters.bedrooms === 'Studio' ? 0 : filters.bedrooms === '5+' ? 5 : parseInt(filters.bedrooms); filteredProjects = filteredProjects.filter(p => { if (!p.bedrooms?.available) return true; if (filters.bedrooms === '5+') return p.bedrooms.available.some(b => b >= 5); return p.bedrooms.available.includes(tb); }); }
+      if (filters.developer) { const d = filters.developer.toLowerCase(); filteredProjects = filteredProjects.filter(p => p.developer?.name?.toLowerCase().includes(d)); }
+      if (resetPage) setListings(filteredProjects); else setListings(prev => [...prev, ...filteredProjects]);
       setTotalResults(data.pagination?.total || 0);
       setHasMore(data.pagination?.has_next || false);
-      
-    } catch (err) {
-      console.error('PF API Error:', err);
-      setError('Impossibile caricare i progetti. Controlla la console per dettagli.');
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error('PF API Error:', err); setError('Impossibile caricare i progetti.'); }
+    finally { setLoading(false); }
   };
 
-  // Load more
-  const loadMore = () => {
-    setOffset(o => o + 20);
-    searchListings(false);
-  };
+  const loadMore = () => { setOffset(o => o + 50); searchListings(false); };
+  useEffect(() => { searchListings(); }, []);
 
-  // Initial load
-  useEffect(() => {
-    searchListings();
-  }, []);
-
-  // Check if listing is saved
-  const isListingSaved = (projectId) => {
-    return savedListings?.some(s => s.property_id === projectId);
-  };
-
-  // Format price
-  const formatPrice = (price) => {
-    if (!price || price === 0) return 'TBD';
-    const num = parseFloat(price);
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
-    return num.toLocaleString();
-  };
-
-  // Format bedrooms array
-  const formatBedrooms = (bedrooms) => {
-    if (!bedrooms?.available?.length) return null;
-    const beds = bedrooms.available;
-    if (beds.length === 1) {
-      return beds[0] === 0 ? 'Studio' : `${beds[0]} BR`;
-    }
-    const min = Math.min(...beds);
-    const max = Math.max(...beds);
-    if (min === 0) return `Studio - ${max} BR`;
-    return `${min} - ${max} BR`;
-  };
-
-  // Format delivery date
-  const formatDelivery = (dateStr) => {
-    if (!dateStr) return null;
-    const date = new Date(dateStr);
-    const quarter = Math.ceil((date.getMonth() + 1) / 3);
-    return `Q${quarter} ${date.getFullYear()}`;
-  };
-
-  // Format payment plan
-  const formatPaymentPlan = (plans) => {
-    if (!plans?.plans?.[0]) return null;
-    const plan = plans.plans[0].summary;
-    return `${plan.down_payment}/${plan.during_construction}/${plan.handover}`;
-  };
+  const isListingSaved = (projectId) => savedListings?.some(s => s.property_id === projectId);
+  const formatPrice = (price) => { if (!price || price === 0) return 'TBD'; const num = parseFloat(price); if (num >= 1000000) return (num/1000000).toFixed(1) + 'M'; if (num >= 1000) return (num/1000).toFixed(0) + 'K'; return num.toLocaleString(); };
+  const formatBedrooms = (bedrooms) => { if (!bedrooms?.available?.length) return null; const beds = bedrooms.available; if (beds.length === 1) return beds[0] === 0 ? 'Studio' : beds[0] + ' BR'; const min = Math.min(...beds); const max = Math.max(...beds); return min === 0 ? 'Studio - ' + max + ' BR' : min + ' - ' + max + ' BR'; };
+  const formatDelivery = (dateStr) => { if (!dateStr) return null; const date = new Date(dateStr); const quarter = Math.ceil((date.getMonth() + 1) / 3); return 'Q' + quarter + ' ' + date.getFullYear(); };
+  const formatPaymentPlan = (plans) => { if (!plans?.plans?.[0]) return null; const plan = plans.plans[0].summary; return plan.down_payment + '/' + plan.during_construction + '/' + plan.handover; };
+  const handleAreaClick = (projects, areaName) => { setSelectedAreaProjects(projects); setSelectedAreaName(areaName); };
+  const displayProjects = selectedAreaProjects || listings;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-orange-400" />
-            Off-Plan Properties
-          </h2>
-          <p className="text-zinc-500 text-sm mt-1">
-            {totalResults > 0 ? `${totalResults.toLocaleString()} annunci trovati` : 'Cerca progetti off-plan'}
-          </p>
+    <div className="h-full flex flex-col">
+      <div className="flex-shrink-0 mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-white flex items-center gap-2"><Building2 className="w-6 h-6 text-orange-400" />Off-Plan Projects</h2>
+            <p className="text-zinc-500 text-sm mt-1">{totalResults > 0 ? totalResults.toLocaleString() + ' progetti' : 'Cerca progetti'}{selectedAreaName && ' • ' + selectedAreaName}</p>
+          </div>
+          <div className="flex items-center gap-2 bg-zinc-800/50 p-1 rounded-xl">
+            <button onClick={() => { setViewMode('list'); setSelectedAreaProjects(null); }} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'list' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Lista"><List className="w-5 h-5" /></button>
+            <button onClick={() => setViewMode('split')} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'split' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Split"><Grid className="w-5 h-5" /></button>
+            <button onClick={() => setViewMode('map')} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'map' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Mappa"><Map className="w-5 h-5" /></button>
+          </div>
         </div>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        {/* Search bar - full width */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-          <input 
-            type="text" 
-            placeholder="Cerca progetto per nome... (es. Damac Lagoons, Marina View)" 
-            value={filters.search} 
-            onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-            onKeyDown={(e) => e.key === 'Enter' && searchListings(true)}
-            className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" 
-          />
-        </div>
-        
-        {/* Other filters */}
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-          <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">
-            <option value="">Tutte le zone</option>
-            {dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
-          
-          <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">
-            <option value="">Tutti i developer</option>
-            {topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}
-          </select>
-          
-          <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">
-            <option value="">Camere</option>
-            {bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : `${b} BR`}</option>)}
-          </select>
-          
-          <input type="number" placeholder="Prezzo min" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
-          
-          <input type="number" placeholder="Prezzo max" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
-          
-          <Button onClick={() => searchListings(true)} icon={Search} disabled={loading}>
-            {loading ? 'Cercando...' : 'Cerca'}
-          </Button>
-        </div>
-      </Card>
-
-      {/* Error */}
-      {error && (
-        <Card className="border-red-500/20 bg-red-500/5">
-          <div className="flex items-center gap-3 text-red-400">
-            <AlertCircle className="w-5 h-5" />
-            <span>{error}</span>
-            <Button variant="ghost" size="sm" onClick={() => searchListings(true)}>Riprova</Button>
+        <Card className="mb-4">
+          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(true)} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}</select>
+            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutti i developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
+            <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
+            <input type="number" placeholder="Prezzo min" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <input type="number" placeholder="Prezzo max" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <Button onClick={() => { setSelectedAreaProjects(null); searchListings(true); }} icon={Search} disabled={loading}>{loading ? 'Cercando...' : 'Cerca'}</Button>
           </div>
         </Card>
-      )}
+        {selectedAreaProjects && <div className="flex items-center gap-2 mb-4"><span className="text-zinc-400 text-sm">Filtrato: <span className="text-orange-400">{selectedAreaName}</span></span><Button variant="ghost" size="sm" onClick={() => { setSelectedAreaProjects(null); setSelectedAreaName(''); }}><X className="w-4 h-4 mr-1" />Rimuovi</Button></div>}
+      </div>
 
-      {/* Loading */}
-      {loading && listings.length === 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1,2,3,4,5,6].map(i => (
-            <Card key={i} className="animate-pulse">
-              <div className="h-40 bg-zinc-800 rounded-xl mb-3" />
-              <div className="h-4 bg-zinc-800 rounded w-3/4 mb-2" />
-              <div className="h-3 bg-zinc-800 rounded w-1/2" />
-            </Card>
-          ))}
-        </div>
-      )}
+      {error && <Card className="border-red-500/20 bg-red-500/5 mb-4"><div className="flex items-center gap-3 text-red-400"><AlertCircle className="w-5 h-5" /><span>{error}</span><Button variant="ghost" size="sm" onClick={() => searchListings(true)}>Riprova</Button></div></Card>}
 
-      {/* Results Grid */}
-      {listings.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {listings.map(project => (
-            <Card key={project.project_id} hover className="overflow-hidden group cursor-pointer" onClick={() => setSelectedListing(project)}>
-              {/* Image */}
-              <div className="relative h-40 -mx-4 -mt-4 mb-3 overflow-hidden">
-                {project.images?.[0]?.medium_image_url ? (
-                  <img src={project.images[0].medium_image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                ) : (
-                  <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                    <Building2 className="w-12 h-12 text-zinc-600" />
-                  </div>
-                )}
-                {/* Badge - Construction status */}
-                <div className={`absolute top-2 left-2 px-2 py-1 text-white text-xs font-medium rounded-lg ${
-                  project.construction_phase_key === 'completed' ? 'bg-green-500/90' :
-                  project.construction_phase_key === 'under_construction' ? 'bg-orange-500/90' :
-                  'bg-blue-500/90'
-                }`}>
-                  {project.construction_phase_key === 'completed' ? 'Completato' :
-                   project.construction_phase_key === 'under_construction' ? 'In Costruzione' :
-                   'Lancio'}
+      <div className="flex-1 min-h-0">
+        {viewMode === 'list' && (
+          <div className="h-full overflow-y-auto">
+            {loading && listings.length === 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{[1,2,3,4,5,6].map(i => <Card key={i} className="animate-pulse"><div className="h-40 bg-zinc-800 rounded-xl mb-3" /><div className="h-4 bg-zinc-800 rounded w-3/4 mb-2" /><div className="h-3 bg-zinc-800 rounded w-1/2" /></Card>)}</div>
+            ) : displayProjects.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {displayProjects.map(project => (
+                    <Card key={project.project_id} hover className="overflow-hidden group cursor-pointer" onClick={() => setSelectedListing(project)}>
+                      <div className="relative h-40 -mx-4 -mt-4 mb-3 overflow-hidden">
+                        {project.images?.[0]?.medium_image_url ? <img src={project.images[0].medium_image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /> : <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Building2 className="w-12 h-12 text-zinc-600" /></div>}
+                        <div className={'absolute top-2 left-2 px-2 py-1 text-white text-xs font-medium rounded-lg ' + (project.construction_phase_key === 'completed' ? 'bg-green-500/90' : project.construction_phase_key === 'under_construction' ? 'bg-orange-500/90' : 'bg-blue-500/90')}>{project.construction_phase_key === 'completed' ? 'Completato' : project.construction_phase_key === 'under_construction' ? 'In Costruzione' : 'Lancio'}</div>
+                        {formatDelivery(project.delivery_date) && <div className="absolute top-2 right-12 px-2 py-1 bg-black/70 text-white text-xs rounded-lg">{formatDelivery(project.delivery_date)}</div>}
+                        <button onClick={(e) => { e.stopPropagation(); isListingSaved(project.project_id) ? onRemoveListing(project.project_id) : onSaveListing(project); }} className={'absolute top-2 right-2 p-2 rounded-full transition-colors ' + (isListingSaved(project.project_id) ? 'bg-orange-500 text-white' : 'bg-black/50 text-white hover:bg-orange-500')}><svg className="w-4 h-4" fill={isListingSaved(project.project_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg></button>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-white font-medium line-clamp-1">{project.title}</p>
+                        <p className="text-zinc-500 text-sm line-clamp-1">{project.location?.full_name}</p>
+                        <div className="flex items-center gap-3 text-xs text-zinc-400">
+                          {formatBedrooms(project.bedrooms) && <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" />{formatBedrooms(project.bedrooms)}</span>}
+                          {project.payment_plans && <span>{formatPaymentPlan(project.payment_plans)}</span>}
+                        </div>
+                        <div className="flex items-center justify-between pt-2">
+                          <p className="text-orange-400 font-semibold">{project.price_from > 0 ? 'da AED ' + formatPrice(project.price_from) : 'Prezzo TBD'}</p>
+                          {project.developer?.name && <span className="text-zinc-500 text-xs truncate max-w-[100px]">{project.developer.name}</span>}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
+                        <Button variant="ghost" size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); setSelectedListing(project); }}><Eye className="w-4 h-4 mr-1" />Dettagli</Button>
+                        <Button variant="secondary" size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); setShowAssignModal(project); }}><Plus className="w-4 h-4 mr-1" />Lead</Button>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
-                {/* Delivery date badge */}
-                {formatDelivery(project.delivery_date) && (
-                  <div className="absolute top-2 right-12 px-2 py-1 bg-black/70 text-white text-xs rounded-lg">
-                    {formatDelivery(project.delivery_date)}
-                  </div>
-                )}
-                {/* Save button */}
-                <button onClick={(e) => { e.stopPropagation(); isListingSaved(project.project_id) ? onRemoveListing(project.project_id) : onSaveListing(project); }} className={`absolute top-2 right-2 p-2 rounded-full transition-colors ${isListingSaved(project.project_id) ? 'bg-orange-500 text-white' : 'bg-black/50 text-white hover:bg-orange-500'}`}>
-                  <svg className="w-4 h-4" fill={isListingSaved(project.project_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
-                </button>
-              </div>
-              
-              {/* Content */}
-              <div className="space-y-2">
-                <p className="text-white font-medium line-clamp-1">{project.title}</p>
-                <p className="text-zinc-500 text-sm line-clamp-1">{project.location?.full_name}</p>
-                
-                <div className="flex items-center gap-3 text-xs text-zinc-400">
-                  {formatBedrooms(project.bedrooms) && (
-                    <span className="flex items-center gap-1">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-                      {formatBedrooms(project.bedrooms)}
-                    </span>
-                  )}
-                  {project.payment_plans && (
-                    <span className="flex items-center gap-1" title="Payment Plan: Down/Construction/Handover">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                      {formatPaymentPlan(project.payment_plans)}
-                    </span>
+                {hasMore && !selectedAreaProjects && <div className="flex justify-center pt-6"><Button variant="secondary" onClick={loadMore} disabled={loading}>{loading ? 'Caricamento...' : 'Carica altri'}</Button></div>}
+              </>
+            ) : <EmptyState icon={Building2} title="Nessun risultato" description="Modifica i filtri" />}
+          </div>
+        )}
+
+        {viewMode === 'map' && <div className="h-full rounded-2xl overflow-hidden border border-zinc-800"><MapboxMap projects={listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} /></div>}
+
+        {viewMode === 'split' && (
+          <div className="h-full flex gap-4">
+            <div className="flex-1 rounded-2xl overflow-hidden border border-zinc-800"><MapboxMap projects={listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} /></div>
+            <div className="w-80 flex-shrink-0 flex flex-col bg-zinc-900/50 rounded-2xl border border-zinc-800 overflow-hidden">
+              <div className="p-3 border-b border-zinc-800"><p className="text-white font-medium">{selectedAreaName || 'Tutti i progetti'}</p><p className="text-zinc-500 text-sm">{displayProjects.length} progetti</p></div>
+              <div className="flex-1 overflow-y-auto p-3 space-y-2">{displayProjects.map(project => <ProjectCardCompact key={project.project_id} project={project} isSelected={selectedListing?.project_id === project.project_id} onClick={() => setSelectedListing(project)} />)}</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {selectedListing && <ListingDetailModal listing={selectedListing} onClose={() => setSelectedListing(null)} onCreateLead={() => { setShowAssignModal(selectedListing); setSelectedListing(null); }} isSaved={isListingSaved(selectedListing.project_id)} onToggleSave={() => isListingSaved(selectedListing.project_id) ? onRemoveListing(selectedListing.project_id) : onSaveListing(selectedListing)} />}
+      {showAssignModal && <AssignListingModal listing={showAssignModal} clienti={clienti} onClose={() => setShowAssignModal(null)} onCreateLead={onCreateLead} user={user} />}
+    </div>
+  );
+}
                   )}
                 </div>
                 
@@ -2718,6 +2701,106 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Image Gallery Thumbnails */}
+          {images.length > 1 && (
+            <div className="mb-6">
+              <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                <Eye className="w-4 h-4 text-orange-400" /> Galleria
+                <span className="text-zinc-500 text-sm font-normal">({images.length} immagini)</span>
+              </h3>
+              <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                {images.slice(0, 12).map((img, idx) => (
+                  <button key={idx} onClick={() => { setActiveImageIndex(idx); setShowFullGallery(true); }} className="relative h-20 rounded-lg overflow-hidden group">
+                    <img src={img.small_image_url || img.medium_image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                      <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </button>
+                ))}
+                {images.length > 12 && (
+                  <button onClick={() => setShowFullGallery(true)} className="h-20 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 hover:bg-zinc-700 transition-colors">
+                    <span className="text-sm font-medium">+{images.length - 12}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Amenities if available */}
+          {listing.amenities?.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-white font-semibold mb-3">Servizi e Amenities</h3>
+              <div className="flex flex-wrap gap-2">
+                {listing.amenities.map((a, i) => (
+                  <span key={i} className="px-3 py-1.5 bg-zinc-800/50 text-zinc-300 text-sm rounded-full">{a}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Actions */}
+          <div className="flex gap-3 pt-4 border-t border-zinc-800">
+            <Button className="flex-1 py-3 bg-orange-500 hover:bg-orange-600" onClick={onCreateLead}>
+              <Plus className="w-5 h-5 mr-2" /> Crea Lead
+            </Button>
+            <Button variant="secondary" className="flex-1 py-3" onClick={() => {
+              const bedsText = formatBedrooms(listing.bedrooms) || 'Varie tipologie';
+              const deliveryText = formatDelivery(listing.delivery_date) || 'TBD';
+              const paymentText = listing.payment_plans?.plans?.[0]?.summary ? 
+                `💳 ${listing.payment_plans.plans[0].summary.down_payment}% anticipo` : '';
+              const text = `🏗️ *${listing.title}*\n\n📍 ${listing.location?.full_name}\n💰 ${listing.price_from > 0 ? `da AED ${formatPrice(listing.price_from)}` : 'Prezzo su richiesta'}\n🏠 ${bedsText}\n📅 Consegna: ${deliveryText}\n🏢 Developer: ${listing.developer?.name || 'TBD'}\n${paymentText}\n\n_Progetto Off-Plan Dubai_\n\n🔗 Per info: contattami!`;
+              window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+            }}>
+              <MessageCircle className="w-5 h-5 mr-2" /> WhatsApp
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Assign Listing to Client Modal
+function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
+  const [selectedCliente, setSelectedCliente] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [createNew, setCreateNew] = useState(false);
+  const [newCliente, setNewCliente] = useState({ nome: '', cognome: '', telefono: '', email: '' });
+  
+  const filteredClienti = clienti.filter(c => 
+    `${c.nome} ${c.cognome} ${c.telefono}`.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const handleCreate = () => {
+    const leadData = {
+      progetto: listing.title?.substring(0, 50) || listing.location?.name,
+      developer: listing.location?.name || 'TBD',
+      zona: listing.location?.path_name?.split(',')[1]?.trim() || 'Dubai',
+      valore: parseFloat(listing.price) || 0,
+      stato: 'lead',
+      agente: user?.nome || '',
+      pf_property_id: listing.property_id,
+      pf_url: listing.url,
+      note: `Off-Plan: ${listing.property_type} - ${listing.bedrooms || 'N/A'} BR - ${listing.size || 'N/A'} sqft`
+    };
+    
+    if (selectedCliente) {
+      leadData.cliente_id = selectedCliente.id;
+      leadData.cliente_nome = `${selectedCliente.nome} ${selectedCliente.cognome}`;
+    } else if (createNew && newCliente.nome) {
+      leadData.newCliente = newCliente;
+    }
+    
+    onCreateLead(leadData);
+    onClose();
+  };
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-md animate-scaleIn">
           )}
 
           {/* Image Gallery Thumbnails */}
