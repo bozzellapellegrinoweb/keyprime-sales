@@ -2066,7 +2066,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
       if (filters.minPrice) params.append('price_from', filters.minPrice);
       if (filters.maxPrice) params.append('price_to', filters.maxPrice);
       
-      const url = `https://${PF_API_HOST}/search_projects?${params.toString()}`;
+      const url = `https://${PF_API_HOST}/projects?${params.toString()}`;
       
       console.log('Fetching:', url);
       
