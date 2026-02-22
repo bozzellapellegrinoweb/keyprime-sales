@@ -530,6 +530,8 @@ export default function App() {
   // Filters
   const [filters, setFilters] = useState({ search: '', stato: '' });
   const [clienteFilters, setClienteFilters] = useState({ search: '', stato: '' });
+  const [periodFilter, setPeriodFilter] = useState('all'); // all, 30, 60, 90
+  const [showAgentDetail, setShowAgentDetail] = useState(null);
   
   // Global Search
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
@@ -968,8 +970,18 @@ export default function App() {
 
   // ==================== ADMIN VIEW ====================
   if (view === 'admin') {
-    const vendite = sales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
-    const totals = sales.reduce((a, s) => {
+    // Period filter logic
+    const getFilteredByPeriod = (salesData) => {
+      if (periodFilter === 'all') return salesData;
+      const days = parseInt(periodFilter);
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days);
+      return salesData.filter(s => s.data && new Date(s.data) >= cutoff);
+    };
+    
+    const periodSales = getFilteredByPeriod(sales);
+    const vendite = periodSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
+    const totals = periodSales.reduce((a, s) => {
       const c = Number(s.valore) * (s.commission_pct || 5) / 100;
       const ag = s.agente ? c * 0.7 : 0;
       const sg = s.segnalatore ? c * 0.3 : 0;
@@ -979,10 +991,10 @@ export default function App() {
       return { valore: a.valore + Number(s.valore), comm: a.comm + c, ag: a.ag + ag, sg: a.sg + sg, netto: a.netto + n, pell: a.pell + p, giov: a.giov + g };
     }, { valore: 0, comm: 0, ag: 0, sg: 0, netto: 0, pell: 0, giov: 0 });
     
-    const byStato = pipelineStati.reduce((a, st) => { a[st] = sales.filter(s => (s.stato || 'lead') === st); return a; }, {});
-    const byMonth = sales.reduce((a, s) => { const m = s.data?.substring(0, 7) || 'N/A'; a[m] = (a[m] || 0) + Number(s.valore); return a; }, {});
-    const byAgente = sales.reduce((a, s) => { if (s.agente) a[s.agente] = (a[s.agente] || 0) + Number(s.valore); return a; }, {});
-    const byZona = sales.reduce((a, s) => { if (s.zona) a[s.zona] = (a[s.zona] || 0) + Number(s.valore); return a; }, {});
+    const byStato = pipelineStati.reduce((a, st) => { a[st] = periodSales.filter(s => (s.stato || 'lead') === st); return a; }, {});
+    const byMonth = periodSales.reduce((a, s) => { const m = s.data?.substring(0, 7) || 'N/A'; a[m] = (a[m] || 0) + Number(s.valore); return a; }, {});
+    const byAgente = periodSales.reduce((a, s) => { if (s.agente) a[s.agente] = (a[s.agente] || 0) + Number(s.valore); return a; }, {});
+    const byZona = periodSales.reduce((a, s) => { if (s.zona) a[s.zona] = (a[s.zona] || 0) + Number(s.valore); return a; }, {});
     const pendingTasks = tasks.filter(t => t.stato === 'pending');
 
     const tabs = [
@@ -1076,9 +1088,21 @@ export default function App() {
             {/* DASHBOARD */}
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
-                {/* Export Button */}
-                <div className="flex justify-end">
-                  <Button variant="secondary" icon={Printer} onClick={() => generateDashboardPDF(totals, sales, vendite, byAgente, byZona)}>
+                {/* Period Filter + Export */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex gap-2">
+                    {[
+                      { id: 'all', label: 'Tutto' },
+                      { id: '30', label: '30 giorni' },
+                      { id: '60', label: '60 giorni' },
+                      { id: '90', label: '90 giorni' }
+                    ].map(p => (
+                      <button key={p.id} onClick={() => setPeriodFilter(p.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${periodFilter === p.id ? 'bg-violet-500/20 text-violet-400' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}>
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                  <Button variant="secondary" icon={Printer} onClick={() => generateDashboardPDF(totals, periodSales, vendite, byAgente, byZona)}>
                     Esporta Report
                   </Button>
                 </div>
@@ -1136,25 +1160,46 @@ export default function App() {
                 </Card>
 
                 {/* Top Performers */}
-                <div className="grid lg:grid-cols-2 gap-4">
+                <div className="grid lg:grid-cols-3 gap-4">
+                  {/* Top Agenti - Clickable */}
                   <Card>
                     <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Award className="w-5 h-5 text-amber-400" />Top Agenti</h3>
                     <div className="space-y-3">
                       {Object.entries(byAgente).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, value], i) => (
-                        <div key={name} className="flex items-center gap-3">
+                        <div key={name} onClick={() => setShowAgentDetail({ name, type: 'agente' })} className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-500 text-black' : 'bg-zinc-800 text-zinc-400'}`}>{i + 1}</div>
                           <Avatar nome={name} size="sm" />
                           <div className="flex-1">
                             <p className="text-white text-sm">{name}</p>
-                            <ProgressBar value={value} max={Object.values(byAgente)[0] || 1} color={i === 0 ? '#FBBF24' : '#52525B'} height="h-1" />
+                            <ProgressBar value={value} max={Object.values(byAgente).sort((a,b) => b-a)[0] || 1} color={i === 0 ? '#FBBF24' : '#52525B'} height="h-1" />
+                          </div>
+                          <span className="text-zinc-400 text-sm">{fmt(value)}</span>
+                          <ChevronRight className="w-4 h-4 text-zinc-600" />
+                        </div>
+                      ))}
+                      {Object.keys(byAgente).length === 0 && <p className="text-zinc-500 text-sm text-center py-4">Nessun dato</p>}
+                    </div>
+                  </Card>
+                  
+                  {/* Top Zone */}
+                  <Card>
+                    <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><MapPin className="w-5 h-5 text-emerald-400" />Top Zone</h3>
+                    <div className="space-y-3">
+                      {Object.entries(byZona).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([zona, value], i) => (
+                        <div key={zona} className="flex items-center gap-3">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-400'}`}>{i + 1}</div>
+                          <div className="flex-1">
+                            <p className="text-white text-sm">{zona}</p>
+                            <ProgressBar value={value} max={Object.values(byZona).sort((a,b) => b-a)[0] || 1} color={i === 0 ? '#34D399' : '#52525B'} height="h-1" />
                           </div>
                           <span className="text-zinc-400 text-sm">{fmt(value)}</span>
                         </div>
                       ))}
-                      {Object.keys(byAgente).length === 0 && <p className="text-zinc-500 text-sm">Nessun dato</p>}
+                      {Object.keys(byZona).length === 0 && <p className="text-zinc-500 text-sm text-center py-4">Nessun dato</p>}
                     </div>
                   </Card>
                   
+                  {/* Trend Mensile */}
                   <Card>
                     <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-violet-400" />Trend Mensile</h3>
                     <div className="space-y-3">
@@ -1162,13 +1207,23 @@ export default function App() {
                         <div key={month} className="flex items-center gap-3">
                           <span className="text-zinc-500 text-sm w-16">{month}</span>
                           <div className="flex-1"><ProgressBar value={value} max={Math.max(...Object.values(byMonth)) || 1} color="#A78BFA" /></div>
-                          <span className="text-white text-sm w-24 text-right">{fmt(value)}</span>
+                          <span className="text-white text-sm w-20 text-right">{fmt(value)}</span>
                         </div>
                       ))}
+                      {Object.keys(byMonth).length === 0 && <p className="text-zinc-500 text-sm text-center py-4">Nessun dato</p>}
                     </div>
                   </Card>
                 </div>
               </div>
+            )}
+            
+            {/* AGENT DETAIL VIEW */}
+            {activeTab === 'dashboard' && showAgentDetail && (
+              <AgentDetailView 
+                agent={showAgentDetail} 
+                sales={periodSales} 
+                onBack={() => setShowAgentDetail(null)} 
+              />
             )}
 
             {/* VENDITE */}
@@ -1722,6 +1777,148 @@ function TeamTab({ users, onCreate, onEdit, onDelete }) {
             </div>
           </Card>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// Agent Detail View
+function AgentDetailView({ agent, sales, onBack }) {
+  const agentSales = sales.filter(s => 
+    agent.type === 'agente' ? s.agente === agent.name : s.segnalatore === agent.name
+  );
+  const vendite = agentSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
+  const totalVolume = agentSales.reduce((sum, s) => sum + Number(s.valore || 0), 0);
+  const totalVendite = vendite.reduce((sum, s) => sum + Number(s.valore || 0), 0);
+  const rate = agent.type === 'agente' ? 0.7 : 0.3;
+  const totalComm = vendite.reduce((sum, s) => sum + (Number(s.valore || 0) * (s.commission_pct || 5) / 100 * rate), 0);
+  const commPagate = vendite.filter(s => s.pagato).reduce((sum, s) => sum + (Number(s.valore || 0) * (s.commission_pct || 5) / 100 * rate), 0);
+  
+  const byStato = pipelineStati.reduce((a, st) => { 
+    a[st] = agentSales.filter(s => (s.stato || 'lead') === st).length; 
+    return a; 
+  }, {});
+  
+  const byZona = agentSales.reduce((a, s) => { 
+    if (s.zona) a[s.zona] = (a[s.zona] || 0) + Number(s.valore || 0); 
+    return a; 
+  }, {});
+  
+  const byMonth = agentSales.reduce((a, s) => { 
+    const m = s.data?.substring(0, 7) || 'N/A'; 
+    a[m] = (a[m] || 0) + Number(s.valore || 0); 
+    return a; 
+  }, {});
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#09090B] overflow-auto">
+      <div className="max-w-4xl mx-auto p-6">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <Button variant="ghost" icon={ChevronLeft} onClick={onBack}>Indietro</Button>
+          <div className="flex-1" />
+        </div>
+        
+        {/* Profile */}
+        <div className="flex items-center gap-4 mb-8">
+          <Avatar nome={agent.name} size="xl" />
+          <div>
+            <h1 className="text-2xl font-semibold text-white">{agent.name}</h1>
+            <p className="text-zinc-500 capitalize">{agent.type}</p>
+          </div>
+        </div>
+        
+        {/* Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <p className="text-zinc-500 text-sm">Volume Totale</p>
+            <p className="text-2xl font-semibold text-white mt-1">{fmt(totalVolume)}</p>
+            <p className="text-zinc-600 text-xs">AED</p>
+          </Card>
+          <Card>
+            <p className="text-zinc-500 text-sm">Lead</p>
+            <p className="text-2xl font-semibold text-blue-400 mt-1">{agentSales.length}</p>
+          </Card>
+          <Card>
+            <p className="text-zinc-500 text-sm">Vendite Chiuse</p>
+            <p className="text-2xl font-semibold text-emerald-400 mt-1">{vendite.length}</p>
+            <p className="text-zinc-600 text-xs">{fmt(totalVendite)} AED</p>
+          </Card>
+          <Card>
+            <p className="text-zinc-500 text-sm">Commissioni</p>
+            <p className="text-2xl font-semibold text-amber-400 mt-1">{fmt(totalComm)}</p>
+            <p className="text-emerald-400 text-xs">Pagate: {fmt(commPagate)}</p>
+          </Card>
+        </div>
+        
+        {/* Pipeline */}
+        <Card className="mb-6">
+          <h3 className="text-white font-semibold mb-4">Pipeline</h3>
+          <div className="grid grid-cols-5 gap-2">
+            {pipelineStati.map(st => (
+              <div key={st} className="text-center p-3 rounded-xl" style={{ background: theme.status[st]?.bg }}>
+                <div className="text-xl font-semibold text-white">{byStato[st] || 0}</div>
+                <div className="text-xs capitalize" style={{ color: theme.status[st]?.color }}>{st}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+        
+        {/* Charts */}
+        <div className="grid lg:grid-cols-2 gap-4 mb-6">
+          <Card>
+            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-emerald-400" />Zone
+            </h3>
+            <div className="space-y-2">
+              {Object.entries(byZona).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([zona, value]) => (
+                <div key={zona} className="flex items-center gap-3">
+                  <span className="text-zinc-400 text-sm w-24 truncate">{zona}</span>
+                  <div className="flex-1"><ProgressBar value={value} max={Object.values(byZona).sort((a,b)=>b-a)[0] || 1} color="#34D399" /></div>
+                  <span className="text-white text-sm w-20 text-right">{fmt(value)}</span>
+                </div>
+              ))}
+              {Object.keys(byZona).length === 0 && <p className="text-zinc-500 text-sm">Nessun dato</p>}
+            </div>
+          </Card>
+          
+          <Card>
+            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-violet-400" />Trend
+            </h3>
+            <div className="space-y-2">
+              {Object.entries(byMonth).sort((a, b) => a[0].localeCompare(b[0])).slice(-5).map(([month, value]) => (
+                <div key={month} className="flex items-center gap-3">
+                  <span className="text-zinc-400 text-sm w-16">{month}</span>
+                  <div className="flex-1"><ProgressBar value={value} max={Math.max(...Object.values(byMonth)) || 1} color="#A78BFA" /></div>
+                  <span className="text-white text-sm w-20 text-right">{fmt(value)}</span>
+                </div>
+              ))}
+              {Object.keys(byMonth).length === 0 && <p className="text-zinc-500 text-sm">Nessun dato</p>}
+            </div>
+          </Card>
+        </div>
+        
+        {/* Recent Sales */}
+        <Card>
+          <h3 className="text-white font-semibold mb-4">Ultimi Lead</h3>
+          <div className="space-y-2">
+            {agentSales.slice(0, 10).map(s => (
+              <div key={s.id} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl">
+                <div className="w-1 h-10 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{s.progetto || 'TBD'}</p>
+                  <p className="text-zinc-500 text-xs">{s.developer} • {s.zona}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-white text-sm font-medium">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
+                  <p className="text-xs" style={{ color: theme.status[s.stato || 'lead']?.color }}>{s.stato || 'lead'}</p>
+                </div>
+              </div>
+            ))}
+            {agentSales.length === 0 && <p className="text-zinc-500 text-sm text-center py-4">Nessun lead</p>}
+          </div>
+        </Card>
       </div>
     </div>
   );
