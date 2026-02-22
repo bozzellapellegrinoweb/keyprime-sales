@@ -578,7 +578,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Modals
@@ -631,7 +631,7 @@ export default function App() {
   // Auth
   useEffect(() => {
     const s = localStorage.getItem('keyprime_user');
-    if (s) { const u = JSON.parse(s); setUser(u); setView(u.ruolo === 'admin' ? 'admin' : u.ruolo); }
+    if (s) { const u = JSON.parse(s); setUser(u); setActiveTab(u.ruolo === 'admin' ? 'dashboard' : 'home'); setView(u.ruolo === 'admin' ? 'admin' : u.ruolo); }
   }, []);
   
   // Data Loading
@@ -649,6 +649,7 @@ export default function App() {
     const { data } = await supabase.from('user_credentials').select('*').eq('username', username).eq('password', password).eq('attivo', true).single();
     if (!data) { setError('Credenziali non valide'); setLoading(false); return; }
     setUser(data); localStorage.setItem('keyprime_user', JSON.stringify(data));
+    setActiveTab(data.ruolo === 'admin' ? 'dashboard' : 'home');
     setView(data.ruolo === 'admin' ? 'admin' : data.ruolo); setLoading(false);
   };
   
