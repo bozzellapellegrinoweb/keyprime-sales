@@ -28,7 +28,8 @@ const theme = {
     pipeline: { accent: '#60A5FA', bg: 'rgba(96,165,250,0.08)', border: 'rgba(96,165,250,0.2)' },
     crm: { accent: '#FBBF24', bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.2)' },
     tasks: { accent: '#F472B6', bg: 'rgba(244,114,182,0.08)', border: 'rgba(244,114,182,0.2)' },
-    utenti: { accent: '#22D3EE', bg: 'rgba(34,211,238,0.08)', border: 'rgba(34,211,238,0.2)' }
+    utenti: { accent: '#22D3EE', bg: 'rgba(34,211,238,0.08)', border: 'rgba(34,211,238,0.2)' },
+    offplan: { accent: '#F97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.2)' }
   },
   status: {
     lead: { color: '#71717A', bg: 'rgba(113,113,122,0.15)' },
@@ -533,6 +534,9 @@ export default function App() {
   const [periodFilter, setPeriodFilter] = useState('all'); // all, 30, 60, 90
   const [showAgentDetail, setShowAgentDetail] = useState(null);
   
+  // Saved Listings (PropertyFinder)
+  const [savedListings, setSavedListings] = useState([]);
+  
   // Global Search
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   
@@ -570,8 +574,9 @@ export default function App() {
   const loadUsers = async () => { const { data } = await supabase.from('user_credentials').select('*').order('created_at', { ascending: false }); setUsers(data || []); };
   const loadClienti = async () => { const { data } = await supabase.from('clienti').select('*').order('created_at', { ascending: false }); setClienti(data || []); };
   const loadTasks = async () => { const { data } = await supabase.from('tasks').select('*').order('scadenza', { ascending: true }); setTasks(data || []); };
+  const loadSavedListings = async () => { const { data } = await supabase.from('saved_listings').select('*').order('created_at', { ascending: false }); setSavedListings(data || []); };
   
-  useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); if (user.ruolo === 'admin') loadUsers(); }}, [user]);
+  useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); loadSavedListings(); if (user.ruolo === 'admin') loadUsers(); }}, [user]);
 
   // Auth Handlers
   const handleLogin = async (username, password) => {
@@ -588,6 +593,77 @@ export default function App() {
     await supabase.from('user_credentials').update({ password: np }).eq('id', user.id);
     const u = { ...user, password: np }; setUser(u); localStorage.setItem('keyprime_user', JSON.stringify(u));
     setShowPasswordModal(false); showToast('Password aggiornata');
+  };
+
+  // Saved Listings Handlers
+  const saveListing = async (listing) => {
+    const { error } = await supabase.from('saved_listings').insert([{
+      property_id: listing.property_id,
+      title: listing.title,
+      price: parseFloat(listing.price) || 0,
+      location_full: listing.location?.full_name,
+      location_path: listing.location?.path_name,
+      property_type: listing.property_type,
+      size: parseFloat(listing.size) || null,
+      bedrooms: listing.bedrooms,
+      bathrooms: listing.bathrooms,
+      furnished: listing.furnished,
+      image_url: listing.images?.[0]?.medium_image_url,
+      pf_url: listing.url,
+      completion_status: listing.completion_status,
+      agent_name: listing.agent?.name,
+      agent_email: listing.agent?.email,
+      description: listing.description?.substring(0, 500),
+      created_by: user?.nome
+    }]);
+    if (!error) { loadSavedListings(); showToast('Annuncio salvato'); }
+  };
+  
+  const removeListing = async (propertyId) => {
+    await supabase.from('saved_listings').delete().eq('property_id', propertyId);
+    loadSavedListings(); showToast('Annuncio rimosso');
+  };
+  
+  const createLeadFromListing = async (leadData) => {
+    // If creating new cliente first
+    let cliente_id = leadData.cliente_id;
+    if (leadData.newCliente && leadData.newCliente.nome) {
+      const { data: cd } = await supabase.from('clienti').insert([{
+        nome: leadData.newCliente.nome,
+        cognome: leadData.newCliente.cognome || '',
+        telefono: leadData.newCliente.telefono || '',
+        email: leadData.newCliente.email || '',
+        stato: 'nuovo',
+        fonte: 'Off-Plan',
+        agente_riferimento: user?.nome,
+        created_by: user?.nome,
+        referente: user?.referente
+      }]).select().single();
+      if (cd) {
+        cliente_id = cd.id;
+        leadData.cliente_nome = `${cd.nome} ${cd.cognome}`;
+        loadClienti();
+      }
+    }
+    
+    // Create lead
+    await supabase.from('sales').insert([{
+      data: new Date().toISOString().split('T')[0],
+      developer: leadData.developer,
+      progetto: leadData.progetto,
+      zona: leadData.zona,
+      valore: leadData.valore || 0,
+      stato: 'lead',
+      agente: user?.nome,
+      referente: user?.referente,
+      cliente_id: cliente_id,
+      cliente_nome: leadData.cliente_nome,
+      note: leadData.note,
+      created_by: user?.nome
+    }]);
+    
+    loadSales();
+    showToast('Lead creato da Off-Plan');
   };
 
   // Sales Handlers
@@ -1002,6 +1078,7 @@ export default function App() {
       { id: 'vendite', icon: DollarSign, label: 'Vendite', accent: theme.sections.vendite.accent },
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.pipeline.accent },
       { id: 'crm', icon: Users, label: 'CRM', accent: theme.sections.crm.accent },
+      { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: pendingTasks.length },
       { id: 'utenti', icon: Settings, label: 'Team', accent: theme.sections.utenti.accent }
     ];
@@ -1067,6 +1144,7 @@ export default function App() {
                   {activeTab === 'vendite' && `${sales.length} transazioni totali`}
                   {activeTab === 'pipeline' && 'Gestisci il flusso di vendita'}
                   {activeTab === 'crm' && `${clienti.length} clienti in database`}
+                  {activeTab === 'offplan' && `Progetti Off-Plan • ${savedListings.length} salvati`}
                   {activeTab === 'tasks' && `${pendingTasks.length} task da completare`}
                   {activeTab === 'utenti' && `${users.length} membri del team`}
                 </p>
@@ -1234,6 +1312,9 @@ export default function App() {
 
             {/* CRM */}
             {activeTab === 'crm' && (showClienteDetail ? <ClienteDetailView cliente={showClienteDetail} sales={sales.filter(s => s.cliente_id === showClienteDetail.id)} tasks={tasks.filter(t => t.cliente_id === showClienteDetail.id)} onBack={() => setShowClienteDetail(null)} onEdit={() => setShowClienteModal(showClienteDetail)} onDelete={() => deleteCliente(showClienteDetail.id)} updateCliente={updateCliente} onAddTask={() => setShowTaskModal({ cliente_id: showClienteDetail.id })} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(showClienteDetail, sales.filter(s => s.cliente_id === showClienteDetail.id), tasks.filter(t => t.cliente_id === showClienteDetail.id))} /> : <CRMTab clienti={filteredClienti} filters={clienteFilters} setFilters={setClienteFilters} sales={sales} onSelect={setShowClienteDetail} onCreate={() => setShowClienteModal({})} />)}
+
+            {/* OFF-PLAN */}
+            {activeTab === 'offplan' && <OffPlanTab clienti={clienti} onCreateLead={createLeadFromListing} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeListing} user={user} />}
 
             {/* TASKS */}
             {activeTab === 'tasks' && <AdminTasksTab tasks={tasks} clienti={clienti} users={users} onComplete={completeTask} onDelete={deleteTask} onEdit={setShowTaskModal} onCreate={() => setShowTaskModal({})} />}
@@ -1925,6 +2006,495 @@ function AgentDetailView({ agent, sales, onBack }) {
 }
 
 // ==================== MODALS & FORMS ====================
+
+// PropertyFinder API Config
+const PF_API_HOST = 'uae-real-estate-api-propertyfinder-ae-data.p.rapidapi.com';
+const PF_API_KEY = '726ac8a1f8msh5ec783ecc467b76p1e1338jsn88a853551916';
+
+// Off-Plan Tab Component
+function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRemoveListing, user }) {
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    location: '',
+    minPrice: '',
+    maxPrice: '',
+    bedrooms: '',
+    propertyType: ''
+  });
+  const [selectedListing, setSelectedListing] = useState(null);
+  const [showAssignModal, setShowAssignModal] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalResults, setTotalResults] = useState(0);
+
+  // Dubai areas for filter
+  const dubaiAreas = [
+    'Dubai Marina', 'Downtown Dubai', 'Business Bay', 'Palm Jumeirah', 
+    'JBR', 'Dubai Hills', 'MBR City', 'Creek Harbour', 'Jumeirah Village Circle',
+    'Dubai South', 'Damac Hills', 'Arabian Ranches', 'Meydan', 'DIFC'
+  ];
+
+  const propertyTypes = ['Apartment', 'Villa', 'Townhouse', 'Penthouse', 'Studio'];
+  const bedroomOptions = ['Studio', '1', '2', '3', '4', '5+'];
+
+  // Search PropertyFinder API
+  const searchListings = async (resetPage = true) => {
+    setLoading(true);
+    setError(null);
+    
+    const currentPage = resetPage ? 1 : page;
+    if (resetPage) setPage(1);
+    
+    try {
+      let url = `https://${PF_API_HOST}/search_properties?`;
+      const params = new URLSearchParams();
+      
+      // Only off-plan
+      params.append('completion_status', 'off_plan,off_plan_primary');
+      params.append('listing_category', 'Residential Buy');
+      params.append('limit', '20');
+      params.append('page', currentPage.toString());
+      
+      // Apply filters
+      if (filters.location) params.append('location', filters.location);
+      if (filters.minPrice) params.append('min_price', filters.minPrice);
+      if (filters.maxPrice) params.append('max_price', filters.maxPrice);
+      if (filters.bedrooms) {
+        if (filters.bedrooms === 'Studio') {
+          params.append('bedrooms', '0');
+        } else if (filters.bedrooms === '5+') {
+          params.append('min_bedrooms', '5');
+        } else {
+          params.append('bedrooms', filters.bedrooms);
+        }
+      }
+      if (filters.propertyType) params.append('property_type', filters.propertyType);
+      
+      const response = await fetch(url + params.toString(), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-host': PF_API_HOST,
+          'x-rapidapi-key': PF_API_KEY
+        }
+      });
+      
+      if (!response.ok) throw new Error('Errore caricamento annunci');
+      
+      const data = await response.json();
+      
+      // Filter only off-plan results
+      const offPlanListings = (data.data || []).filter(l => 
+        l.completion_status === 'off_plan' || l.completion_status === 'off_plan_primary'
+      );
+      
+      if (resetPage) {
+        setListings(offPlanListings);
+      } else {
+        setListings(prev => [...prev, ...offPlanListings]);
+      }
+      
+      setTotalResults(data.pagination?.total || 0);
+      setHasMore(data.pagination?.has_next || false);
+      
+    } catch (err) {
+      console.error('PF API Error:', err);
+      setError('Impossibile caricare gli annunci. Riprova.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load more
+  const loadMore = () => {
+    setPage(p => p + 1);
+    searchListings(false);
+  };
+
+  // Initial load
+  useEffect(() => {
+    searchListings();
+  }, []);
+
+  // Check if listing is saved
+  const isListingSaved = (propertyId) => {
+    return savedListings?.some(s => s.property_id === propertyId);
+  };
+
+  // Format price
+  const formatPrice = (price) => {
+    const num = parseFloat(price);
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
+    return num.toLocaleString();
+  };
+
+  // Extract developer from description or location
+  const extractDeveloper = (listing) => {
+    const desc = listing.description?.toLowerCase() || '';
+    const devs = ['emaar', 'damac', 'sobha', 'meraas', 'nakheel', 'azizi', 'danube', 'binghatti', 'omniyat', 'ellington', 'select group', 'mag'];
+    for (const dev of devs) {
+      if (desc.includes(dev)) return dev.charAt(0).toUpperCase() + dev.slice(1);
+    }
+    return listing.location?.name || 'Developer';
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+            <Building2 className="w-6 h-6 text-orange-400" />
+            Off-Plan Properties
+          </h2>
+          <p className="text-zinc-500 text-sm mt-1">
+            {totalResults > 0 ? `${totalResults.toLocaleString()} annunci trovati` : 'Cerca progetti off-plan'}
+          </p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+          <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">
+            <option value="">Tutte le zone</option>
+            {dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+          
+          <select value={filters.propertyType} onChange={(e) => setFilters(f => ({ ...f, propertyType: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">
+            <option value="">Tutti i tipi</option>
+            {propertyTypes.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+          
+          <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">
+            <option value="">Camere</option>
+            {bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : `${b} BR`}</option>)}
+          </select>
+          
+          <input type="number" placeholder="Prezzo min" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+          
+          <input type="number" placeholder="Prezzo max" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+          
+          <Button onClick={() => searchListings(true)} icon={Search} disabled={loading}>
+            {loading ? 'Cercando...' : 'Cerca'}
+          </Button>
+        </div>
+      </Card>
+
+      {/* Error */}
+      {error && (
+        <Card className="border-red-500/20 bg-red-500/5">
+          <div className="flex items-center gap-3 text-red-400">
+            <AlertCircle className="w-5 h-5" />
+            <span>{error}</span>
+            <Button variant="ghost" size="sm" onClick={() => searchListings(true)}>Riprova</Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Loading */}
+      {loading && listings.length === 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1,2,3,4,5,6].map(i => (
+            <Card key={i} className="animate-pulse">
+              <div className="h-40 bg-zinc-800 rounded-xl mb-3" />
+              <div className="h-4 bg-zinc-800 rounded w-3/4 mb-2" />
+              <div className="h-3 bg-zinc-800 rounded w-1/2" />
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Results Grid */}
+      {listings.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {listings.map(listing => (
+            <Card key={listing.property_id} hover className="overflow-hidden group">
+              {/* Image */}
+              <div className="relative h-40 -mx-4 -mt-4 mb-3 overflow-hidden">
+                {listing.images?.[0]?.medium_image_url ? (
+                  <img src={listing.images[0].medium_image_url} alt={listing.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                ) : (
+                  <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                    <Building2 className="w-12 h-12 text-zinc-600" />
+                  </div>
+                )}
+                {/* Badge */}
+                <div className="absolute top-2 left-2 px-2 py-1 bg-orange-500/90 text-white text-xs font-medium rounded-lg">
+                  Off-Plan
+                </div>
+                {/* Save button */}
+                <button onClick={(e) => { e.stopPropagation(); isListingSaved(listing.property_id) ? onRemoveListing(listing.property_id) : onSaveListing(listing); }} className={`absolute top-2 right-2 p-2 rounded-full transition-colors ${isListingSaved(listing.property_id) ? 'bg-orange-500 text-white' : 'bg-black/50 text-white hover:bg-orange-500'}`}>
+                  <svg className="w-4 h-4" fill={isListingSaved(listing.property_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                </button>
+              </div>
+              
+              {/* Content */}
+              <div className="space-y-2">
+                <p className="text-white font-medium line-clamp-1">{listing.title}</p>
+                <p className="text-zinc-500 text-sm line-clamp-1">{listing.location?.path_name || listing.location?.full_name}</p>
+                
+                <div className="flex items-center gap-3 text-xs text-zinc-400">
+                  {listing.bedrooms && listing.bedrooms !== 'None' && (
+                    <span>{listing.bedrooms === '0' ? 'Studio' : `${listing.bedrooms} BR`}</span>
+                  )}
+                  {listing.size && <span>{parseFloat(listing.size).toLocaleString()} sqft</span>}
+                  {listing.property_type && <span>{listing.property_type}</span>}
+                </div>
+                
+                <div className="flex items-center justify-between pt-2">
+                  <p className="text-orange-400 font-semibold">AED {formatPrice(listing.price)}</p>
+                  <span className="text-zinc-600 text-xs">{extractDeveloper(listing)}</span>
+                </div>
+              </div>
+              
+              {/* Actions */}
+              <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
+                <Button variant="ghost" size="sm" className="flex-1" onClick={() => setSelectedListing(listing)}>
+                  <Eye className="w-4 h-4 mr-1" /> Dettagli
+                </Button>
+                <Button variant="secondary" size="sm" className="flex-1" onClick={() => setShowAssignModal(listing)}>
+                  <Plus className="w-4 h-4 mr-1" /> Lead
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Load More */}
+      {hasMore && listings.length > 0 && (
+        <div className="flex justify-center pt-4">
+          <Button variant="secondary" onClick={loadMore} disabled={loading}>
+            {loading ? 'Caricamento...' : 'Carica altri'}
+          </Button>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && listings.length === 0 && !error && (
+        <EmptyState icon={Building2} title="Nessun risultato" description="Modifica i filtri o cerca in altre zone" />
+      )}
+
+      {/* Listing Detail Modal */}
+      {selectedListing && (
+        <ListingDetailModal listing={selectedListing} onClose={() => setSelectedListing(null)} onCreateLead={() => { setShowAssignModal(selectedListing); setSelectedListing(null); }} isSaved={isListingSaved(selectedListing.property_id)} onToggleSave={() => isListingSaved(selectedListing.property_id) ? onRemoveListing(selectedListing.property_id) : onSaveListing(selectedListing)} />
+      )}
+
+      {/* Assign to Client Modal */}
+      {showAssignModal && (
+        <AssignListingModal listing={showAssignModal} clienti={clienti} onClose={() => setShowAssignModal(null)} onCreateLead={onCreateLead} user={user} />
+      )}
+    </div>
+  );
+}
+
+// Listing Detail Modal
+function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleSave }) {
+  const formatPrice = (price) => parseFloat(price).toLocaleString();
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden animate-scaleIn">
+        {/* Header Image */}
+        <div className="relative h-64">
+          {listing.images?.[0]?.medium_image_url ? (
+            <img src={listing.images[0].medium_image_url} alt={listing.title} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+              <Building2 className="w-16 h-16 text-zinc-600" />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#18181B] to-transparent" />
+          <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70">
+            <X className="w-5 h-5" />
+          </button>
+          <div className="absolute bottom-4 left-4 right-4">
+            <span className="px-2 py-1 bg-orange-500 text-white text-xs font-medium rounded-lg">Off-Plan</span>
+            <h2 className="text-xl font-semibold text-white mt-2 line-clamp-2">{listing.title}</h2>
+          </div>
+        </div>
+        
+        {/* Content */}
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-16rem)]">
+          {/* Price & Location */}
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <p className="text-2xl font-bold text-orange-400">AED {formatPrice(listing.price)}</p>
+              <p className="text-zinc-400 mt-1">{listing.location?.full_name}</p>
+            </div>
+            <button onClick={onToggleSave} className={`p-3 rounded-xl transition-colors ${isSaved ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-orange-400'}`}>
+              <svg className="w-5 h-5" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+            </button>
+          </div>
+          
+          {/* Details Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {listing.bedrooms && listing.bedrooms !== 'None' && (
+              <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
+                <p className="text-zinc-500 text-xs">Camere</p>
+                <p className="text-white font-medium">{listing.bedrooms === '0' ? 'Studio' : listing.bedrooms}</p>
+              </div>
+            )}
+            {listing.bathrooms && listing.bathrooms !== 'None' && listing.bathrooms !== 'none' && (
+              <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
+                <p className="text-zinc-500 text-xs">Bagni</p>
+                <p className="text-white font-medium">{listing.bathrooms}</p>
+              </div>
+            )}
+            {listing.size && (
+              <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
+                <p className="text-zinc-500 text-xs">Dimensione</p>
+                <p className="text-white font-medium">{parseFloat(listing.size).toLocaleString()} sqft</p>
+              </div>
+            )}
+            <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
+              <p className="text-zinc-500 text-xs">Tipo</p>
+              <p className="text-white font-medium">{listing.property_type}</p>
+            </div>
+          </div>
+          
+          {/* Description */}
+          {listing.description && (
+            <div className="mb-6">
+              <h3 className="text-white font-medium mb-2">Descrizione</h3>
+              <p className="text-zinc-400 text-sm whitespace-pre-line line-clamp-6">{listing.description}</p>
+            </div>
+          )}
+          
+          {/* Agent Info */}
+          {listing.agent && (
+            <div className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl mb-6">
+              {listing.agent.image_url && <img src={listing.agent.image_url} alt={listing.agent.name} className="w-10 h-10 rounded-full object-cover" />}
+              <div className="flex-1">
+                <p className="text-white text-sm font-medium">{listing.agent.name}</p>
+                <p className="text-zinc-500 text-xs">{listing.agent.email}</p>
+              </div>
+              {listing.agent.is_super_agent && <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-full">Super Agent</span>}
+            </div>
+          )}
+          
+          {/* Actions */}
+          <div className="flex gap-3">
+            <Button className="flex-1" onClick={onCreateLead}>
+              <Plus className="w-4 h-4 mr-2" /> Crea Lead
+            </Button>
+            <Button variant="secondary" className="flex-1" onClick={() => {
+              const text = `🏗️ *${listing.title}*\n\n📍 ${listing.location?.full_name}\n💰 AED ${parseFloat(listing.price).toLocaleString()}\n📐 ${listing.size ? parseFloat(listing.size).toLocaleString() + ' sqft' : 'N/A'}\n🛏️ ${listing.bedrooms === 'None' ? 'Studio' : listing.bedrooms + ' BR'}\n\n_Off-Plan Property_`;
+              window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+            }}>
+              <MessageCircle className="w-4 h-4 mr-2" /> Condividi
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Assign Listing to Client Modal
+function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
+  const [selectedCliente, setSelectedCliente] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [createNew, setCreateNew] = useState(false);
+  const [newCliente, setNewCliente] = useState({ nome: '', cognome: '', telefono: '', email: '' });
+  
+  const filteredClienti = clienti.filter(c => 
+    `${c.nome} ${c.cognome} ${c.telefono}`.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const handleCreate = () => {
+    const leadData = {
+      progetto: listing.title?.substring(0, 50) || listing.location?.name,
+      developer: listing.location?.name || 'TBD',
+      zona: listing.location?.path_name?.split(',')[1]?.trim() || 'Dubai',
+      valore: parseFloat(listing.price) || 0,
+      stato: 'lead',
+      agente: user?.nome || '',
+      pf_property_id: listing.property_id,
+      pf_url: listing.url,
+      note: `Off-Plan: ${listing.property_type} - ${listing.bedrooms || 'N/A'} BR - ${listing.size || 'N/A'} sqft`
+    };
+    
+    if (selectedCliente) {
+      leadData.cliente_id = selectedCliente.id;
+      leadData.cliente_nome = `${selectedCliente.nome} ${selectedCliente.cognome}`;
+    } else if (createNew && newCliente.nome) {
+      leadData.newCliente = newCliente;
+    }
+    
+    onCreateLead(leadData);
+    onClose();
+  };
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-md animate-scaleIn">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <h3 className="text-lg font-semibold text-white">Crea Lead da Annuncio</h3>
+          <button onClick={onClose} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+        </div>
+        
+        <div className="p-4 space-y-4">
+          {/* Listing Summary */}
+          <div className="flex gap-3 p-3 bg-zinc-800/50 rounded-xl">
+            {listing.images?.[0]?.small_image_url && <img src={listing.images[0].small_image_url} alt="" className="w-16 h-16 rounded-lg object-cover" />}
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-medium line-clamp-1">{listing.title}</p>
+              <p className="text-zinc-500 text-xs line-clamp-1">{listing.location?.path_name}</p>
+              <p className="text-orange-400 text-sm font-medium mt-1">AED {parseFloat(listing.price).toLocaleString()}</p>
+            </div>
+          </div>
+          
+          {/* Client Selection */}
+          <div>
+            <label className="text-sm text-zinc-400 mb-2 block">Associa a Cliente (opzionale)</label>
+            <input type="text" placeholder="Cerca cliente..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCreateNew(false); }} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            
+            {searchQuery && !createNew && (
+              <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
+                {filteredClienti.slice(0, 5).map(c => (
+                  <button key={c.id} onClick={() => { setSelectedCliente(c); setSearchQuery(`${c.nome} ${c.cognome}`); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${selectedCliente?.id === c.id ? 'bg-orange-500/20 text-orange-400' : 'hover:bg-zinc-800 text-zinc-300'}`}>
+                    <Avatar nome={c.nome} cognome={c.cognome} size="xs" />
+                    <span className="text-sm">{c.nome} {c.cognome}</span>
+                  </button>
+                ))}
+                {filteredClienti.length === 0 && (
+                  <button onClick={() => { setCreateNew(true); setNewCliente(n => ({ ...n, nome: searchQuery.split(' ')[0], cognome: searchQuery.split(' ')[1] || '' })); }} className="w-full text-left p-2 rounded-lg text-orange-400 hover:bg-zinc-800 text-sm">
+                    + Crea nuovo cliente "{searchQuery}"
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {/* New Client Form */}
+          {createNew && (
+            <div className="space-y-3 p-3 bg-zinc-800/30 rounded-xl">
+              <p className="text-sm text-zinc-400">Nuovo Cliente</p>
+              <div className="grid grid-cols-2 gap-2">
+                <input type="text" placeholder="Nome" value={newCliente.nome} onChange={(e) => setNewCliente(n => ({ ...n, nome: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+                <input type="text" placeholder="Cognome" value={newCliente.cognome} onChange={(e) => setNewCliente(n => ({ ...n, cognome: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+              </div>
+              <input type="tel" placeholder="Telefono" value={newCliente.telefono} onChange={(e) => setNewCliente(n => ({ ...n, telefono: e.target.value }))} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+              <input type="email" placeholder="Email" value={newCliente.email} onChange={(e) => setNewCliente(n => ({ ...n, email: e.target.value }))} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+            </div>
+          )}
+        </div>
+        
+        <div className="flex gap-3 p-4 border-t border-zinc-800">
+          <Button variant="secondary" className="flex-1" onClick={onClose}>Annulla</Button>
+          <Button className="flex-1" onClick={handleCreate}>Crea Lead</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Login Form
 function LoginForm({ onLogin, loading }) {
