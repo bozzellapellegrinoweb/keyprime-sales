@@ -2327,67 +2327,6 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
     </div>
   );
 }
-                  )}
-                </div>
-                
-                <div className="flex items-center justify-between pt-2">
-                  <div>
-                    <p className="text-orange-400 font-semibold">
-                      {project.price_from > 0 ? `da AED ${formatPrice(project.price_from)}` : 'Prezzo su richiesta'}
-                    </p>
-                  </div>
-                  {project.developer?.name && (
-                    <div className="flex items-center gap-1.5">
-                      {project.developer.logo && (
-                        <img src={project.developer.logo} alt="" className="w-4 h-4 rounded object-contain bg-white" />
-                      )}
-                      <span className="text-zinc-500 text-xs truncate max-w-[100px]">{project.developer.name}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Actions */}
-              <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
-                <Button variant="ghost" size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); setSelectedListing(project); }}>
-                  <Eye className="w-4 h-4 mr-1" /> Dettagli
-                </Button>
-                <Button variant="secondary" size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); setShowAssignModal(project); }}>
-                  <Plus className="w-4 h-4 mr-1" /> Lead
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Load More */}
-      {hasMore && listings.length > 0 && (
-        <div className="flex justify-center pt-4">
-          <Button variant="secondary" onClick={loadMore} disabled={loading}>
-            {loading ? 'Caricamento...' : 'Carica altri'}
-          </Button>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!loading && listings.length === 0 && !error && (
-        <EmptyState icon={Building2} title="Nessun risultato" description="Modifica i filtri o cerca in altre zone" />
-      )}
-
-      {/* Listing Detail Modal */}
-      {selectedListing && (
-        <ListingDetailModal listing={selectedListing} onClose={() => setSelectedListing(null)} onCreateLead={() => { setShowAssignModal(selectedListing); setSelectedListing(null); }} isSaved={isListingSaved(selectedListing.project_id)} onToggleSave={() => isListingSaved(selectedListing.project_id) ? onRemoveListing(selectedListing.project_id) : onSaveListing(selectedListing)} />
-      )}
-
-      {/* Assign to Client Modal */}
-      {showAssignModal && (
-        <AssignListingModal listing={showAssignModal} clienti={clienti} onClose={() => setShowAssignModal(null)} onCreateLead={onCreateLead} user={user} />
-      )}
-    </div>
-  );
-}
-
 // Listing Detail Modal (for Off-Plan Projects) - Enhanced with Gallery, Map, Location Insights
 function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleSave }) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
