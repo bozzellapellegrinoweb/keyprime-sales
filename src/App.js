@@ -1,149 +1,257 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, UserCheck, Menu, Key, CheckSquare, Square, Bell, MapPin, Award, User, MessageCircle, Filter, ChevronLeft, ChevronRight, Globe, Calendar, Clock, FileText, Plus, AlertTriangle, Send, ExternalLink, MoreVertical, Zap, ArrowUp, ArrowDown, Activity, PieChart, Home } from 'lucide-react';
+import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, CheckSquare, Square, Bell, MapPin, Award, User, MessageCircle, Filter, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, Briefcase, ArrowUpRight, ArrowDownRight, MoreHorizontal, Sparkles } from 'lucide-react';
 
 const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NjkyNjAsImV4cCI6MjA4NzI0NTI2MH0.oXUs9ITNi6lEFat_5FH0x-Exw5MDgRhwx6T0yL3xiWQ');
 
+// Config
 const RESEND_API_KEY = 're_jCpLJKfw_MfWu2jbSzPPgz6pLHQXMAXJb';
 const EMAIL_FROM = 'onboarding@resend.dev';
 const ADMIN_EMAIL = 'bozzellapellegrino@gmail.com';
+
+// Data
 const zones = ['Palm Jumeirah', 'Dubai Marina', 'Downtown', 'Dubai Creek', 'JBR', 'Business Bay', 'JLT', 'DIFC', 'MBR City', 'Dubai Hills', 'Altro'];
 const developers = ['Emaar', 'Damac', 'Sobha', 'Meraas', 'Nakheel', 'Dubai Properties', 'Azizi', 'Danube', 'Binghatti', 'Altro'];
 const commissions = [2, 4, 5, 6];
 const pipelineStati = ['lead', 'trattativa', 'prenotato', 'venduto', 'incassato'];
-const pipelineColors = { lead: 'bg-slate-500', trattativa: 'bg-blue-500', prenotato: 'bg-amber-500', venduto: 'bg-emerald-500', incassato: 'bg-green-600' };
-const pipelineLabels = { lead: '🎯 Lead', trattativa: '💬 Trattativa', prenotato: '📝 Prenotato', venduto: '✅ Venduto', incassato: '💰 Incassato' };
 const clienteStati = ['nuovo', 'contattato', 'interessato', 'trattativa', 'acquistato', 'perso'];
-const clienteStatiColors = { nuovo: 'bg-slate-500', contattato: 'bg-blue-500', interessato: 'bg-amber-500', trattativa: 'bg-purple-500', acquistato: 'bg-emerald-500', perso: 'bg-red-500' };
 const taskPriorita = ['bassa', 'normale', 'alta', 'urgente'];
-const taskPrioritaColors = { bassa: 'bg-slate-500', normale: 'bg-blue-500', alta: 'bg-amber-500', urgente: 'bg-red-500' };
+
+// Theme Colors - Section Based
+const theme = {
+  bg: { primary: '#09090B', secondary: '#0F0F11', tertiary: '#18181B', elevated: '#1F1F23' },
+  border: { subtle: '#27272A', default: '#3F3F46', strong: '#52525B' },
+  text: { primary: '#FAFAFA', secondary: '#A1A1AA', tertiary: '#71717A', muted: '#52525B' },
+  sections: {
+    dashboard: { accent: '#A78BFA', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.2)' },
+    vendite: { accent: '#34D399', bg: 'rgba(52,211,153,0.08)', border: 'rgba(52,211,153,0.2)' },
+    pipeline: { accent: '#60A5FA', bg: 'rgba(96,165,250,0.08)', border: 'rgba(96,165,250,0.2)' },
+    crm: { accent: '#FBBF24', bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.2)' },
+    tasks: { accent: '#F472B6', bg: 'rgba(244,114,182,0.08)', border: 'rgba(244,114,182,0.2)' },
+    utenti: { accent: '#22D3EE', bg: 'rgba(34,211,238,0.08)', border: 'rgba(34,211,238,0.2)' }
+  },
+  status: {
+    lead: { color: '#71717A', bg: 'rgba(113,113,122,0.15)' },
+    trattativa: { color: '#60A5FA', bg: 'rgba(96,165,250,0.15)' },
+    prenotato: { color: '#FBBF24', bg: 'rgba(251,191,36,0.15)' },
+    venduto: { color: '#34D399', bg: 'rgba(52,211,153,0.15)' },
+    incassato: { color: '#22C55E', bg: 'rgba(34,197,94,0.15)' }
+  },
+  priority: {
+    bassa: { color: '#71717A', bg: 'rgba(113,113,122,0.15)' },
+    normale: { color: '#60A5FA', bg: 'rgba(96,165,250,0.15)' },
+    alta: { color: '#FBBF24', bg: 'rgba(251,191,36,0.15)' },
+    urgente: { color: '#EF4444', bg: 'rgba(239,68,68,0.15)' }
+  }
+};
+
+// Utilities
 const fmt = (n) => (n || 0).toLocaleString('en-AE', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 const fmtDateTime = (d) => d ? new Date(d).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-';
+const fmtShort = (d) => d ? new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }) : '-';
 const getWhatsAppLink = (phone, msg = '') => `https://wa.me/${(phone || '').replace(/\D/g, '')}${msg ? `?text=${encodeURIComponent(msg)}` : ''}`;
 const getBaseUrl = () => typeof window !== 'undefined' ? window.location.origin : '';
 const isOverdue = (d) => d && new Date(d) < new Date();
 const isToday = (d) => d && new Date(d).toDateString() === new Date().toDateString();
 const getInitials = (nome, cognome) => `${(nome || '')[0] || ''}${(cognome || '')[0] || ''}`.toUpperCase() || '?';
-const getAvatarColor = (name) => { const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-pink-500', 'bg-cyan-500', 'bg-red-500']; return colors[Math.abs((name || '').charCodeAt(0) || 0) % colors.length]; };
 
+// Email Functions
 const sendEmail = async (to, subject, html) => { try { await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: EMAIL_FROM, to: [to], subject, html }) }); return true; } catch (e) { return false; } };
+const notifyTaskCompleted = async (task, agentName) => { await sendEmail(ADMIN_EMAIL, `✅ Task completato: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px"><h2>Task Completato</h2><p><strong>${task.titolo}</strong></p><p>Completato da: ${agentName}</p></div>`); };
+const notifyTaskNote = async (task, agentName, note) => { await sendEmail(ADMIN_EMAIL, `💬 Nota: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px"><h2>Nuova Nota</h2><p><strong>${task.titolo}</strong></p><p>Da: ${agentName}</p><p>Nota: ${note}</p></div>`); };
 
-const notifyTaskAssigned = async (task, assigneeEmail) => { if (!assigneeEmail) return; const html = `<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px"><h2 style="color:#C9A96E">📋 Nuovo Task Assegnato</h2><div style="background:#f5f5f5;padding:15px;border-radius:8px;margin:15px 0"><p><strong>Titolo:</strong> ${task.titolo}</p>${task.descrizione ? `<p><strong>Descrizione:</strong> ${task.descrizione}</p>` : ''}${task.scadenza ? `<p><strong>Scadenza:</strong> ${fmtDate(task.scadenza)}</p>` : ''}<p><strong>Priorità:</strong> ${task.priorita}</p></div><p style="color:#666;font-size:12px">KeyPrime CRM</p></div>`; await sendEmail(assigneeEmail, `📋 Task: ${task.titolo}`, html); };
-const notifyTaskCompleted = async (task, agentName) => { const html = `<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px"><h2 style="color:#10b981">✅ Task Completato</h2><div style="background:#f5f5f5;padding:15px;border-radius:8px;margin:15px 0"><p><strong>Titolo:</strong> ${task.titolo}</p><p><strong>Completato da:</strong> ${agentName}</p>${task.note ? `<p><strong>Nota:</strong> ${task.note}</p>` : ''}</div><p style="color:#666;font-size:12px">KeyPrime CRM</p></div>`; await sendEmail(ADMIN_EMAIL, `✅ Task completato: ${task.titolo}`, html); };
-const notifyTaskNote = async (task, agentName, note) => { const html = `<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px"><h2 style="color:#3b82f6">💬 Nota su Task</h2><div style="background:#f5f5f5;padding:15px;border-radius:8px;margin:15px 0"><p><strong>Task:</strong> ${task.titolo}</p><p><strong>Da:</strong> ${agentName}</p><p><strong>Nota:</strong> ${note}</p></div><p style="color:#666;font-size:12px">KeyPrime CRM</p></div>`; await sendEmail(ADMIN_EMAIL, `💬 Nota task: ${task.titolo}`, html); };
+// PDF Generator
+const generateClientePDF = (cliente, sales, tasks) => { const tv = sales.filter(s => s.stato === 'venduto' || s.stato === 'incassato').reduce((sum, s) => sum + Number(s.valore || 0), 0); const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${cliente.nome}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:40px;max-width:800px;margin:0 auto;color:#1a1a1a}h1{font-size:28px;font-weight:600;margin-bottom:8px}h2{font-size:14px;font-weight:600;color:#666;margin:24px 0 12px;text-transform:uppercase;letter-spacing:0.5px}.stats{display:flex;gap:16px;margin:24px 0}.stat{flex:1;background:#f5f5f7;padding:16px;border-radius:12px;text-align:center}.stat-val{font-size:24px;font-weight:600}.stat-label{font-size:12px;color:#666;margin-top:4px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.item{background:#f5f5f7;padding:12px 16px;border-radius:8px}.item-label{font-size:11px;color:#666;margin-bottom:2px}.item-value{font-size:14px;font-weight:500}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{padding:10px 12px;text-align:left;font-size:13px}th{background:#f5f5f7;font-weight:500}tr:not(:last-child) td{border-bottom:1px solid #e5e5e5}</style></head><body><h1>${cliente.nome} ${cliente.cognome||''}</h1><p style="color:#666">${cliente.telefono||''} ${cliente.email?'• '+cliente.email:''}</p><div class="stats"><div class="stat"><div class="stat-val">${sales.length}</div><div class="stat-label">Lead</div></div><div class="stat"><div class="stat-val">${fmt(tv)}</div><div class="stat-label">Valore AED</div></div><div class="stat"><div class="stat-val">${cliente.stato}</div><div class="stat-label">Stato</div></div></div><h2>Informazioni</h2><div class="grid"><div class="item"><div class="item-label">Budget</div><div class="item-value">${cliente.budget_max?fmt(cliente.budget_max)+' AED':'N/A'}</div></div><div class="item"><div class="item-label">Agente</div><div class="item-value">${cliente.agente_riferimento||'N/A'}</div></div></div>${sales.length>0?'<h2>Storico Lead</h2><table><tr><th>Data</th><th>Progetto</th><th>Valore</th><th>Stato</th></tr>'+sales.map(s=>'<tr><td>'+fmtShort(s.data)+'</td><td>'+s.progetto+'</td><td>'+(s.valore>0?fmt(s.valore):'TBD')+'</td><td>'+s.stato+'</td></tr>').join('')+'</table>':''}</body></html>`; const w = window.open('','_blank'); w.document.write(html); w.document.close(); setTimeout(()=>w.print(),500); };
 
-const generateClientePDF = (cliente, sales, tasks) => { const totalValue = sales.filter(s => s.stato === 'venduto' || s.stato === 'incassato').reduce((sum, s) => sum + Number(s.valore || 0), 0); const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${cliente.nome}</title><style>*{margin:0;padding:0}body{font-family:Arial,sans-serif;padding:40px;max-width:800px;margin:0 auto}h1{color:#C9A96E;border-bottom:2px solid #C9A96E;padding-bottom:10px;margin-bottom:20px}h2{margin:20px 0 10px;font-size:16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px}.item{background:#f5f5f5;padding:12px;border-radius:8px}.label{font-size:11px;color:#666}.value{font-size:14px;font-weight:500;margin-top:4px}.stats{display:flex;gap:15px;margin-bottom:20px}.stat{flex:1;background:#1a1a2e;color:white;padding:15px;border-radius:8px;text-align:center}.stat-val{font-size:24px;font-weight:bold;color:#C9A96E}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{padding:8px;text-align:left;border-bottom:1px solid #eee;font-size:12px}th{background:#f5f5f5}.footer{margin-top:40px;text-align:center;color:#666;font-size:11px}</style></head><body><div style="font-size:24px;font-weight:bold;color:#C9A96E;margin-bottom:20px">KEYPRIME</div><h1>${cliente.nome} ${cliente.cognome||''}</h1><div class="stats"><div class="stat"><div class="stat-val">${sales.length}</div><div>Lead</div></div><div class="stat"><div class="stat-val">${fmt(totalValue)}</div><div>Valore</div></div><div class="stat"><div class="stat-val">${cliente.stato}</div><div>Stato</div></div></div><h2>Contatto</h2><div class="grid"><div class="item"><div class="label">Telefono</div><div class="value">${cliente.telefono||'-'}</div></div><div class="item"><div class="label">Email</div><div class="value">${cliente.email||'-'}</div></div><div class="item"><div class="label">Budget</div><div class="value">${cliente.budget_max?fmt(cliente.budget_max)+' AED':'-'}</div></div><div class="item"><div class="label">Agente</div><div class="value">${cliente.agente_riferimento||'-'}</div></div></div>${cliente.note?'<h2>Note</h2><p style="background:#f5f5f5;padding:12px;border-radius:8px">'+cliente.note+'</p>':''}${sales.length>0?'<h2>Storico</h2><table><tr><th>Data</th><th>Progetto</th><th>Valore</th><th>Stato</th></tr>'+sales.map(s=>'<tr><td>'+fmtDate(s.data)+'</td><td>'+s.progetto+'</td><td>'+(s.valore>0?fmt(s.valore):'TBD')+'</td><td>'+s.stato+'</td></tr>').join('')+'</table>':''}${tasks.length>0?'<h2>Task</h2><table><tr><th>Titolo</th><th>Scadenza</th><th>Stato</th></tr>'+tasks.map(t=>'<tr><td>'+t.titolo+'</td><td>'+fmtDate(t.scadenza)+'</td><td>'+t.stato+'</td></tr>').join('')+'</table>':''}<div class="footer">KeyPrime Real Estate CRM - ${new Date().toLocaleDateString('it-IT')}</div></body></html>`; const w = window.open('','_blank'); w.document.write(html); w.document.close(); setTimeout(()=>w.print(),500); };
+// ==================== UI COMPONENTS ====================
 
-// Toast Notification Component
+// Toast
 const Toast = ({ message, type = 'success', onClose }) => {
-  useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
-  return <div className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-slideUp ${type === 'success' ? 'bg-emerald-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'} text-white`}><Check className="w-4 h-4" /><span className="text-sm font-medium">{message}</span></div>;
+  useEffect(() => { const t = setTimeout(onClose, 2500); return () => clearTimeout(t); }, [onClose]);
+  const colors = { success: 'bg-emerald-500', error: 'bg-red-500', info: 'bg-blue-500' };
+  return (
+    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 ${colors[type]} text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-2 animate-slideUp`}>
+      <Check className="w-4 h-4" /><span className="text-sm font-medium">{message}</span>
+    </div>
+  );
 };
 
-// Skeleton Loader
-const Skeleton = ({ className }) => <div className={`animate-pulse bg-slate-700 rounded ${className}`} />;
-
-// Avatar Component
-const Avatar = ({ nome, cognome, size = 'md', className = '' }) => {
-  const sizes = { sm: 'w-8 h-8 text-xs', md: 'w-10 h-10 text-sm', lg: 'w-12 h-12 text-base' };
-  return <div className={`${sizes[size]} ${getAvatarColor(nome)} rounded-full flex items-center justify-center font-bold text-white ${className}`}>{getInitials(nome, cognome)}</div>;
+// Avatar
+const Avatar = ({ nome, cognome, size = 'md', color }) => {
+  const sizes = { sm: 'w-8 h-8 text-xs', md: 'w-10 h-10 text-sm', lg: 'w-12 h-12 text-base', xl: 'w-14 h-14 text-lg' };
+  const colors = ['bg-violet-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
+  const bgColor = color || colors[Math.abs((nome || '').charCodeAt(0) || 0) % colors.length];
+  return <div className={`${sizes[size]} ${bgColor} rounded-full flex items-center justify-center font-semibold text-white shrink-0`}>{getInitials(nome, cognome)}</div>;
 };
 
-// Animated Counter
-const AnimatedNumber = ({ value, prefix = '', suffix = '' }) => {
-  const [display, setDisplay] = useState(0);
-  useEffect(() => { const duration = 500; const steps = 20; const increment = value / steps; let current = 0; const timer = setInterval(() => { current += increment; if (current >= value) { setDisplay(value); clearInterval(timer); } else { setDisplay(Math.floor(current)); }}, duration / steps); return () => clearInterval(timer); }, [value]);
-  return <span>{prefix}{fmt(display)}{suffix}</span>;
+// Status Badge
+const StatusBadge = ({ status, type = 'pipeline' }) => {
+  const config = type === 'pipeline' ? theme.status[status] : type === 'priority' ? theme.priority[status] : theme.status[status];
+  if (!config) return null;
+  return <span className="px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: config.bg, color: config.color }}>{status}</span>;
 };
+
+// Card Component
+const Card = ({ children, className = '', hover = false, onClick, padding = 'p-5' }) => (
+  <div onClick={onClick} className={`bg-[#18181B] border border-[#27272A] rounded-2xl ${padding} ${hover ? 'hover:border-[#3F3F46] hover:bg-[#1F1F23] cursor-pointer transition-all duration-200' : ''} ${className}`}>
+    {children}
+  </div>
+);
+
+// Section Header
+const SectionHeader = ({ icon: Icon, title, accent, action, actionLabel, onAction }) => (
+  <div className="flex items-center justify-between mb-5">
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `rgba(${accent}, 0.15)` }}>
+        <Icon className="w-5 h-5" style={{ color: `rgb(${accent})` }} />
+      </div>
+      <h2 className="text-lg font-semibold text-white">{title}</h2>
+    </div>
+    {action && (
+      <button onClick={onAction} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:bg-white/5" style={{ color: `rgb(${accent})` }}>
+        {actionLabel} <ChevronRight className="w-4 h-4" />
+      </button>
+    )}
+  </div>
+);
+
+// Metric Card
+const MetricCard = ({ label, value, subValue, icon: Icon, color, trend, onClick }) => (
+  <Card hover={!!onClick} onClick={onClick} className="relative overflow-hidden">
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-sm text-zinc-500 mb-1">{label}</p>
+        <p className="text-2xl font-semibold text-white">{typeof value === 'number' ? fmt(value) : value}</p>
+        {subValue && <p className="text-sm text-zinc-500 mt-1">{subValue}</p>}
+      </div>
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: `${color}15` }}>
+        <Icon className="w-5 h-5" style={{ color }} />
+      </div>
+    </div>
+    {trend !== undefined && (
+      <div className={`flex items-center gap-1 mt-3 text-sm ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+        {trend >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+        {Math.abs(trend)}% vs last month
+      </div>
+    )}
+    <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full opacity-5" style={{ background: color }} />
+  </Card>
+);
 
 // Progress Bar
-const ProgressBar = ({ value, max, color = 'bg-amber-500', showLabel = false }) => {
+const ProgressBar = ({ value, max, color = '#A78BFA', height = 'h-2', showLabel = false }) => {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
-  return <div className="relative"><div className="h-2 bg-slate-700 rounded-full overflow-hidden"><div className={`h-full ${color} rounded-full transition-all duration-700 ease-out`} style={{ width: `${pct}%` }} /></div>{showLabel && <span className="absolute right-0 -top-5 text-xs text-slate-400">{pct.toFixed(0)}%</span>}</div>;
+  return (
+    <div className="relative">
+      <div className={`${height} bg-zinc-800 rounded-full overflow-hidden`}>
+        <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${pct}%`, background: color }} />
+      </div>
+      {showLabel && <span className="absolute right-0 -top-6 text-xs text-zinc-500">{pct.toFixed(0)}%</span>}
+    </div>
+  );
 };
 
-// Stat Card - Clickable
-const StatCard = ({ icon: Icon, label, value, subValue, color, onClick, trend }) => (
-  <div onClick={onClick} className={`bg-gradient-to-br ${color} border border-white/10 rounded-xl p-4 cursor-pointer hover:scale-[1.02] transition-all duration-200 active:scale-[0.98] group`}>
-    <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center gap-2 text-white/70 text-xs"><Icon className="w-4 h-4" />{label}</div>
-      {trend !== undefined && <div className={`flex items-center gap-1 text-xs ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{trend >= 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}{Math.abs(trend)}%</div>}
+// Empty State
+const EmptyState = ({ icon: Icon, title, description, action, onAction }) => (
+  <Card className="text-center py-12">
+    <div className="w-16 h-16 rounded-2xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+      <Icon className="w-8 h-8 text-zinc-600" />
     </div>
-    <div className="text-2xl font-bold text-white"><AnimatedNumber value={value} /></div>
-    {subValue && <div className="text-white/60 text-xs mt-1">{subValue}</div>}
-    <ChevronRight className="w-4 h-4 text-white/30 absolute right-3 top-1/2 -translate-y-1/2 group-hover:text-white/60 transition-colors" />
+    <h3 className="text-lg font-medium text-white mb-2">{title}</h3>
+    <p className="text-zinc-500 text-sm mb-6 max-w-sm mx-auto">{description}</p>
+    {action && <button onClick={onAction} className="px-5 py-2.5 bg-white text-zinc-900 rounded-xl font-medium text-sm hover:bg-zinc-100 transition-colors">{action}</button>}
+  </Card>
+);
+
+// Input
+const Input = ({ label, ...props }) => (
+  <div>
+    {label && <label className="block text-sm text-zinc-400 mb-2">{label}</label>}
+    <input {...props} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] focus:ring-1 focus:ring-[#3F3F46] transition-all" />
   </div>
 );
 
-// FAB - Floating Action Button
-const FAB = ({ onClick, icon: Icon, label, color = 'bg-amber-500' }) => (
-  <button onClick={onClick} className={`fixed bottom-6 right-6 ${color} text-white rounded-full shadow-lg shadow-amber-500/30 flex items-center gap-2 px-5 py-4 hover:scale-105 transition-transform active:scale-95 z-40`}>
-    <Icon className="w-5 h-5" /><span className="font-semibold">{label}</span>
-  </button>
+// Select
+const Select = ({ label, children, ...props }) => (
+  <div>
+    {label && <label className="block text-sm text-zinc-400 mb-2">{label}</label>}
+    <select {...props} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3F3F46] transition-all appearance-none cursor-pointer">
+      {children}
+    </select>
+  </div>
 );
 
-// Bottom Sheet Modal
+// Button
+const Button = ({ children, variant = 'primary', size = 'md', icon: Icon, className = '', ...props }) => {
+  const variants = {
+    primary: 'bg-white text-zinc-900 hover:bg-zinc-100',
+    secondary: 'bg-zinc-800 text-white hover:bg-zinc-700',
+    ghost: 'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5',
+    danger: 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+  };
+  const sizes = { sm: 'px-3 py-1.5 text-xs', md: 'px-4 py-2.5 text-sm', lg: 'px-6 py-3 text-base' };
+  return (
+    <button {...props} className={`${variants[variant]} ${sizes[size]} rounded-xl font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${className}`}>
+      {Icon && <Icon className="w-4 h-4" />}{children}
+    </button>
+  );
+};
+
+// Modal
+const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
+  if (!isOpen) return null;
+  const sizes = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl' };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative bg-[#18181B] border border-[#27272A] rounded-2xl w-full ${sizes[size]} max-h-[85vh] overflow-hidden animate-scaleIn`}>
+        <div className="flex items-center justify-between p-5 border-b border-[#27272A]">
+          <h3 className="text-lg font-semibold text-white">{title}</h3>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="p-5 overflow-y-auto max-h-[calc(85vh-80px)]">{children}</div>
+      </div>
+    </div>
+  );
+};
+
+// Bottom Sheet
 const BottomSheet = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
-  return <div className="fixed inset-0 z-50"><div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} /><div className="absolute bottom-0 left-0 right-0 bg-slate-800 rounded-t-3xl border-t border-slate-700 max-h-[85vh] overflow-hidden animate-slideUp"><div className="flex items-center justify-between p-4 border-b border-slate-700"><h3 className="text-lg font-semibold text-white">{title}</h3><button onClick={onClose} className="text-slate-400 p-2"><X className="w-5 h-5" /></button></div><div className="overflow-y-auto max-h-[calc(85vh-60px)] p-4">{children}</div></div></div>;
+  return (
+    <div className="fixed inset-0 z-50 md:flex md:items-center md:justify-center md:p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute bottom-0 left-0 right-0 md:relative md:max-w-lg md:w-full bg-[#18181B] border-t md:border border-[#27272A] rounded-t-3xl md:rounded-2xl max-h-[90vh] overflow-hidden animate-slideUp">
+        <div className="flex items-center justify-between p-5 border-b border-[#27272A]">
+          <h3 className="text-lg font-semibold text-white">{title}</h3>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="p-5 overflow-y-auto max-h-[calc(90vh-80px)]">{children}</div>
+      </div>
+    </div>
+  );
 };
 
-// Quick Action Buttons
-const QuickActions = ({ phone, whatsapp, email, onEdit, onDelete, clienteName }) => (
-  <div className="flex gap-2 flex-wrap">
-    {phone && <a href={`tel:${phone}`} className="flex-1 min-w-[80px] bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-3 flex items-center justify-center gap-2 text-sm transition-colors"><Phone className="w-4 h-4" /></a>}
-    {(whatsapp || phone) && <a href={getWhatsAppLink(whatsapp || phone, clienteName ? `Ciao ${clienteName}, ` : '')} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-[80px] bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-3 flex items-center justify-center gap-2 text-sm transition-colors"><MessageCircle className="w-4 h-4" /></a>}
-    {email && <a href={`mailto:${email}`} className="flex-1 min-w-[80px] bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-3 flex items-center justify-center gap-2 text-sm transition-colors"><Mail className="w-4 h-4" /></a>}
-    {onEdit && <button onClick={onEdit} className="bg-slate-700 hover:bg-slate-600 text-white rounded-xl p-3 transition-colors"><Edit2 className="w-4 h-4" /></button>}
-  </div>
-);
-
-const Logo = ({ size = 'large', centered = false }) => <div className={centered ? 'flex justify-center w-full' : ''}><img src="/logo.png" alt="KeyPrime" className={size === 'large' ? 'h-16 sm:h-20 md:h-24 w-auto max-w-[250px]' : 'h-10 md:h-12 w-auto'} style={{ objectFit: 'contain' }} /></div>;
-
-const NotificationBell = ({ count, onClick }) => (
-  <button onClick={onClick} className="relative text-slate-400 hover:text-white p-2 transition-colors">
-    <Bell className="w-5 h-5" />
-    {count > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">{count > 9 ? '9+' : count}</span>}
+// Sidebar Nav Item
+const NavItem = ({ icon: Icon, label, active, onClick, accent, badge }) => (
+  <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${active ? 'bg-white/10 text-white' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
+    <Icon className="w-5 h-5" style={active ? { color: accent } : {}} />
+    <span className="font-medium flex-1">{label}</span>
+    {badge > 0 && <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">{badge}</span>}
   </button>
 );
 
-const NotificationPanel = ({ tasks, onClose, onGoToTask, onMarkAllRead, unreadIds }) => (
-  <div className="fixed inset-0 z-50" onClick={onClose}>
-    <div className="absolute right-4 top-16 w-80 max-h-96 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden animate-slideDown" onClick={e => e.stopPropagation()}>
-      <div className="bg-slate-700 px-4 py-3 flex justify-between items-center">
-        <span className="text-white font-semibold">Notifiche</span>
-        <div className="flex items-center gap-2">
-          {unreadIds.length > 0 && <button onClick={onMarkAllRead} className="text-xs text-amber-400 hover:text-amber-300">Segna lette</button>}
-          <button onClick={onClose} className="text-slate-400"><X className="w-4 h-4" /></button>
-        </div>
-      </div>
-      <div className="max-h-72 overflow-y-auto">
-        {tasks.length === 0 ? <div className="p-4 text-center text-slate-500">Nessuna notifica</div> : tasks.map(t => (
-          <div key={t.id} onClick={() => onGoToTask(t)} className={`p-3 border-b border-slate-700 cursor-pointer hover:bg-slate-700/50 transition-colors ${isOverdue(t.scadenza) ? 'bg-red-500/10' : ''} ${unreadIds.includes(t.id) ? 'border-l-2 border-l-amber-500' : ''}`}>
-            <div className="flex items-start gap-2">
-              <div className={`w-2 h-2 rounded-full mt-1.5 ${isOverdue(t.scadenza) ? 'bg-red-500' : isToday(t.scadenza) ? 'bg-amber-500' : 'bg-blue-500'}`} />
-              <div className="flex-1">
-                <div className="text-white text-sm font-medium">{t.titolo}</div>
-                <div className="text-slate-400 text-xs">{t.scadenza ? fmtDateTime(t.scadenza) : 'Senza scadenza'}</div>
-                {isOverdue(t.scadenza) && <span className="text-red-400 text-xs">Scaduto!</span>}
-                {unreadIds.includes(t.id) && <span className="text-amber-400 text-xs ml-2">● Nuovo</span>}
-              </div>
-              <span className={`px-2 py-0.5 rounded text-xs text-white ${taskPrioritaColors[t.priorita]}`}>{t.priorita}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+// Quick Actions Row
+const QuickActions = ({ phone, whatsapp, email, clienteName }) => (
+  <div className="flex gap-2">
+    {phone && <a href={`tel:${phone}`} className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl py-3 flex items-center justify-center gap-2 text-sm transition-colors"><Phone className="w-4 h-4" />Chiama</a>}
+    {(whatsapp || phone) && <a href={getWhatsAppLink(whatsapp || phone, clienteName ? `Ciao ${clienteName}, ` : '')} target="_blank" rel="noopener noreferrer" className="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl py-3 flex items-center justify-center gap-2 text-sm transition-colors"><MessageCircle className="w-4 h-4" />WhatsApp</a>}
+    {email && <a href={`mailto:${email}`} className="flex-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl py-3 flex items-center justify-center gap-2 text-sm transition-colors"><Mail className="w-4 h-4" />Email</a>}
   </div>
 );
 
-const MobileMenu = ({ isOpen, onClose, tabs, activeTab, setActiveTab, user, onLogout }) => { if (!isOpen) return null; return <div className="fixed inset-0 z-50"><div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} /><div className="absolute left-0 top-0 bottom-0 w-72 bg-slate-800 border-r border-slate-700 p-4 flex flex-col animate-slideRight"><div className="flex items-center justify-between mb-6"><Logo size="small" /><button onClick={onClose} className="text-slate-400"><X className="w-6 h-6" /></button></div><div className="space-y-2 flex-1">{tabs.map(t => <button key={t.id} onClick={() => { setActiveTab(t.id); onClose(); }} className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all ${activeTab === t.id ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-white hover:bg-slate-600'}`}>{t.icon} {t.label}</button>)}</div><div className="border-t border-slate-700 pt-4"><div className="bg-slate-700/50 rounded-xl p-4 mb-4"><div className="flex items-center gap-3"><Avatar nome={user?.nome} /><div><div className="text-white font-medium">{user?.nome}</div><div className="text-slate-400 text-xs">{user?.ruolo}</div></div></div></div><button onClick={onLogout} className="w-full bg-red-500/20 text-red-400 rounded-xl py-3 flex items-center justify-center gap-2 hover:bg-red-500/30 transition-colors"><LogOut className="w-5 h-5" /> Esci</button></div></div></div>; };
-
-const SelectWithOther = ({ value, onChange, options, placeholder, className }) => { const [showCustom, setShowCustom] = useState(false); const [cv, setCv] = useState(''); useEffect(() => { if (value && !options.includes(value) && value !== 'Altro') { setShowCustom(true); setCv(value); } }, [value, options]); return <div className="space-y-2"><select value={showCustom ? 'Altro' : value} onChange={(e) => { if (e.target.value === 'Altro') { setShowCustom(true); setCv(''); onChange(''); } else { setShowCustom(false); onChange(e.target.value); }}} className={className}><option value="">{placeholder}</option>{options.map(o => <option key={o} value={o}>{o}</option>)}</select>{showCustom && <input type="text" value={cv} onChange={(e) => { setCv(e.target.value); onChange(e.target.value); }} placeholder="Specifica..." className={className} autoFocus />}</div>; };
-
-const ClientSearch = ({ clienti, onSelect, onCreateNew, selectedClient }) => { const [search, setSearch] = useState(''); const [show, setShow] = useState(false); const filtered = search.length >= 2 ? clienti.filter(c => `${c.nome} ${c.cognome} ${c.telefono}`.toLowerCase().includes(search.toLowerCase())).slice(0, 5) : []; return <div className="relative">{selectedClient ? <div className="bg-emerald-900/30 border border-emerald-500/50 rounded-xl p-3 flex items-center gap-3"><Avatar nome={selectedClient.nome} cognome={selectedClient.cognome} size="sm" /><div className="flex-1"><div className="text-white font-medium">{selectedClient.nome} {selectedClient.cognome}</div><div className="text-emerald-400 text-xs">{selectedClient.telefono}</div></div><button onClick={() => onSelect(null)} className="text-slate-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button></div> : <><div className="relative"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input type="text" placeholder="Cerca cliente..." value={search} onChange={(e) => { setSearch(e.target.value); setShow(true); }} onFocus={() => setShow(true)} className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:border-amber-500 transition-colors" /></div>{show && search.length >= 2 && <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-xl">{filtered.map(c => <button key={c.id} onClick={() => { onSelect(c); setSearch(''); setShow(false); }} className="w-full text-left px-4 py-3 hover:bg-slate-700 border-b border-slate-700 last:border-0 flex items-center gap-3 transition-colors"><Avatar nome={c.nome} cognome={c.cognome} size="sm" /><div><div className="text-white text-sm">{c.nome} {c.cognome}</div><div className="text-slate-400 text-xs">{c.telefono}</div></div></button>)}{filtered.length === 0 && <div className="px-4 py-3 text-slate-400 text-sm">Nessuno</div>}<button onClick={() => { onCreateNew(); setShow(false); }} className="w-full text-left px-4 py-3 bg-blue-900/30 text-blue-400 flex items-center gap-2 hover:bg-blue-900/50 transition-colors"><UserPlus className="w-4 h-4" /> Nuovo</button></div>}{!search && <button onClick={onCreateNew} className="w-full mt-2 bg-slate-700/50 border border-dashed border-slate-600 rounded-xl py-3 text-slate-400 text-sm flex items-center justify-center gap-2 hover:border-amber-500 hover:text-amber-400 transition-colors"><UserPlus className="w-4 h-4" /> Nuovo cliente</button>}</>}</div>; };
-
+// ==================== MAIN APP ====================
 export default function App() {
   const [view, setView] = useState('login');
   const [user, setUser] = useState(null);
@@ -153,29 +261,27 @@ export default function App() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(null);
   const [toast, setToast] = useState(null);
-  const [showUserModal, setShowUserModal] = useState(false);
-  const [showClienteModal, setShowClienteModal] = useState(false);
-  const [showTaskModal, setShowTaskModal] = useState(false);
-  const [showNoteModal, setShowNoteModal] = useState(null);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showLeadDetail, setShowLeadDetail] = useState(null);
-  const [editingCliente, setEditingCliente] = useState(null);
-  const [editingUser, setEditingUser] = useState(null);
-  const [editingTask, setEditingTask] = useState(null);
-  const [adminTab, setAdminTab] = useState('dashboard');
-  const [filters, setFilters] = useState({ search: '', stato: '' });
-  const [convertingSale, setConvertingSale] = useState(null);
-  const [agentTab, setAgentTab] = useState('home');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedSales, setSelectedSales] = useState([]);
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const [selectedClienti, setSelectedClienti] = useState([]);
+  
+  // Modals
+  const [showForm, setShowForm] = useState(null);
+  const [showLeadDetail, setShowLeadDetail] = useState(null);
+  const [showClienteDetail, setShowClienteDetail] = useState(null);
+  const [showClienteModal, setShowClienteModal] = useState(null);
+  const [showTaskModal, setShowTaskModal] = useState(null);
+  const [showUserModal, setShowUserModal] = useState(null);
+  const [showNoteModal, setShowNoteModal] = useState(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [selectedCliente, setSelectedCliente] = useState(null);
-  const [clienteFilters, setClienteFilters] = useState({ search: '', stato: '', budgetMin: '', budgetMax: '', agente: '' });
-  const [showFilters, setShowFilters] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [convertingSale, setConvertingSale] = useState(null);
+  
+  // Filters
+  const [filters, setFilters] = useState({ search: '', stato: '' });
+  const [clienteFilters, setClienteFilters] = useState({ search: '', stato: '' });
+  
+  // Notifications
   const [readNotificationIds, setReadNotificationIds] = useState(() => {
     const saved = localStorage.getItem('keyprime_read_notifications');
     return saved ? JSON.parse(saved) : [];
@@ -183,8 +289,13 @@ export default function App() {
 
   const showToast = (message, type = 'success') => setToast({ message, type });
 
-  useEffect(() => { const s = localStorage.getItem('keyprime_user'); if (s) { const u = JSON.parse(s); setUser(u); setView(u.ruolo === 'admin' ? 'admin' : u.ruolo); } }, []);
+  // Auth
+  useEffect(() => {
+    const s = localStorage.getItem('keyprime_user');
+    if (s) { const u = JSON.parse(s); setUser(u); setView(u.ruolo === 'admin' ? 'admin' : u.ruolo); }
+  }, []);
   
+  // Data Loading
   const loadSales = async () => { setLoading(true); const { data } = await supabase.from('sales_with_commissions').select('*').order('created_at', { ascending: false }); setSales(data || []); setLoading(false); };
   const loadUsers = async () => { const { data } = await supabase.from('user_credentials').select('*').order('created_at', { ascending: false }); setUsers(data || []); };
   const loadClienti = async () => { const { data } = await supabase.from('clienti').select('*').order('created_at', { ascending: false }); setClienti(data || []); };
@@ -192,63 +303,146 @@ export default function App() {
   
   useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); if (user.ruolo === 'admin') loadUsers(); }}, [user]);
 
-  const handleLogin = async (username, password) => { setLoading(true); setError(null); const { data } = await supabase.from('user_credentials').select('*').eq('username', username).eq('password', password).eq('attivo', true).single(); if (!data) { setError('Credenziali non valide'); setLoading(false); return; } setUser(data); localStorage.setItem('keyprime_user', JSON.stringify(data)); setView(data.ruolo === 'admin' ? 'admin' : data.ruolo); setLoading(false); };
+  // Auth Handlers
+  const handleLogin = async (username, password) => {
+    setLoading(true); setError(null);
+    const { data } = await supabase.from('user_credentials').select('*').eq('username', username).eq('password', password).eq('attivo', true).single();
+    if (!data) { setError('Credenziali non valide'); setLoading(false); return; }
+    setUser(data); localStorage.setItem('keyprime_user', JSON.stringify(data));
+    setView(data.ruolo === 'admin' ? 'admin' : data.ruolo); setLoading(false);
+  };
+  
   const handleLogout = () => { setUser(null); localStorage.removeItem('keyprime_user'); setView('login'); setMobileMenuOpen(false); };
-  const changePassword = async (np) => { await supabase.from('user_credentials').update({ password: np }).eq('id', user.id); const u = { ...user, password: np }; setUser(u); localStorage.setItem('keyprime_user', JSON.stringify(u)); setShowPasswordModal(false); showToast('Password aggiornata!'); return true; };
-
-  const addLead = async (ld) => { let cliente_id = ld.cliente_id; if (!cliente_id && ld.cliente_nome) { const { data: cd } = await supabase.from('clienti').insert([{ nome: ld.cliente_nome, cognome: ld.cliente_cognome, email: ld.cliente_email, telefono: ld.cliente_telefono, whatsapp: ld.cliente_whatsapp, nazionalita: ld.cliente_nazionalita, budget_min: ld.cliente_budget_min ? parseFloat(ld.cliente_budget_min) : null, budget_max: ld.cliente_budget_max ? parseFloat(ld.cliente_budget_max) : null, note: ld.cliente_note, stato: 'nuovo', fonte: 'Agente', agente_riferimento: user?.nome, created_by: user?.nome, referente: user?.referente }]).select().single(); if (cd) cliente_id = cd.id; } await supabase.from('sales').insert([{ data: ld.data, developer: ld.developer, progetto: ld.progetto, zona: ld.zona, valore: ld.valore || 0, agente: ld.agente, segnalatore: ld.segnalatore, referente: user?.referente, commission_pct: 5, inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: ld.stato || 'lead', cliente_id }]); showToast('Lead salvato!'); setShowForm(null); loadSales(); loadClienti(); };
-
-  const addSale = async (sd) => { let cliente_id = sd.cliente_id; let cliente_nome = sd.cliente_nome || ''; if (!cliente_id && sd.nuovo_cliente_nome) { const { data: cd } = await supabase.from('clienti').insert([{ nome: sd.nuovo_cliente_nome, cognome: sd.nuovo_cliente_cognome || '', telefono: sd.nuovo_cliente_telefono || '', email: sd.nuovo_cliente_email || '', stato: 'acquistato', fonte: 'Vendita', agente_riferimento: user?.nome, created_by: user?.nome, referente: user?.referente }]).select().single(); if (cd) { cliente_id = cd.id; cliente_nome = cd.nome; } } if (sd.cliente_id) await supabase.from('clienti').update({ stato: 'acquistato' }).eq('id', sd.cliente_id); await supabase.from('sales').insert([{ data: sd.data, developer: sd.developer, progetto: sd.progetto, zona: sd.zona, valore: sd.valore, agente: sd.agente, segnalatore: sd.segnalatore, cliente_id, cliente_nome, referente: user?.referente, commission_pct: 5, inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: 'venduto' }]); showToast('Vendita registrata!'); setShowForm(null); loadSales(); loadClienti(); };
   
-  const convertLeadToSale = async (id, v) => { const sale = sales.find(s => s.id === id); if (sale?.cliente_id) await supabase.from('clienti').update({ stato: 'acquistato' }).eq('id', sale.cliente_id); await supabase.from('sales').update({ stato: 'venduto', valore: v }).eq('id', id); setConvertingSale(null); setShowLeadDetail(null); showToast('Vendita confermata!'); loadSales(); loadClienti(); };
-  const updateSale = async (id, u) => { const s = sales.find(x => x.id === id); if (u.pagato === true && !s?.pagato) { const tn = s.agente || s.segnalatore; if (tn) { const { data: tu } = await supabase.from('user_credentials').select('*').eq('nome', tn).single(); if (tu?.email) { const ca = Number(s.valore) * (s.commission_pct || 5) / 100 * (s.agente ? 0.7 : 0.3); await sendEmail(tu.email, '💰 Commissione', `<h2>Pagata!</h2><p>${s.progetto}: ${fmt(ca)} AED</p>`); }}} await supabase.from('sales').update(u).eq('id', id); loadSales(); };
-  const deleteSale = async (id) => { if (!window.confirm('Eliminare?')) return; await supabase.from('sales').delete().eq('id', id); showToast('Eliminato'); loadSales(); };
-  const deleteSelectedSales = async () => { if (!selectedSales.length || !window.confirm(`Eliminare ${selectedSales.length}?`)) return; for (const id of selectedSales) await supabase.from('sales').delete().eq('id', id); setSelectedSales([]); loadSales(); };
-  const toggleSelectSale = (id) => setSelectedSales(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
-  const selectAllSales = () => setSelectedSales(selectedSales.length === filteredSales.length ? [] : filteredSales.map(s => s.id));
-  
-  const createUser = async (d) => { await supabase.from('user_credentials').insert([d]); loadUsers(); setShowUserModal(false); showToast('Utente creato!'); return true; };
-  const updateUser = async (id, d) => { await supabase.from('user_credentials').update(d).eq('id', id); loadUsers(); setShowUserModal(false); setEditingUser(null); showToast('Salvato!'); return true; };
-  const deleteUser = async (id) => { if (!window.confirm('Eliminare?')) return; await supabase.from('user_credentials').delete().eq('id', id); loadUsers(); };
-  const deleteSelectedUsers = async () => { if (!selectedUsers.length) return; for (const id of selectedUsers) await supabase.from('user_credentials').delete().eq('id', id); setSelectedUsers([]); loadUsers(); };
-  const toggleSelectUser = (id) => setSelectedUsers(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
-  
-  const createCliente = async (d) => { await supabase.from('clienti').insert([{ ...d, created_by: user?.nome, referente: user?.referente }]); loadClienti(); setShowClienteModal(false); showToast('Cliente creato!'); return true; };
-  const updateCliente = async (id, d) => { await supabase.from('clienti').update(d).eq('id', id); loadClienti(); setShowClienteModal(false); if (selectedCliente?.id === id) setSelectedCliente({ ...selectedCliente, ...d }); showToast('Salvato!'); return true; };
-  const deleteCliente = async (id) => { if (!window.confirm('Eliminare?')) return; await supabase.from('clienti').delete().eq('id', id); loadClienti(); if (selectedCliente?.id === id) setSelectedCliente(null); };
-  const deleteSelectedClienti = async () => { if (!selectedClienti.length) return; for (const id of selectedClienti) await supabase.from('clienti').delete().eq('id', id); setSelectedClienti([]); loadClienti(); };
-  const toggleSelectCliente = (id) => setSelectedClienti(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
+  const changePassword = async (np) => {
+    await supabase.from('user_credentials').update({ password: np }).eq('id', user.id);
+    const u = { ...user, password: np }; setUser(u); localStorage.setItem('keyprime_user', JSON.stringify(u));
+    setShowPasswordModal(false); showToast('Password aggiornata');
+  };
 
-  const createTask = async (d) => { const { data: newTask } = await supabase.from('tasks').insert([{ ...d, created_by: user?.nome }]).select().single(); if (newTask && d.assegnato_a) { const assignee = users.find(u => u.nome === d.assegnato_a); if (assignee?.email) await notifyTaskAssigned(newTask, assignee.email); } loadTasks(); setShowTaskModal(false); setEditingTask(null); showToast('Task creato!'); return true; };
-  const updateTask = async (id, d) => { await supabase.from('tasks').update(d).eq('id', id); loadTasks(); setShowTaskModal(false); setEditingTask(null); showToast('Salvato!'); return true; };
-  const completeTask = async (id) => { const task = tasks.find(t => t.id === id); await supabase.from('tasks').update({ stato: 'completato', completed_at: new Date().toISOString() }).eq('id', id); if (task && user?.ruolo !== 'admin') await notifyTaskCompleted(task, user?.nome); showToast('Task completato!'); loadTasks(); };
-  const addTaskNote = async (id, note) => { const task = tasks.find(t => t.id === id); await supabase.from('tasks').update({ note }).eq('id', id); if (task && user?.ruolo !== 'admin') await notifyTaskNote(task, user?.nome, note); loadTasks(); setShowNoteModal(null); showToast('Nota inviata!'); };
+  // Sales Handlers
+  const addLead = async (ld) => {
+    let cliente_id = ld.cliente_id;
+    if (!cliente_id && ld.cliente_nome) {
+      const { data: cd } = await supabase.from('clienti').insert([{
+        nome: ld.cliente_nome, cognome: ld.cliente_cognome, email: ld.cliente_email, telefono: ld.cliente_telefono,
+        whatsapp: ld.cliente_whatsapp, nazionalita: ld.cliente_nazionalita, budget_min: ld.cliente_budget_min ? parseFloat(ld.cliente_budget_min) : null,
+        budget_max: ld.cliente_budget_max ? parseFloat(ld.cliente_budget_max) : null, note: ld.cliente_note,
+        stato: 'nuovo', fonte: 'Agente', agente_riferimento: user?.nome, created_by: user?.nome, referente: user?.referente
+      }]).select().single();
+      if (cd) cliente_id = cd.id;
+    }
+    await supabase.from('sales').insert([{
+      data: ld.data, developer: ld.developer, progetto: ld.progetto, zona: ld.zona, valore: ld.valore || 0,
+      agente: ld.agente, segnalatore: ld.segnalatore, referente: user?.referente, commission_pct: 5,
+      inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: ld.stato || 'lead', cliente_id
+    }]);
+    showToast('Lead aggiunto'); setShowForm(null); loadSales(); loadClienti();
+  };
+
+  const addSale = async (sd) => {
+    let cliente_id = sd.cliente_id;
+    if (!cliente_id && sd.nuovo_cliente_nome) {
+      const { data: cd } = await supabase.from('clienti').insert([{
+        nome: sd.nuovo_cliente_nome, cognome: sd.nuovo_cliente_cognome || '', telefono: sd.nuovo_cliente_telefono || '',
+        email: sd.nuovo_cliente_email || '', stato: 'acquistato', fonte: 'Vendita',
+        agente_riferimento: user?.nome, created_by: user?.nome, referente: user?.referente
+      }]).select().single();
+      if (cd) cliente_id = cd.id;
+    }
+    if (sd.cliente_id) await supabase.from('clienti').update({ stato: 'acquistato' }).eq('id', sd.cliente_id);
+    await supabase.from('sales').insert([{
+      data: sd.data, developer: sd.developer, progetto: sd.progetto, zona: sd.zona, valore: sd.valore,
+      agente: sd.agente, segnalatore: sd.segnalatore, cliente_id, cliente_nome: sd.cliente_nome,
+      referente: user?.referente, commission_pct: 5, inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: 'venduto'
+    }]);
+    showToast('Vendita registrata'); setShowForm(null); loadSales(); loadClienti();
+  };
+
+  const convertLeadToSale = async (id, v) => {
+    const sale = sales.find(s => s.id === id);
+    if (sale?.cliente_id) await supabase.from('clienti').update({ stato: 'acquistato' }).eq('id', sale.cliente_id);
+    await supabase.from('sales').update({ stato: 'venduto', valore: v }).eq('id', id);
+    setConvertingSale(null); setShowLeadDetail(null); showToast('Vendita confermata!'); loadSales(); loadClienti();
+  };
+
+  const updateSale = async (id, u) => {
+    const s = sales.find(x => x.id === id);
+    if (u.pagato === true && !s?.pagato) {
+      const tn = s.agente || s.segnalatore;
+      if (tn) {
+        const { data: tu } = await supabase.from('user_credentials').select('*').eq('nome', tn).single();
+        if (tu?.email) {
+          const ca = Number(s.valore) * (s.commission_pct || 5) / 100 * (s.agente ? 0.7 : 0.3);
+          await sendEmail(tu.email, '💰 Commissione', `<div style="font-family:-apple-system,sans-serif;padding:20px"><h2>Commissione Pagata!</h2><p>${s.progetto}: ${fmt(ca)} AED</p></div>`);
+        }
+      }
+    }
+    await supabase.from('sales').update(u).eq('id', id); loadSales();
+  };
+
+  const deleteSale = async (id) => { if (!window.confirm('Eliminare questo lead?')) return; await supabase.from('sales').delete().eq('id', id); showToast('Eliminato'); loadSales(); };
+
+  // Cliente Handlers
+  const createCliente = async (d) => { await supabase.from('clienti').insert([{ ...d, created_by: user?.nome, referente: user?.referente }]); loadClienti(); setShowClienteModal(null); showToast('Cliente creato'); };
+  const updateCliente = async (id, d) => { await supabase.from('clienti').update(d).eq('id', id); loadClienti(); setShowClienteModal(null); if (showClienteDetail?.id === id) setShowClienteDetail({ ...showClienteDetail, ...d }); showToast('Salvato'); };
+  const deleteCliente = async (id) => { if (!window.confirm('Eliminare?')) return; await supabase.from('clienti').delete().eq('id', id); loadClienti(); setShowClienteDetail(null); };
+
+  // Task Handlers
+  const createTask = async (d) => { await supabase.from('tasks').insert([{ ...d, created_by: user?.nome }]); loadTasks(); setShowTaskModal(null); showToast('Task creato'); };
+  const updateTask = async (id, d) => { await supabase.from('tasks').update(d).eq('id', id); loadTasks(); setShowTaskModal(null); showToast('Salvato'); };
+  const completeTask = async (id) => { const task = tasks.find(t => t.id === id); await supabase.from('tasks').update({ stato: 'completato', completed_at: new Date().toISOString() }).eq('id', id); if (task && user?.ruolo !== 'admin') await notifyTaskCompleted(task, user?.nome); showToast('Completato!'); loadTasks(); };
+  const addTaskNote = async (id, note) => { const task = tasks.find(t => t.id === id); await supabase.from('tasks').update({ note }).eq('id', id); if (task && user?.ruolo !== 'admin') await notifyTaskNote(task, user?.nome, note); loadTasks(); setShowNoteModal(null); showToast('Nota inviata'); };
   const deleteTask = async (id) => { if (!window.confirm('Eliminare?')) return; await supabase.from('tasks').delete().eq('id', id); loadTasks(); };
+
+  // User Handlers
+  const createUser = async (d) => { await supabase.from('user_credentials').insert([d]); loadUsers(); setShowUserModal(null); showToast('Utente creato'); };
+  const updateUser = async (id, d) => { await supabase.from('user_credentials').update(d).eq('id', id); loadUsers(); setShowUserModal(null); showToast('Salvato'); };
+  const deleteUser = async (id) => { if (!window.confirm('Eliminare?')) return; await supabase.from('user_credentials').delete().eq('id', id); loadUsers(); };
+
+  // Computed Data
+  const filteredSales = sales.filter(s => {
+    if (filters.search && !`${s.progetto} ${s.developer} ${s.agente} ${s.cliente_nome}`.toLowerCase().includes(filters.search.toLowerCase())) return false;
+    if (filters.stato && s.stato !== filters.stato) return false;
+    return true;
+  });
   
-  const exportToCSV = () => { let csv = '\ufeffData,Progetto,Cliente,Agente,Valore,Stato\n'; filteredSales.forEach(s => csv += `${s.data},"${s.progetto}","${s.cliente_nome||''}","${s.agente||''}",${s.valore},${s.stato}\n`); const l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); l.download = `KeyPrime_${new Date().toISOString().split('T')[0]}.csv`; l.click(); };
-  const exportClientiToCSV = () => { let csv = '\ufeffNome,Cognome,Telefono,Email,Stato,Budget,Agente\n'; filteredClienti.forEach(c => csv += `"${c.nome}","${c.cognome||''}","${c.telefono||''}","${c.email||''}","${c.stato}",${c.budget_max||''},"${c.agente_riferimento||''}"\n`); const l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); l.download = `Clienti_${new Date().toISOString().split('T')[0]}.csv`; l.click(); };
-  
-  const filteredSales = sales.filter(s => { if (filters.search && !`${s.progetto} ${s.developer} ${s.agente} ${s.cliente_nome}`.toLowerCase().includes(filters.search.toLowerCase())) return false; if (filters.stato && s.stato !== filters.stato) return false; return true; });
-  const filteredClienti = clienti.filter(c => { if (clienteFilters.search && !`${c.nome} ${c.cognome} ${c.email} ${c.telefono}`.toLowerCase().includes(clienteFilters.search.toLowerCase())) return false; if (clienteFilters.stato && c.stato !== clienteFilters.stato) return false; if (clienteFilters.agente && c.agente_riferimento !== clienteFilters.agente) return false; if (clienteFilters.budgetMin && (!c.budget_min || c.budget_min < parseFloat(clienteFilters.budgetMin))) return false; if (clienteFilters.budgetMax && (!c.budget_max || c.budget_max > parseFloat(clienteFilters.budgetMax))) return false; return true; });
-  const getClientSales = (clienteId) => sales.filter(s => s.cliente_id === clienteId);
-  const getClientTasks = (clienteId) => tasks.filter(t => t.cliente_id === clienteId);
-  const uniqueAgenti = [...new Set(clienti.map(c => c.agente_riferimento).filter(Boolean))];
-  
+  const filteredClienti = clienti.filter(c => {
+    if (clienteFilters.search && !`${c.nome} ${c.cognome} ${c.email} ${c.telefono}`.toLowerCase().includes(clienteFilters.search.toLowerCase())) return false;
+    if (clienteFilters.stato && c.stato !== clienteFilters.stato) return false;
+    return true;
+  });
+
   const myPendingTasks = tasks.filter(t => t.stato === 'pending' && (user?.ruolo === 'admin' || t.assegnato_a === user?.nome));
   const overdueTasks = myPendingTasks.filter(t => isOverdue(t.scadenza));
   const todayTasks = myPendingTasks.filter(t => isToday(t.scadenza));
   const notificationTasks = myPendingTasks.filter(t => isOverdue(t.scadenza) || isToday(t.scadenza));
   const unreadNotificationIds = notificationTasks.filter(t => !readNotificationIds.includes(t.id)).map(t => t.id);
   const notificationCount = unreadNotificationIds.length;
-  
-  const markNotificationsAsRead = () => { const allIds = [...new Set([...readNotificationIds, ...notificationTasks.map(t => t.id)])]; setReadNotificationIds(allIds); localStorage.setItem('keyprime_read_notifications', JSON.stringify(allIds)); };
-  const openNotifications = () => setShowNotifications(true);
-  const closeNotifications = () => { setShowNotifications(false); markNotificationsAsRead(); };
-  const goToTaskFromNotification = (task) => { setShowNotifications(false); if (user?.ruolo === 'admin') setAdminTab('tasks'); else setAgentTab('tasks'); };
-  
-  const ErrorBanner = () => error && <div className="bg-red-500/20 border border-red-500/50 text-red-300 rounded-xl px-4 py-3 mb-4 flex items-center gap-2"><AlertCircle className="w-5 h-5" />{error}<button onClick={() => setError(null)} className="ml-auto">X</button></div>;
 
-  if (view === 'login') return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6"><div className="w-full max-w-sm"><div className="text-center mb-8"><Logo size="large" centered /><p className="text-slate-400 text-sm mt-3">Sales Management</p></div>{error && <div className="bg-red-500/20 text-red-300 rounded-xl px-4 py-3 mb-4 text-sm">{error}</div>}<div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 backdrop-blur"><LoginForm onLogin={handleLogin} loading={loading} /></div></div></div>;
+  const markNotificationsAsRead = () => {
+    const allIds = [...new Set([...readNotificationIds, ...notificationTasks.map(t => t.id)])];
+    setReadNotificationIds(allIds);
+    localStorage.setItem('keyprime_read_notifications', JSON.stringify(allIds));
+  };
+
+  // ==================== LOGIN VIEW ====================
+  if (view === 'login') {
+    return (
+      <div className="min-h-screen bg-[#09090B] flex items-center justify-center p-6">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-10">
+            <img src="/logo.png" alt="KeyPrime" className="h-12 mx-auto mb-4" />
+            <p className="text-zinc-500 text-sm">Real Estate CRM</p>
+          </div>
+          
+          {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-4 py-3 mb-6 text-sm">{error}</div>}
+          
+          <LoginForm onLogin={handleLogin} loading={loading} />
+        </div>
+      </div>
+    );
+  }
 
   // ==================== AGENT/SEGNALATORE VIEW ====================
   if (view === 'agente' || view === 'segnalatore') {
@@ -261,342 +455,242 @@ export default function App() {
     const totalComm = myVendite.reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * rate), 0);
     const pagate = myVendite.filter(s => s.pagato).reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * rate), 0);
     const byStato = pipelineStati.reduce((acc, st) => { acc[st] = mySales.filter(s => (s.stato || 'lead') === st); return acc; }, {});
-    const recentSales = mySales.slice(0, 5);
-    
-    const agentTabs = [
-      { id: 'home', icon: '🏠', label: 'Home' },
-      { id: 'lista', icon: '📋', label: 'Lead' },
-      { id: 'pipeline', icon: '🎯', label: 'Pipeline' },
-      { id: 'tasks', icon: '📅', label: `Task${myTasks.length > 0 ? ` (${myTasks.length})` : ''}` },
-      { id: 'settings', icon: '⚙️', label: 'Impostazioni' }
+
+    const tabs = [
+      { id: 'home', icon: LayoutDashboard, label: 'Home', accent: theme.sections.dashboard.accent },
+      { id: 'leads', icon: Target, label: 'Lead', accent: theme.sections.pipeline.accent },
+      { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: myTasks.length },
+      { id: 'settings', icon: Settings, label: 'Account', accent: theme.sections.utenti.accent }
     ];
 
-    // Lead Detail Bottom Sheet
-    const LeadDetailSheet = ({ sale, onClose }) => {
-      const cliente = clienti.find(c => c.id === sale?.cliente_id);
-      const mc = (sale?.stato === 'venduto' || sale?.stato === 'incassato') ? Number(sale.valore) * (sale.commission_pct || 5) / 100 * rate : 0;
-      if (!sale) return null;
-      return (
-        <BottomSheet isOpen={!!sale} onClose={onClose} title={sale.progetto || 'Lead'}>
-          <div className="space-y-4">
-            {/* Status Badge */}
-            <div className="flex items-center justify-between">
-              <span className={`px-3 py-1 rounded-lg text-sm font-medium text-white ${pipelineColors[sale.stato || 'lead']}`}>{pipelineLabels[sale.stato || 'lead']}</span>
-              <span className="text-slate-400 text-sm">{fmtDate(sale.data)}</span>
-            </div>
-            
-            {/* Value Card */}
-            <div className="bg-gradient-to-r from-amber-500/20 to-amber-600/10 border border-amber-500/30 rounded-xl p-4">
-              <div className="text-amber-300 text-xs mb-1">Valore</div>
-              <div className="text-2xl font-bold text-white">{sale.valore > 0 ? `${fmt(sale.valore)} AED` : 'TBD'}</div>
-              {mc > 0 && <div className="text-emerald-400 text-sm mt-1">Commissione: {fmt(mc)} AED {sale.pagato ? '✓' : '(pending)'}</div>}
-            </div>
-            
-            {/* Details */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-700/50 rounded-xl p-3"><div className="text-slate-400 text-xs">Developer</div><div className="text-white font-medium">{sale.developer}</div></div>
-              <div className="bg-slate-700/50 rounded-xl p-3"><div className="text-slate-400 text-xs">Zona</div><div className="text-white font-medium">{sale.zona}</div></div>
-            </div>
-            
-            {/* Cliente */}
-            {cliente && (
-              <div className="bg-slate-700/50 rounded-xl p-4">
-                <div className="text-slate-400 text-xs mb-2">Cliente</div>
-                <div className="flex items-center gap-3 mb-3">
-                  <Avatar nome={cliente.nome} cognome={cliente.cognome} />
-                  <div>
-                    <div className="text-white font-medium">{cliente.nome} {cliente.cognome}</div>
-                    <div className="text-slate-400 text-sm">{cliente.telefono}</div>
-                  </div>
-                </div>
-                <QuickActions phone={cliente.telefono} whatsapp={cliente.whatsapp || cliente.telefono} email={cliente.email} clienteName={cliente.nome} />
-              </div>
-            )}
-            
-            {/* Pipeline Status Change */}
-            <div>
-              <div className="text-slate-400 text-xs mb-2">Cambia stato</div>
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {pipelineStati.slice(0, -1).map(st => (
-                  <button key={st} onClick={() => { updateSale(sale.id, { stato: st }); onClose(); }} className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${sale.stato === st ? `${pipelineColors[st]} text-white` : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}>{st}</button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Actions */}
-            <div className="flex gap-3 pt-2">
-              {['prenotato', 'trattativa'].includes(sale.stato) && (
-                <button onClick={() => { setConvertingSale(sale); onClose(); }} className="flex-1 bg-emerald-500 text-white rounded-xl py-3 font-semibold flex items-center justify-center gap-2"><DollarSign className="w-5 h-5" /> Registra Vendita</button>
-              )}
-            </div>
-          </div>
-        </BottomSheet>
-      );
-    };
-
     // Form View
-    if (showForm) return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-700 px-4 py-3">
-          <div className="flex items-center justify-between max-w-lg mx-auto">
-            <button onClick={() => setShowForm(null)} className="text-slate-400 flex items-center gap-2"><ChevronLeft className="w-5 h-5" />Indietro</button>
-            <span className="text-white font-medium">{showForm === 'lead' ? 'Nuovo Lead' : 'Nuova Vendita'}</span>
-            <div className="w-16"></div>
+    if (showForm) {
+      return (
+        <div className="min-h-screen bg-[#09090B]">
+          <div className="sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A] px-4 py-4">
+            <div className="flex items-center justify-between max-w-lg mx-auto">
+              <button onClick={() => setShowForm(null)} className="text-zinc-400 hover:text-white flex items-center gap-2 transition-colors">
+                <ChevronLeft className="w-5 h-5" />Indietro
+              </button>
+              <span className="text-white font-semibold">{showForm === 'lead' ? 'Nuovo Lead' : 'Nuova Vendita'}</span>
+              <div className="w-20" />
+            </div>
+          </div>
+          <div className="p-4 pb-32 max-w-lg mx-auto">
+            {showForm === 'lead' && <LeadForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addLead} />}
+            {showForm === 'vendita' && <SaleForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addSale} />}
+          </div>
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#09090B]/95 backdrop-blur-xl border-t border-[#27272A]">
+            <Button onClick={() => document.getElementById('submitBtn')?.click()} className="w-full py-4">
+              {showForm === 'lead' ? 'Salva Lead' : 'Registra Vendita'}
+            </Button>
           </div>
         </div>
-        <div className="p-4 pb-28 max-w-lg mx-auto">
-          {showForm === 'lead' && <LeadFormClean type={type} userName={user?.nome} clienti={myClienti} onSubmit={addLead} />}
-          {showForm === 'vendita' && <SaleFormClean type={type} userName={user?.nome} clienti={myClienti} onSubmit={addSale} />}
-        </div>
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur border-t border-slate-700">
-          <button onClick={() => document.getElementById('submitBtn')?.click()} className={`w-full ${showForm === 'lead' ? 'bg-blue-500' : 'bg-emerald-500'} text-white rounded-xl py-4 font-semibold text-lg transition-transform active:scale-[0.98]`}>
-            {showForm === 'lead' ? '💾 Salva Lead' : '✓ Registra Vendita'}
-          </button>
-        </div>
-      </div>
-    );
+      );
+    }
 
-    // Main Agent View
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
+      <div className="min-h-screen bg-[#09090B] pb-24">
         {/* Header */}
-        <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-700">
-          <div className="flex items-center justify-between px-4 py-3">
+        <div className="sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A]">
+          <div className="flex items-center justify-between px-4 py-4 max-w-5xl mx-auto">
             <div className="flex items-center gap-3">
-              <button onClick={() => setMobileMenuOpen(true)} className="md:hidden text-slate-400"><Menu className="w-6 h-6" /></button>
-              <Logo size="small" />
+              <img src="/logo.png" alt="KeyPrime" className="h-8" />
             </div>
-            <div className="flex items-center gap-2">
-              <NotificationBell count={notificationCount} onClick={openNotifications} />
-              <div className="hidden md:flex items-center gap-3">
-                <Avatar nome={user?.nome} size="sm" />
-                <div className="text-right">
-                  <div className="text-white text-sm font-medium">{user?.nome}</div>
-                  <div className="text-slate-400 text-xs">{type}</div>
-                </div>
-                <button onClick={handleLogout} className="text-slate-400 hover:text-white transition-colors"><LogOut className="w-5 h-5" /></button>
-              </div>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white transition-colors">
+                <Bell className="w-5 h-5" />
+                {notificationCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
+              </button>
+              <Avatar nome={user?.nome} size="sm" />
             </div>
           </div>
         </div>
-        
-        {showNotifications && <NotificationPanel tasks={notificationTasks} onClose={closeNotifications} onGoToTask={goToTaskFromNotification} onMarkAllRead={markNotificationsAsRead} unreadIds={unreadNotificationIds} />}
-        <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} tabs={agentTabs} activeTab={agentTab} setActiveTab={setAgentTab} user={user} onLogout={handleLogout} />
-        <LeadDetailSheet sale={showLeadDetail} onClose={() => setShowLeadDetail(null)} />
-        {convertingSale && <ConvertModal sale={convertingSale} onConvert={convertLeadToSale} onCancel={() => setConvertingSale(null)} />}
-        
-        <div className="p-4 max-w-4xl mx-auto">
-          <ErrorBanner />
-          
-          {/* Desktop Tabs */}
-          <div className="hidden md:flex gap-2 mb-6">
-            {agentTabs.map(t => (
-              <button key={t.id} onClick={() => setAgentTab(t.id)} className={`px-4 py-2 rounded-xl font-medium text-sm transition-all ${agentTab === t.id ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-white hover:bg-slate-600'}`}>{t.icon} {t.label}</button>
-            ))}
-            <div className="flex-1" />
-            <button onClick={loadSales} className="bg-slate-700 text-white rounded-xl px-3 py-2 hover:bg-slate-600 transition-colors"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>
-          </div>
+
+        {/* Content */}
+        <div className="p-4 max-w-5xl mx-auto space-y-6">
           
           {/* HOME TAB */}
-          {agentTab === 'home' && (
-            <div className="space-y-6">
+          {activeTab === 'home' && (
+            <>
               {/* Welcome */}
-              <div className="bg-gradient-to-r from-amber-500/20 via-amber-600/10 to-transparent border border-amber-500/20 rounded-2xl p-5">
-                <div className="flex items-center gap-4">
-                  <Avatar nome={user?.nome} size="lg" />
-                  <div>
-                    <div className="text-slate-400 text-sm">Bentornato,</div>
-                    <div className="text-2xl font-bold text-white">{user?.nome} 👋</div>
-                  </div>
-                </div>
+              <div className="pt-2">
+                <p className="text-zinc-500 text-sm">Bentornato,</p>
+                <h1 className="text-2xl font-semibold text-white">{user?.nome} 👋</h1>
               </div>
-              
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 gap-3">
-                <div onClick={() => setAgentTab('lista')} className="bg-gradient-to-br from-blue-500/20 to-blue-600/30 border border-blue-500/30 rounded-xl p-4 cursor-pointer hover:scale-[1.02] transition-all active:scale-[0.98]">
-                  <div className="flex items-center gap-2 text-blue-300 text-xs mb-1"><Target className="w-4 h-4" />Lead Attivi</div>
-                  <div className="text-3xl font-bold text-white">{mySales.filter(s => s.stato !== 'venduto' && s.stato !== 'incassato').length}</div>
-                </div>
-                <div onClick={() => setAgentTab('lista')} className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/30 border border-emerald-500/30 rounded-xl p-4 cursor-pointer hover:scale-[1.02] transition-all active:scale-[0.98]">
-                  <div className="flex items-center gap-2 text-emerald-300 text-xs mb-1"><TrendingUp className="w-4 h-4" />Vendite</div>
-                  <div className="text-3xl font-bold text-white">{myVendite.length}</div>
-                </div>
-              </div>
-              
-              {/* Commission Card */}
-              <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-white font-semibold">Commissioni</div>
-                  <div className="text-amber-400 text-sm font-medium">{fmt(totalComm)} AED totali</div>
-                </div>
-                <ProgressBar value={pagate} max={totalComm} color="bg-emerald-500" />
-                <div className="flex justify-between mt-2 text-xs">
-                  <span className="text-emerald-400">✓ Pagate: {fmt(pagate)}</span>
-                  <span className="text-amber-400">◌ Pending: {fmt(totalComm - pagate)}</span>
-                </div>
-              </div>
-              
-              {/* Tasks Alert */}
-              {myTasks.length > 0 && (
-                <div onClick={() => setAgentTab('tasks')} className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 cursor-pointer hover:bg-amber-500/20 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-amber-500/20 rounded-full p-2"><Bell className="w-5 h-5 text-amber-400" /></div>
-                    <div className="flex-1">
-                      <div className="text-white font-medium">Hai {myTasks.length} task da completare</div>
-                      <div className="text-amber-300 text-sm">{overdueTasks.filter(t => t.assegnato_a === user?.nome).length > 0 && `${overdueTasks.filter(t => t.assegnato_a === user?.nome).length} scaduti!`}</div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-amber-400" />
-                  </div>
-                </div>
-              )}
-              
-              {/* Recent Activity */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-white font-semibold">Ultimi Lead</div>
-                  <button onClick={() => setAgentTab('lista')} className="text-amber-400 text-sm flex items-center gap-1">Vedi tutti <ChevronRight className="w-4 h-4" /></button>
-                </div>
-                <div className="space-y-2">
-                  {recentSales.length === 0 ? (
-                    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 text-center text-slate-500">Nessun lead ancora. Inizia aggiungendo il primo!</div>
-                  ) : recentSales.map(s => (
-                    <div key={s.id} onClick={() => setShowLeadDetail(s)} className="bg-slate-800 border border-slate-700 rounded-xl p-4 cursor-pointer hover:border-amber-500/50 transition-all active:scale-[0.99]">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-2 h-10 rounded-full ${pipelineColors[s.stato || 'lead']}`} />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-white font-medium truncate">{s.progetto || 'TBD'}</span>
-                            <span className={`px-2 py-0.5 rounded text-xs text-white ${pipelineColors[s.stato || 'lead']}`}>{s.stato}</span>
-                          </div>
-                          <div className="text-slate-400 text-xs truncate">{s.developer} • {s.zona}</div>
-                        </div>
-                        <div className="text-right">
-                          {s.valore > 0 ? <div className="text-amber-400 font-semibold">{fmt(s.valore)}</div> : <div className="text-slate-500 text-sm">TBD</div>}
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-slate-500" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
+
               {/* Quick Actions */}
               <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => setShowForm('lead')} className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl p-4 flex flex-col items-center gap-2 transition-colors">
-                  <Target className="w-6 h-6" />
-                  <span className="font-semibold">Nuovo Lead</span>
+                <button onClick={() => setShowForm('lead')} className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 rounded-2xl p-5 text-left hover:border-blue-500/40 transition-all">
+                  <Target className="w-6 h-6 text-blue-400 mb-3" />
+                  <span className="text-white font-medium block">Nuovo Lead</span>
+                  <span className="text-zinc-500 text-sm">Aggiungi prospect</span>
                 </button>
-                <button onClick={() => setShowForm('vendita')} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl p-4 flex flex-col items-center gap-2 transition-colors">
-                  <DollarSign className="w-6 h-6" />
-                  <span className="font-semibold">Vendita Diretta</span>
+                <button onClick={() => setShowForm('vendita')} className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/20 rounded-2xl p-5 text-left hover:border-emerald-500/40 transition-all">
+                  <DollarSign className="w-6 h-6 text-emerald-400 mb-3" />
+                  <span className="text-white font-medium block">Vendita</span>
+                  <span className="text-zinc-500 text-sm">Registra vendita</span>
                 </button>
               </div>
-            </div>
-          )}
-          
-          {/* LISTA TAB */}
-          {agentTab === 'lista' && (
-            <div className="space-y-3">
-              {mySales.length === 0 ? (
-                <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center">
-                  <Target className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <div className="text-slate-400 mb-4">Nessun lead ancora</div>
-                  <button onClick={() => setShowForm('lead')} className="bg-amber-500 text-slate-900 px-6 py-3 rounded-xl font-semibold">+ Aggiungi Lead</button>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-3">
+                <MetricCard label="Lead Attivi" value={mySales.filter(s => s.stato !== 'venduto' && s.stato !== 'incassato').length} icon={Target} color="#60A5FA" onClick={() => setActiveTab('leads')} />
+                <MetricCard label="Vendite" value={myVendite.length} icon={TrendingUp} color="#34D399" onClick={() => setActiveTab('leads')} />
+              </div>
+
+              {/* Commission */}
+              <Card>
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-white font-medium">Commissioni</span>
+                  <span className="text-zinc-400 text-sm">{fmt(totalComm)} AED totali</span>
                 </div>
-              ) : mySales.map(s => {
-                const mc = (s.stato === 'venduto' || s.stato === 'incassato') ? Number(s.valore) * (s.commission_pct || 5) / 100 * rate : 0;
-                return (
-                  <div key={s.id} onClick={() => setShowLeadDetail(s)} className="bg-slate-800 border border-slate-700 rounded-xl p-4 cursor-pointer hover:border-amber-500/50 transition-all active:scale-[0.99]">
-                    <div className="flex items-start gap-3">
-                      <div className={`w-1.5 h-full min-h-[60px] rounded-full ${pipelineColors[s.stato || 'lead']}`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-white font-medium">{s.progetto || 'TBD'}</span>
-                          <span className={`px-2 py-0.5 rounded text-xs text-white ${pipelineColors[s.stato || 'lead']}`}>{s.stato}</span>
-                        </div>
-                        <div className="text-slate-400 text-sm">{s.developer} • {s.zona}</div>
-                        {s.cliente_nome && <div className="text-blue-400 text-xs mt-1 flex items-center gap-1"><User className="w-3 h-3" />{s.cliente_nome}</div>}
-                        {mc > 0 && <div className="text-xs mt-2"><span className="text-slate-400">Comm: </span><span className="text-amber-300">{fmt(mc)} AED</span><span className={`ml-2 px-1.5 py-0.5 rounded ${s.pagato ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>{s.pagato ? '✓ Pagato' : 'Pending'}</span></div>}
-                      </div>
-                      <div className="text-right">
-                        {s.valore > 0 ? <div className="text-amber-400 font-bold text-lg">{fmt(s.valore)}</div> : <div className="text-slate-500">TBD</div>}
-                        <div className="text-slate-500 text-xs">{fmtDate(s.data)}</div>
-                      </div>
+                <ProgressBar value={pagate} max={totalComm || 1} color="#34D399" />
+                <div className="flex justify-between mt-3 text-sm">
+                  <span className="text-emerald-400">Pagate: {fmt(pagate)}</span>
+                  <span className="text-zinc-500">Pending: {fmt(totalComm - pagate)}</span>
+                </div>
+              </Card>
+
+              {/* Task Alert */}
+              {myTasks.length > 0 && (
+                <Card hover onClick={() => setActiveTab('tasks')} className="border-pink-500/20 bg-pink-500/5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-pink-500/20 flex items-center justify-center">
+                      <ListTodo className="w-6 h-6 text-pink-400" />
                     </div>
+                    <div className="flex-1">
+                      <p className="text-white font-medium">{myTasks.length} task da completare</p>
+                      <p className="text-zinc-500 text-sm">{overdueTasks.filter(t => t.assegnato_a === user?.nome).length > 0 && `${overdueTasks.filter(t => t.assegnato_a === user?.nome).length} scaduti`}</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-zinc-500" />
                   </div>
-                );
-              })}
-            </div>
-          )}
-          
-          {/* PIPELINE TAB */}
-          {agentTab === 'pipeline' && (
-            <div className="space-y-4">
-              {pipelineStati.slice(0, -1).map(st => (
-                <div key={st} className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-                  <div className={`${pipelineColors[st]} px-4 py-2 flex justify-between items-center`}>
-                    <span className="text-white font-medium">{pipelineLabels[st]}</span>
-                    <span className="bg-white/20 px-2 py-0.5 rounded-full text-white text-sm">{byStato[st]?.length || 0}</span>
-                  </div>
-                  <div className="p-3 space-y-2">
-                    {byStato[st]?.length === 0 ? (
-                      <div className="text-slate-500 text-sm text-center py-2">Nessuno</div>
-                    ) : byStato[st]?.map(s => (
-                      <div key={s.id} onClick={() => setShowLeadDetail(s)} className="bg-slate-700/50 rounded-lg p-3 cursor-pointer hover:bg-slate-700 transition-colors">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="text-white text-sm font-medium">{s.progetto || 'TBD'}</div>
-                            {s.cliente_nome && <div className="text-blue-400 text-xs">{s.cliente_nome}</div>}
+                </Card>
+              )}
+
+              {/* Recent Leads */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold text-white">Lead Recenti</h2>
+                  <button onClick={() => setActiveTab('leads')} className="text-sm text-violet-400 flex items-center gap-1">Tutti <ChevronRight className="w-4 h-4" /></button>
+                </div>
+                {mySales.length === 0 ? (
+                  <EmptyState icon={Target} title="Nessun lead" description="Inizia aggiungendo il tuo primo lead" action="Nuovo Lead" onAction={() => setShowForm('lead')} />
+                ) : (
+                  <div className="space-y-2">
+                    {mySales.slice(0, 5).map(s => (
+                      <Card key={s.id} hover onClick={() => setShowLeadDetail(s)} padding="p-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-1 h-12 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-medium truncate">{s.progetto || 'TBD'}</p>
+                            <p className="text-zinc-500 text-sm truncate">{s.developer} • {s.zona}</p>
                           </div>
-                          {s.valore > 0 && <div className="text-amber-400 text-sm font-medium">{fmt(s.valore)}</div>}
+                          <div className="text-right">
+                            <p className="text-white font-medium">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
+                            <StatusBadge status={s.stato || 'lead'} />
+                          </div>
                         </div>
-                      </div>
+                      </Card>
                     ))}
                   </div>
-                </div>
-              ))}
-            </div>
+                )}
+              </div>
+            </>
           )}
-          
+
+          {/* LEADS TAB */}
+          {activeTab === 'leads' && (
+            <>
+              <SectionHeader icon={Target} title="I tuoi Lead" accent="96,165,250" action actionLabel="Nuovo" onAction={() => setShowForm('lead')} />
+              
+              {/* Pipeline Summary */}
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {pipelineStati.slice(0, 4).map(st => (
+                  <div key={st} className="flex-1 min-w-[80px] bg-[#18181B] border border-[#27272A] rounded-xl p-3 text-center">
+                    <div className="text-lg font-semibold text-white">{byStato[st]?.length || 0}</div>
+                    <div className="text-xs text-zinc-500 capitalize">{st}</div>
+                  </div>
+                ))}
+              </div>
+
+              {mySales.length === 0 ? (
+                <EmptyState icon={Target} title="Nessun lead" description="Aggiungi il tuo primo lead per iniziare" action="Nuovo Lead" onAction={() => setShowForm('lead')} />
+              ) : (
+                <div className="space-y-2">
+                  {mySales.map(s => {
+                    const mc = (s.stato === 'venduto' || s.stato === 'incassato') ? Number(s.valore) * (s.commission_pct || 5) / 100 * rate : 0;
+                    return (
+                      <Card key={s.id} hover onClick={() => setShowLeadDetail(s)} padding="p-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-1 h-14 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-white font-medium truncate">{s.progetto || 'TBD'}</p>
+                              <StatusBadge status={s.stato || 'lead'} />
+                            </div>
+                            <p className="text-zinc-500 text-sm">{s.developer} • {s.zona}</p>
+                            {s.cliente_nome && <p className="text-blue-400 text-sm mt-1">{s.cliente_nome}</p>}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-white font-semibold">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
+                            {mc > 0 && <p className="text-emerald-400 text-xs">{fmt(mc)} AED</p>}
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
           {/* TASKS TAB */}
-          {agentTab === 'tasks' && <AgentTasksTab tasks={myTasks} allTasks={tasks.filter(t => t.assegnato_a === user?.nome)} clienti={clienti} onComplete={completeTask} onAddNote={(t) => setShowNoteModal(t)} />}
-          
+          {activeTab === 'tasks' && <AgentTasksTab tasks={myTasks} allTasks={tasks.filter(t => t.assegnato_a === user?.nome)} clienti={clienti} onComplete={completeTask} onAddNote={(t) => setShowNoteModal(t)} />}
+
           {/* SETTINGS TAB */}
-          {agentTab === 'settings' && (
-            <div className="space-y-4">
-              <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-                <div className="flex items-center gap-4 mb-4">
-                  <Avatar nome={user?.nome} size="lg" />
+          {activeTab === 'settings' && (
+            <>
+              <div className="pt-2 mb-6">
+                <h1 className="text-2xl font-semibold text-white">Account</h1>
+              </div>
+              
+              <Card>
+                <div className="flex items-center gap-4 mb-6">
+                  <Avatar nome={user?.nome} size="xl" />
                   <div>
-                    <div className="text-white font-semibold text-lg">{user?.nome}</div>
-                    <div className="text-slate-400 text-sm">{type} • {user?.email || 'No email'}</div>
+                    <p className="text-xl font-semibold text-white">{user?.nome}</p>
+                    <p className="text-zinc-500">{type} • {user?.email || 'No email'}</p>
                   </div>
                 </div>
-                <div className="border-t border-slate-700 pt-4">
-                  <button onClick={() => setShowPasswordModal(true)} className="w-full bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-3 flex items-center justify-center gap-2 transition-colors">
-                    <Key className="w-4 h-4" /> Cambia Password
-                  </button>
+                <div className="space-y-2">
+                  <Button variant="secondary" icon={Key} onClick={() => setShowPasswordModal(true)} className="w-full justify-start">Cambia Password</Button>
+                  <Button variant="danger" icon={LogOut} onClick={handleLogout} className="w-full justify-start">Esci</Button>
                 </div>
-              </div>
-              <button onClick={handleLogout} className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl py-3 flex items-center justify-center gap-2 transition-colors">
-                <LogOut className="w-5 h-5" /> Esci
-              </button>
-            </div>
+              </Card>
+            </>
           )}
         </div>
-        
-        {/* Bottom Navigation Mobile */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-700 px-2 py-2 z-30">
-          <div className="flex justify-around">
-            {agentTabs.slice(0, 4).map(t => (
-              <button key={t.id} onClick={() => setAgentTab(t.id)} className={`flex flex-col items-center py-2 px-4 rounded-xl transition-all ${agentTab === t.id ? 'text-amber-400 bg-amber-500/10' : 'text-slate-400'}`}>
-                <span className="text-lg">{t.icon}</span>
-                <span className="text-xs mt-1">{t.label.split(' ')[0]}</span>
+
+        {/* Bottom Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 bg-[#09090B]/95 backdrop-blur-xl border-t border-[#27272A] px-4 py-2 z-30">
+          <div className="flex justify-around max-w-md mx-auto">
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex flex-col items-center py-2 px-4 rounded-xl transition-all ${activeTab === t.id ? 'text-white' : 'text-zinc-500'}`}>
+                <div className="relative">
+                  <t.icon className="w-6 h-6" style={activeTab === t.id ? { color: t.accent } : {}} />
+                  {t.badge > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">{t.badge}</span>}
+                </div>
+                <span className="text-xs mt-1">{t.label}</span>
               </button>
             ))}
           </div>
         </div>
-        
+
+        {/* Modals */}
+        {showLeadDetail && <LeadDetailSheet sale={showLeadDetail} cliente={clienti.find(c => c.id === showLeadDetail?.cliente_id)} rate={rate} onClose={() => setShowLeadDetail(null)} onUpdateSale={updateSale} onConvert={() => setConvertingSale(showLeadDetail)} />}
+        {convertingSale && <ConvertModal sale={convertingSale} onConvert={convertLeadToSale} onCancel={() => setConvertingSale(null)} />}
+        {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} onClose={() => { setShowNotifications(false); markNotificationsAsRead(); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} />}
         {showPasswordModal && <PasswordModal currentPassword={user?.password} onSave={changePassword} onClose={() => setShowPasswordModal(false)} />}
         {showNoteModal && <NoteModal task={showNoteModal} onSave={addTaskNote} onClose={() => setShowNoteModal(null)} />}
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -607,305 +701,349 @@ export default function App() {
   // ==================== ADMIN VIEW ====================
   if (view === 'admin') {
     const vendite = sales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
-    const totals = sales.reduce((a, s) => { const c = Number(s.valore) * (s.commission_pct || 5) / 100; const ag = s.agente ? c * 0.7 : 0; const sg = s.segnalatore ? c * 0.3 : 0; const n = c - ag - sg; const p = s.referente === 'Pellegrino' ? n * 0.7 : (s.referente === 'Giovanni' ? n * 0.3 : 0); const g = s.referente === 'Giovanni' ? n * 0.7 : (s.referente === 'Pellegrino' ? n * 0.3 : 0); return { valore: a.valore + Number(s.valore), comm: a.comm + c, ag: a.ag + ag, sg: a.sg + sg, netto: a.netto + n, pell: a.pell + p, giov: a.giov + g }; }, { valore: 0, comm: 0, ag: 0, sg: 0, netto: 0, pell: 0, giov: 0 });
+    const totals = sales.reduce((a, s) => {
+      const c = Number(s.valore) * (s.commission_pct || 5) / 100;
+      const ag = s.agente ? c * 0.7 : 0;
+      const sg = s.segnalatore ? c * 0.3 : 0;
+      const n = c - ag - sg;
+      const p = s.referente === 'Pellegrino' ? n * 0.7 : (s.referente === 'Giovanni' ? n * 0.3 : 0);
+      const g = s.referente === 'Giovanni' ? n * 0.7 : (s.referente === 'Pellegrino' ? n * 0.3 : 0);
+      return { valore: a.valore + Number(s.valore), comm: a.comm + c, ag: a.ag + ag, sg: a.sg + sg, netto: a.netto + n, pell: a.pell + p, giov: a.giov + g };
+    }, { valore: 0, comm: 0, ag: 0, sg: 0, netto: 0, pell: 0, giov: 0 });
+    
     const byStato = pipelineStati.reduce((a, st) => { a[st] = sales.filter(s => (s.stato || 'lead') === st); return a; }, {});
     const byMonth = sales.reduce((a, s) => { const m = s.data?.substring(0, 7) || 'N/A'; a[m] = (a[m] || 0) + Number(s.valore); return a; }, {});
     const byAgente = sales.reduce((a, s) => { if (s.agente) a[s.agente] = (a[s.agente] || 0) + Number(s.valore); return a; }, {});
-    const byZona = sales.reduce((a, s) => { if (s.zona) a[s.zona] = (a[s.zona] || 0) + Number(s.valore); return a; }, {});
     const pendingTasks = tasks.filter(t => t.stato === 'pending');
-    const adminTabs = [
-      { id: 'dashboard', icon: '📊', label: 'Dashboard' },
-      { id: 'vendite', icon: '💰', label: 'Vendite' },
-      { id: 'pipeline', icon: '🎯', label: 'Pipeline' },
-      { id: 'clienti', icon: '👥', label: 'CRM' },
-      { id: 'tasks', icon: '📅', label: `Task${pendingTasks.length > 0 ? ` (${pendingTasks.length})` : ''}` },
-      { id: 'utenti', icon: '⚙️', label: 'Utenti' }
+
+    const tabs = [
+      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', accent: theme.sections.dashboard.accent },
+      { id: 'vendite', icon: DollarSign, label: 'Vendite', accent: theme.sections.vendite.accent },
+      { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.pipeline.accent },
+      { id: 'crm', icon: Users, label: 'CRM', accent: theme.sections.crm.accent },
+      { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: pendingTasks.length },
+      { id: 'utenti', icon: Settings, label: 'Team', accent: theme.sections.utenti.accent }
     ];
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        {/* Header */}
-        <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-700">
-          <div className="flex items-center justify-between px-4 py-3 max-w-7xl mx-auto">
-            <div className="flex items-center gap-3">
-              <button onClick={() => setMobileMenuOpen(true)} className="md:hidden text-slate-400"><Menu className="w-6 h-6" /></button>
-              <Logo size="small" />
+      <div className="min-h-screen bg-[#09090B] flex">
+        {/* Sidebar - Desktop */}
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#0F0F11] p-4">
+          <div className="mb-8">
+            <img src="/logo.png" alt="KeyPrime" className="h-8" />
+          </div>
+          
+          <nav className="space-y-1 flex-1">
+            {tabs.map(t => (
+              <NavItem key={t.id} icon={t.icon} label={t.label} active={activeTab === t.id} onClick={() => { setActiveTab(t.id); setShowClienteDetail(null); }} accent={t.accent} badge={t.badge} />
+            ))}
+          </nav>
+          
+          <div className="border-t border-[#27272A] pt-4 mt-4">
+            <div className="flex items-center gap-3 px-4 py-3">
+              <Avatar nome={user?.nome} size="sm" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{user?.nome}</p>
+                <p className="text-xs text-zinc-500">Admin</p>
+              </div>
+              <button onClick={handleLogout} className="text-zinc-500 hover:text-white transition-colors"><LogOut className="w-4 h-4" /></button>
             </div>
-            <div className="flex items-center gap-2">
-              <NotificationBell count={notificationCount} onClick={openNotifications} />
-              <div className="hidden md:flex items-center gap-3">
-                <Avatar nome={user?.nome} size="sm" />
-                <div className="text-right">
-                  <div className="text-white text-sm font-medium">{user?.nome}</div>
-                  <div className="text-slate-400 text-xs">Admin</div>
-                </div>
-                <button onClick={handleLogout} className="text-slate-400 hover:text-white transition-colors"><LogOut className="w-5 h-5" /></button>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto">
+          {/* Mobile Header */}
+          <div className="lg:hidden sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A]">
+            <div className="flex items-center justify-between px-4 py-4">
+              <button onClick={() => setMobileMenuOpen(true)} className="text-zinc-400"><Menu className="w-6 h-6" /></button>
+              <img src="/logo.png" alt="KeyPrime" className="h-8" />
+              <button onClick={() => setShowNotifications(true)} className="relative text-zinc-400">
+                <Bell className="w-5 h-5" />
+                {notificationCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">{notificationCount}</span>}
+              </button>
+            </div>
+            {/* Mobile Tabs */}
+            <div className="flex gap-1 px-4 pb-3 overflow-x-auto">
+              {tabs.map(t => (
+                <button key={t.id} onClick={() => { setActiveTab(t.id); setShowClienteDetail(null); }} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${activeTab === t.id ? 'text-white' : 'text-zinc-500 hover:text-white'}`} style={activeTab === t.id ? { background: `${t.accent}20`, color: t.accent } : {}}>
+                  <t.icon className="w-4 h-4" />
+                  {t.label}
+                  {t.badge > 0 && <span className="px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">{t.badge}</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="p-6 max-w-7xl mx-auto">
+            {/* Desktop Header */}
+            <div className="hidden lg:flex items-center justify-between mb-8">
+              <div>
+                <h1 className="text-2xl font-semibold text-white capitalize">{activeTab}</h1>
+                <p className="text-zinc-500 text-sm mt-1">
+                  {activeTab === 'dashboard' && 'Panoramica generale'}
+                  {activeTab === 'vendite' && `${sales.length} transazioni totali`}
+                  {activeTab === 'pipeline' && 'Gestisci il flusso di vendita'}
+                  {activeTab === 'crm' && `${clienti.length} clienti in database`}
+                  {activeTab === 'tasks' && `${pendingTasks.length} task da completare`}
+                  {activeTab === 'utenti' && `${users.length} membri del team`}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white transition-colors">
+                  <Bell className="w-5 h-5" />
+                  {notificationCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
+                </button>
+                <Button variant="secondary" icon={RefreshCw} onClick={() => { loadSales(); loadClienti(); loadTasks(); loadUsers(); }}>Aggiorna</Button>
               </div>
             </div>
+
+            {/* DASHBOARD */}
+            {activeTab === 'dashboard' && (
+              <div className="space-y-6">
+                {/* Alerts */}
+                {(todayTasks.length > 0 || overdueTasks.length > 0) && (
+                  <Card hover onClick={() => setActiveTab('tasks')} className="border-pink-500/20">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-pink-500/20 flex items-center justify-center">
+                        <Bell className="w-6 h-6 text-pink-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-white font-medium">Task in scadenza</p>
+                        <p className="text-zinc-500 text-sm">
+                          {overdueTasks.length > 0 && <span className="text-red-400">{overdueTasks.length} scaduti</span>}
+                          {overdueTasks.length > 0 && todayTasks.length > 0 && ' • '}
+                          {todayTasks.length > 0 && <span>{todayTasks.length} oggi</span>}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-zinc-500" />
+                    </div>
+                  </Card>
+                )}
+
+                {/* Main Stats */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <MetricCard label="Volume Totale" value={totals.valore} subValue="AED" icon={DollarSign} color="#A78BFA" onClick={() => setActiveTab('vendite')} />
+                  <MetricCard label="Lead Totali" value={sales.length} icon={Target} color="#60A5FA" onClick={() => setActiveTab('pipeline')} />
+                  <MetricCard label="Vendite Chiuse" value={vendite.length} icon={TrendingUp} color="#34D399" onClick={() => setActiveTab('vendite')} />
+                  <MetricCard label="Netto KeyPrime" value={totals.netto} subValue="AED" icon={Sparkles} color="#FBBF24" />
+                </div>
+
+                {/* Commission Split */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card><p className="text-zinc-500 text-sm">Commissioni Tot</p><p className="text-xl font-semibold text-emerald-400 mt-1">{fmt(totals.comm)}</p></Card>
+                  <Card><p className="text-zinc-500 text-sm">Agenti 70%</p><p className="text-xl font-semibold text-blue-400 mt-1">{fmt(totals.ag)}</p></Card>
+                  <Card className="border-green-500/20"><p className="text-zinc-500 text-sm">Pellegrino</p><p className="text-xl font-semibold text-green-400 mt-1">{fmt(totals.pell)}</p></Card>
+                  <Card className="border-orange-500/20"><p className="text-zinc-500 text-sm">Giovanni</p><p className="text-xl font-semibold text-orange-400 mt-1">{fmt(totals.giov)}</p></Card>
+                </div>
+
+                {/* Pipeline Overview */}
+                <Card hover onClick={() => setActiveTab('pipeline')}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-white font-semibold">Pipeline</h3>
+                    <ChevronRight className="w-5 h-5 text-zinc-500" />
+                  </div>
+                  <div className="grid grid-cols-5 gap-2">
+                    {Object.entries(byStato).map(([st, items]) => (
+                      <div key={st} className="text-center p-3 rounded-xl" style={{ background: theme.status[st]?.bg }}>
+                        <div className="text-xl font-semibold text-white">{items.length}</div>
+                        <div className="text-xs capitalize" style={{ color: theme.status[st]?.color }}>{st}</div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                {/* Top Performers */}
+                <div className="grid lg:grid-cols-2 gap-4">
+                  <Card>
+                    <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Award className="w-5 h-5 text-amber-400" />Top Agenti</h3>
+                    <div className="space-y-3">
+                      {Object.entries(byAgente).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, value], i) => (
+                        <div key={name} className="flex items-center gap-3">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-500 text-black' : 'bg-zinc-800 text-zinc-400'}`}>{i + 1}</div>
+                          <Avatar nome={name} size="sm" />
+                          <div className="flex-1">
+                            <p className="text-white text-sm">{name}</p>
+                            <ProgressBar value={value} max={Object.values(byAgente)[0] || 1} color={i === 0 ? '#FBBF24' : '#52525B'} height="h-1" />
+                          </div>
+                          <span className="text-zinc-400 text-sm">{fmt(value)}</span>
+                        </div>
+                      ))}
+                      {Object.keys(byAgente).length === 0 && <p className="text-zinc-500 text-sm">Nessun dato</p>}
+                    </div>
+                  </Card>
+                  
+                  <Card>
+                    <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-violet-400" />Trend Mensile</h3>
+                    <div className="space-y-3">
+                      {Object.entries(byMonth).sort((a, b) => a[0].localeCompare(b[0])).slice(-5).map(([month, value]) => (
+                        <div key={month} className="flex items-center gap-3">
+                          <span className="text-zinc-500 text-sm w-16">{month}</span>
+                          <div className="flex-1"><ProgressBar value={value} max={Math.max(...Object.values(byMonth)) || 1} color="#A78BFA" /></div>
+                          <span className="text-white text-sm w-24 text-right">{fmt(value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* VENDITE */}
+            {activeTab === 'vendite' && <VenditeTab sales={filteredSales} filters={filters} setFilters={setFilters} updateSale={updateSale} deleteSale={deleteSale} loading={loading} />}
+
+            {/* PIPELINE */}
+            {activeTab === 'pipeline' && <PipelineTab byStato={byStato} onSelectLead={setShowLeadDetail} />}
+
+            {/* CRM */}
+            {activeTab === 'crm' && (showClienteDetail ? <ClienteDetailView cliente={showClienteDetail} sales={sales.filter(s => s.cliente_id === showClienteDetail.id)} tasks={tasks.filter(t => t.cliente_id === showClienteDetail.id)} onBack={() => setShowClienteDetail(null)} onEdit={() => setShowClienteModal(showClienteDetail)} onDelete={() => deleteCliente(showClienteDetail.id)} updateCliente={updateCliente} onAddTask={() => setShowTaskModal({ cliente_id: showClienteDetail.id })} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(showClienteDetail, sales.filter(s => s.cliente_id === showClienteDetail.id), tasks.filter(t => t.cliente_id === showClienteDetail.id))} /> : <CRMTab clienti={filteredClienti} filters={clienteFilters} setFilters={setClienteFilters} sales={sales} onSelect={setShowClienteDetail} onCreate={() => setShowClienteModal({})} />)}
+
+            {/* TASKS */}
+            {activeTab === 'tasks' && <AdminTasksTab tasks={tasks} clienti={clienti} users={users} onComplete={completeTask} onDelete={deleteTask} onEdit={setShowTaskModal} onCreate={() => setShowTaskModal({})} />}
+
+            {/* TEAM */}
+            {activeTab === 'utenti' && <TeamTab users={users} onCreate={() => setShowUserModal({})} onEdit={setShowUserModal} onDelete={deleteUser} />}
           </div>
-        </div>
-        
-        {showNotifications && <NotificationPanel tasks={notificationTasks} onClose={closeNotifications} onGoToTask={goToTaskFromNotification} onMarkAllRead={markNotificationsAsRead} unreadIds={unreadNotificationIds} />}
-        <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} tabs={adminTabs} activeTab={adminTab} setActiveTab={(t) => { setAdminTab(t); setSelectedCliente(null); }} user={user} onLogout={handleLogout} />
-        
-        <div className="p-4 max-w-7xl mx-auto">
-          <ErrorBanner />
-          
-          {/* Desktop Tabs */}
-          <div className="hidden md:flex gap-2 mb-6 overflow-x-auto pb-2">
-            {adminTabs.map(t => (
-              <button key={t.id} onClick={() => { setAdminTab(t.id); setSelectedCliente(null); }} className={`px-4 py-2 rounded-xl font-medium whitespace-nowrap text-sm transition-all ${adminTab === t.id ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-white hover:bg-slate-600'}`}>{t.icon} {t.label}</button>
-            ))}
+        </main>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <div className="absolute inset-0 bg-black/60" onClick={() => setMobileMenuOpen(false)} />
+            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#0F0F11] p-4 animate-slideRight">
+              <div className="flex items-center justify-between mb-8">
+                <img src="/logo.png" alt="KeyPrime" className="h-8" />
+                <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-400"><X className="w-5 h-5" /></button>
+              </div>
+              <nav className="space-y-1">
+                {tabs.map(t => (
+                  <NavItem key={t.id} icon={t.icon} label={t.label} active={activeTab === t.id} onClick={() => { setActiveTab(t.id); setMobileMenuOpen(false); setShowClienteDetail(null); }} accent={t.accent} badge={t.badge} />
+                ))}
+              </nav>
+              <div className="absolute bottom-4 left-4 right-4">
+                <Button variant="danger" icon={LogOut} onClick={handleLogout} className="w-full">Esci</Button>
+              </div>
+            </aside>
           </div>
-          
-          {adminTab === 'dashboard' && <DashboardTab totals={totals} sales={sales} vendite={vendite} byStato={byStato} byMonth={byMonth} byAgente={byAgente} byZona={byZona} fmt={fmt} pipelineColors={pipelineColors} todayTasks={todayTasks} overdueTasks={overdueTasks} onNavigate={setAdminTab} />}
-          {adminTab === 'vendite' && <VenditeTab sales={filteredSales} loading={loading} filters={filters} setFilters={setFilters} updateSale={updateSale} deleteSale={deleteSale} loadSales={loadSales} exportToCSV={exportToCSV} fmt={fmt} selectedSales={selectedSales} toggleSelectSale={toggleSelectSale} selectAllSales={selectAllSales} deleteSelectedSales={deleteSelectedSales} />}
-          {adminTab === 'pipeline' && <PipelineTab byStato={byStato} fmt={fmt} pipelineColors={pipelineColors} pipelineLabels={pipelineLabels} />}
-          {adminTab === 'clienti' && (selectedCliente ? <ClienteDetail cliente={selectedCliente} sales={getClientSales(selectedCliente.id)} tasks={getClientTasks(selectedCliente.id)} onBack={() => setSelectedCliente(null)} onEdit={() => { setEditingCliente(selectedCliente); setShowClienteModal(true); }} onDelete={() => deleteCliente(selectedCliente.id)} updateCliente={updateCliente} fmt={fmt} fmtDate={fmtDate} onAddTask={() => { setEditingTask({ cliente_id: selectedCliente.id }); setShowTaskModal(true); }} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(selectedCliente, getClientSales(selectedCliente.id), getClientTasks(selectedCliente.id))} /> : <ClientiTab clienti={filteredClienti} loadClienti={loadClienti} createCliente={createCliente} deleteCliente={deleteCliente} showModal={showClienteModal} setShowModal={setShowClienteModal} editingCliente={editingCliente} setEditingCliente={setEditingCliente} selectedClienti={selectedClienti} toggleSelectCliente={toggleSelectCliente} deleteSelectedClienti={deleteSelectedClienti} onSelectCliente={setSelectedCliente} filters={clienteFilters} setFilters={setClienteFilters} showFilters={showFilters} setShowFilters={setShowFilters} uniqueAgenti={uniqueAgenti} exportToCSV={exportClientiToCSV} sales={sales} fmt={fmt} updateCliente={updateCliente} />)}
-          {adminTab === 'tasks' && <AdminTasksTab tasks={tasks} clienti={clienti} users={users} onComplete={completeTask} onDelete={deleteTask} onEdit={(t) => { setEditingTask(t); setShowTaskModal(true); }} onCreate={() => { setEditingTask(null); setShowTaskModal(true); }} />}
-          {adminTab === 'utenti' && <UserManagement users={users} loadUsers={loadUsers} createUser={createUser} updateUser={updateUser} deleteUser={deleteUser} showUserModal={showUserModal} setShowUserModal={setShowUserModal} editingUser={editingUser} setEditingUser={setEditingUser} selectedUsers={selectedUsers} toggleSelectUser={toggleSelectUser} deleteSelectedUsers={deleteSelectedUsers} />}
-        </div>
-        
-        {showTaskModal && <TaskModal task={editingTask} clienti={clienti} users={users} onClose={() => { setShowTaskModal(false); setEditingTask(null); }} onSave={editingTask?.id ? (d) => updateTask(editingTask.id, d) : createTask} currentUser={user?.nome} />}
-        {showClienteModal && <ClienteModal cliente={editingCliente} onClose={() => { setShowClienteModal(false); setEditingCliente(null); }} onSave={editingCliente ? (d) => updateCliente(editingCliente.id, d) : createCliente} />}
+        )}
+
+        {/* Modals */}
+        {showLeadDetail && <LeadDetailSheet sale={showLeadDetail} cliente={clienti.find(c => c.id === showLeadDetail?.cliente_id)} rate={0.7} onClose={() => setShowLeadDetail(null)} onUpdateSale={updateSale} onConvert={() => setConvertingSale(showLeadDetail)} isAdmin />}
+        {convertingSale && <ConvertModal sale={convertingSale} onConvert={convertLeadToSale} onCancel={() => setConvertingSale(null)} />}
+        {showClienteModal && <ClienteModal cliente={showClienteModal.id ? showClienteModal : null} onSave={showClienteModal.id ? (d) => updateCliente(showClienteModal.id, d) : createCliente} onClose={() => setShowClienteModal(null)} />}
+        {showTaskModal && <TaskModal task={showTaskModal.id ? showTaskModal : null} clienti={clienti} users={users} onSave={showTaskModal.id ? (d) => updateTask(showTaskModal.id, d) : createTask} onClose={() => setShowTaskModal(null)} />}
+        {showUserModal && <UserModal user={showUserModal.id ? showUserModal : null} onSave={showUserModal.id ? (d) => updateUser(showUserModal.id, d) : createUser} onClose={() => setShowUserModal(null)} />}
+        {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} onClose={() => { setShowNotifications(false); markNotificationsAsRead(); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} />}
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
     );
   }
+
   return null;
 }
 
-// ==================== FORM COMPONENTS ====================
+// ==================== TAB COMPONENTS ====================
 
-function LoginForm({ onLogin, loading }) { const [u, setU] = useState(''); const [p, setP] = useState(''); const [sp, setSp] = useState(false); return <form onSubmit={(e) => { e.preventDefault(); onLogin(u, p); }} className="space-y-4"><div><label className="block text-slate-300 text-sm mb-2">Username</label><input type="text" value={u} onChange={(e) => setU(e.target.value)} className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:border-amber-500 transition-colors" /></div><div><label className="block text-slate-300 text-sm mb-2">Password</label><div className="relative"><input type={sp ? 'text' : 'password'} value={p} onChange={(e) => setP(e.target.value)} className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 pr-12 text-white focus:border-amber-500 transition-colors" /><button type="button" onClick={() => setSp(!sp)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">{sp ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button></div></div><button type="submit" disabled={loading || !u || !p} className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-slate-600 text-slate-900 rounded-xl py-3 font-semibold transition-all active:scale-[0.98]">{loading ? '...' : 'Accedi'}</button></form>; }
-
-function PasswordModal({ currentPassword, onSave, onClose }) { const [op, setOp] = useState(''); const [np, setNp] = useState(''); const [cp, setCp] = useState(''); const [e, setE] = useState(''); const save = () => { if (op !== currentPassword) { setE('Password errata'); return; } if (np.length < 6) { setE('Min 6 caratteri'); return; } if (np !== cp) { setE('Non coincidono'); return; } onSave(np); }; return <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"><div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full border border-slate-700"><h3 className="text-lg font-semibold text-white mb-4">Cambia Password</h3>{e && <div className="bg-red-500/20 text-red-300 rounded-lg px-3 py-2 mb-4 text-sm">{e}</div>}<div className="space-y-3"><input type="password" placeholder="Attuale" value={op} onChange={(e) => setOp(e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white" /><input type="password" placeholder="Nuova" value={np} onChange={(e) => setNp(e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white" /><input type="password" placeholder="Conferma" value={cp} onChange={(e) => setCp(e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white" /><div className="flex gap-3 pt-2"><button onClick={onClose} className="flex-1 bg-slate-700 text-white rounded-xl py-3">Annulla</button><button onClick={save} className="flex-1 bg-amber-500 text-slate-900 rounded-xl py-3 font-semibold">Salva</button></div></div></div></div>; }
-
-function NoteModal({ task, onSave, onClose }) { const [note, setNote] = useState(task.note || ''); return <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"><div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700"><h3 className="text-lg font-semibold text-white mb-2">Aggiungi Nota</h3><p className="text-slate-400 text-sm mb-4">{task.titolo}</p><textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Scrivi una nota..." className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white h-32" autoFocus /><p className="text-slate-500 text-xs mt-2">L'admin riceverà una notifica</p><div className="flex gap-3 mt-4"><button onClick={onClose} className="flex-1 bg-slate-700 text-white rounded-xl py-3">Annulla</button><button onClick={() => onSave(task.id, note)} className="flex-1 bg-amber-500 text-slate-900 rounded-xl py-3 font-semibold flex items-center justify-center gap-2"><Send className="w-4 h-4" /> Invia</button></div></div></div>; }
-
-function ConvertModal({ sale, onConvert, onCancel }) { const [v, setV] = useState(sale.valore || ''); return <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"><div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full border border-slate-700"><h3 className="text-lg font-semibold text-white mb-4">🎉 Registra Vendita</h3><div className="bg-slate-700/50 rounded-xl p-3 mb-4"><div className="text-white font-medium text-sm">{sale.progetto}</div><div className="text-slate-400 text-xs">{sale.developer} • {sale.zona}</div></div><label className="block text-slate-400 text-sm mb-2">Valore finale (AED)</label><input type="number" placeholder="es. 1500000" value={v} onChange={(e) => setV(e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white text-lg mb-4" autoFocus /><div className="flex gap-3"><button onClick={onCancel} className="flex-1 bg-slate-700 text-white rounded-xl py-3">Annulla</button><button onClick={() => v && onConvert(sale.id, parseFloat(v))} disabled={!v} className="flex-1 bg-emerald-500 disabled:bg-slate-600 text-white rounded-xl py-3 font-semibold">✓ Conferma</button></div></div></div>; }
-
-function LeadFormClean({ type, userName, clienti, onSubmit }) { const [selectedClient, setSelectedClient] = useState(null); const [showNew, setShowNew] = useState(false); const [f, setF] = useState({ data: new Date().toISOString().split('T')[0], developer: '', progetto: '', zona: '', valore: '', stato: 'lead', cliente_nome: '', cliente_cognome: '', cliente_email: '', cliente_telefono: '', cliente_whatsapp: '', cliente_nazionalita: '', cliente_budget_min: '', cliente_budget_max: '', cliente_note: '' }); const sub = (e) => { e?.preventDefault(); if (!selectedClient && !f.cliente_nome) { alert('Seleziona o crea un cliente'); return; } onSubmit({ ...f, cliente_id: selectedClient?.id, cliente_nome: selectedClient?.nome || f.cliente_nome, cliente_cognome: selectedClient?.cognome || f.cliente_cognome, developer: f.developer || 'TBD', progetto: f.progetto || 'TBD', zona: f.zona || 'TBD', valore: f.valore ? parseFloat(f.valore) : 0, agente: type === 'agente' ? userName : null, segnalatore: type === 'segnalatore' ? userName : null }); }; const inp = "w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:border-amber-500 transition-colors"; return <form onSubmit={sub}><div className="space-y-4"><div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700"><h4 className="text-white font-medium mb-3 flex items-center gap-2"><User className="w-4 h-4 text-amber-400" /> Cliente</h4><ClientSearch clienti={clienti} selectedClient={selectedClient} onSelect={(c) => { setSelectedClient(c); setShowNew(false); }} onCreateNew={() => { setSelectedClient(null); setShowNew(true); }} />{showNew && !selectedClient && <div className="mt-4 pt-4 border-t border-slate-700 space-y-3"><div className="grid grid-cols-2 gap-3"><input type="text" placeholder="Nome *" value={f.cliente_nome} onChange={(e) => setF({ ...f, cliente_nome: e.target.value })} className={inp} /><input type="text" placeholder="Cognome" value={f.cliente_cognome} onChange={(e) => setF({ ...f, cliente_cognome: e.target.value })} className={inp} /><input type="tel" placeholder="Telefono" value={f.cliente_telefono} onChange={(e) => setF({ ...f, cliente_telefono: e.target.value })} className={inp} /><input type="email" placeholder="Email" value={f.cliente_email} onChange={(e) => setF({ ...f, cliente_email: e.target.value })} className={inp} /><input type="number" placeholder="Budget Min" value={f.cliente_budget_min} onChange={(e) => setF({ ...f, cliente_budget_min: e.target.value })} className={inp} /><input type="number" placeholder="Budget Max" value={f.cliente_budget_max} onChange={(e) => setF({ ...f, cliente_budget_max: e.target.value })} className={inp} /></div></div>}</div><div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700"><h4 className="text-white font-medium mb-3 flex items-center gap-2"><Home className="w-4 h-4 text-amber-400" /> Immobile</h4><div className="grid grid-cols-2 gap-3"><SelectWithOther value={f.developer} onChange={(v) => setF({ ...f, developer: v })} options={developers} placeholder="Developer" className={inp} /><SelectWithOther value={f.zona} onChange={(v) => setF({ ...f, zona: v })} options={zones} placeholder="Zona" className={inp} /><input type="text" placeholder="Progetto" value={f.progetto} onChange={(e) => setF({ ...f, progetto: e.target.value })} className={inp} /><input type="number" placeholder="Valore (AED)" value={f.valore} onChange={(e) => setF({ ...f, valore: e.target.value })} className={inp} /></div></div><div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700"><h4 className="text-white font-medium mb-3">Stato iniziale</h4><div className="flex flex-wrap gap-2">{pipelineStati.slice(0, 4).map(st => <button key={st} type="button" onClick={() => setF({ ...f, stato: st })} className={`px-4 py-2 rounded-xl text-sm transition-all ${f.stato === st ? `${pipelineColors[st]} text-white` : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}>{st}</button>)}</div></div></div><button type="submit" id="submitBtn" className="hidden">Submit</button></form>; }
-
-function SaleFormClean({ type, userName, clienti, onSubmit }) { const [selectedClient, setSelectedClient] = useState(null); const [showNew, setShowNew] = useState(false); const [f, setF] = useState({ data: new Date().toISOString().split('T')[0], developer: '', progetto: '', zona: '', valore: '', nuovo_cliente_nome: '', nuovo_cliente_cognome: '', nuovo_cliente_telefono: '', nuovo_cliente_email: '' }); const sub = (e) => { e?.preventDefault(); if (!selectedClient && !f.nuovo_cliente_nome) { alert('Seleziona o inserisci il cliente'); return; } if (!f.developer || !f.progetto || !f.zona || !f.valore) { alert('Compila tutti i campi'); return; } onSubmit({ data: f.data, developer: f.developer, progetto: f.progetto, zona: f.zona, valore: parseFloat(f.valore), agente: type === 'agente' ? userName : null, segnalatore: type === 'segnalatore' ? userName : null, cliente_id: selectedClient?.id, cliente_nome: selectedClient?.nome || f.nuovo_cliente_nome, nuovo_cliente_nome: f.nuovo_cliente_nome, nuovo_cliente_cognome: f.nuovo_cliente_cognome, nuovo_cliente_telefono: f.nuovo_cliente_telefono, nuovo_cliente_email: f.nuovo_cliente_email }); }; const inp = "w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:border-amber-500 transition-colors"; return <form onSubmit={sub}><div className="space-y-4"><div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700"><h4 className="text-white font-medium mb-3 flex items-center gap-2"><User className="w-4 h-4 text-amber-400" /> Cliente</h4><ClientSearch clienti={clienti} selectedClient={selectedClient} onSelect={(c) => { setSelectedClient(c); setShowNew(false); }} onCreateNew={() => { setSelectedClient(null); setShowNew(true); }} />{showNew && !selectedClient && <div className="mt-4 pt-4 border-t border-slate-700"><div className="grid grid-cols-2 gap-3"><input type="text" placeholder="Nome *" value={f.nuovo_cliente_nome} onChange={(e) => setF({ ...f, nuovo_cliente_nome: e.target.value })} className={inp} /><input type="text" placeholder="Cognome" value={f.nuovo_cliente_cognome} onChange={(e) => setF({ ...f, nuovo_cliente_cognome: e.target.value })} className={inp} /><input type="tel" placeholder="Telefono" value={f.nuovo_cliente_telefono} onChange={(e) => setF({ ...f, nuovo_cliente_telefono: e.target.value })} className={inp} /><input type="email" placeholder="Email" value={f.nuovo_cliente_email} onChange={(e) => setF({ ...f, nuovo_cliente_email: e.target.value })} className={inp} /></div></div>}</div><div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700"><h4 className="text-white font-medium mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-emerald-400" /> Dettagli Vendita</h4><div className="space-y-3"><input type="date" value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} className={inp} /><SelectWithOther value={f.developer} onChange={(v) => setF({ ...f, developer: v })} options={developers} placeholder="Developer *" className={inp} /><input type="text" placeholder="Progetto *" value={f.progetto} onChange={(e) => setF({ ...f, progetto: e.target.value })} className={inp} /><SelectWithOther value={f.zona} onChange={(v) => setF({ ...f, zona: v })} options={zones} placeholder="Zona *" className={inp} /><input type="number" placeholder="Valore (AED) *" value={f.valore} onChange={(e) => setF({ ...f, valore: e.target.value })} className={`${inp} text-lg font-semibold`} /></div></div></div><button type="submit" id="submitBtn" className="hidden">Submit</button></form>; }
-
-// ==================== DASHBOARD ====================
-function DashboardTab({ totals, sales, vendite, byStato, byMonth, byAgente, byZona, fmt, pipelineColors, todayTasks, overdueTasks, onNavigate }) {
-  const sm = Object.entries(byMonth).sort((a, b) => a[0].localeCompare(b[0])).slice(-6);
-  const maxM = Math.max(...sm.map(([, v]) => v)) || 1;
-  const sa = Object.entries(byAgente).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  const sz = Object.entries(byZona).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  const avg = vendite.length > 0 ? totals.valore / vendite.length : 0;
-  const conv = sales.length > 0 ? (vendite.length / sales.length * 100).toFixed(1) : 0;
-  const maxAgent = Math.max(...sa.map(([,v]) => v)) || 1;
-  
+// Vendite Tab
+function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loading }) {
   return (
-    <div className="space-y-6">
-      {/* Alerts */}
-      {(todayTasks?.length > 0 || overdueTasks?.length > 0) && (
-        <div onClick={() => onNavigate('tasks')} className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3 cursor-pointer hover:bg-amber-500/20 transition-colors">
-          <div className="bg-amber-500/20 rounded-full p-2"><Bell className="w-5 h-5 text-amber-400" /></div>
-          <div className="flex-1">
-            <div className="text-white font-medium">Task in scadenza</div>
-            <div className="text-amber-300 text-sm">
-              {overdueTasks?.length > 0 && <span className="text-red-400 font-medium">{overdueTasks.length} scaduti</span>}
-              {overdueTasks?.length > 0 && todayTasks?.length > 0 && ' • '}
-              {todayTasks?.length > 0 && <span>{todayTasks.length} oggi</span>}
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-amber-400" />
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <input type="text" placeholder="Cerca progetto, cliente, agente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50" />
         </div>
-      )}
-      
-      {/* Main Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div onClick={() => onNavigate('vendite')} className="relative bg-gradient-to-br from-blue-500/20 to-blue-600/30 border border-blue-500/30 rounded-xl p-4 cursor-pointer hover:scale-[1.02] transition-all active:scale-[0.98]">
-          <div className="flex items-center gap-2 text-blue-300 text-xs mb-1"><Target className="w-4 h-4" />Lead Totali</div>
-          <div className="text-2xl font-bold text-white"><AnimatedNumber value={sales.length} /></div>
-          <ChevronRight className="w-4 h-4 text-blue-300/50 absolute right-3 top-1/2 -translate-y-1/2" />
-        </div>
-        <div onClick={() => onNavigate('vendite')} className="relative bg-gradient-to-br from-emerald-500/20 to-emerald-600/30 border border-emerald-500/30 rounded-xl p-4 cursor-pointer hover:scale-[1.02] transition-all active:scale-[0.98]">
-          <div className="flex items-center gap-2 text-emerald-300 text-xs mb-1"><TrendingUp className="w-4 h-4" />Vendite</div>
-          <div className="text-2xl font-bold text-white"><AnimatedNumber value={vendite.length} /></div>
-          <div className="text-emerald-400 text-xs">{conv}% conversione</div>
-          <ChevronRight className="w-4 h-4 text-emerald-300/50 absolute right-3 top-1/2 -translate-y-1/2" />
-        </div>
-        <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/30 border border-amber-500/30 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-amber-300 text-xs mb-1"><DollarSign className="w-4 h-4" />Volume</div>
-          <div className="text-xl font-bold text-white"><AnimatedNumber value={totals.valore} /></div>
-          <div className="text-amber-400 text-xs">Media: {fmt(avg)}</div>
-        </div>
-        <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/30 border border-purple-500/30 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-purple-300 text-xs mb-1"><Activity className="w-4 h-4" />Netto KP</div>
-          <div className="text-xl font-bold text-white"><AnimatedNumber value={totals.netto} /></div>
-        </div>
+        <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50">
+          <option value="">Tutti gli stati</option>
+          {pipelineStati.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
       </div>
-      
-      {/* Commission Split */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 text-center">
-          <div className="text-slate-400 text-xs">Commissioni Tot</div>
-          <div className="text-lg font-bold text-emerald-400">{fmt(totals.comm)}</div>
-        </div>
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 text-center">
-          <div className="text-slate-400 text-xs">Agenti 70%</div>
-          <div className="text-lg font-bold text-blue-400">{fmt(totals.ag)}</div>
-        </div>
-        <div className="bg-green-900/30 border border-green-700/50 rounded-xl p-3 text-center">
-          <div className="text-green-300 text-xs">Pellegrino</div>
-          <div className="text-lg font-bold text-green-400">{fmt(totals.pell)}</div>
-        </div>
-        <div className="bg-orange-900/30 border border-orange-700/50 rounded-xl p-3 text-center">
-          <div className="text-orange-300 text-xs">Giovanni</div>
-          <div className="text-lg font-bold text-orange-400">{fmt(totals.giov)}</div>
-        </div>
-      </div>
-      
-      {/* Pipeline Overview */}
-      <div onClick={() => onNavigate('pipeline')} className="bg-slate-800 border border-slate-700 rounded-xl p-4 cursor-pointer hover:border-amber-500/50 transition-colors">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-semibold flex items-center gap-2"><PieChart className="w-4 h-4 text-amber-400" />Pipeline</h3>
-          <ChevronRight className="w-4 h-4 text-slate-500" />
-        </div>
-        <div className="flex gap-2">
-          {Object.entries(byStato).map(([st, items]) => (
-            <div key={st} className="flex-1">
-              <div className={`${pipelineColors[st]} rounded-lg p-3 text-center text-white`}>
-                <div className="text-xl font-bold">{items.length}</div>
-                <div className="text-xs opacity-80">{st}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      <div className="grid md:grid-cols-2 gap-4">
-        {/* Monthly Trend */}
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-          <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-amber-400" />Andamento</h3>
-          <div className="space-y-3">
-            {sm.map(([m, v]) => (
-              <div key={m} className="flex items-center gap-3">
-                <div className="text-slate-400 text-xs w-16">{m}</div>
-                <div className="flex-1 bg-slate-700 rounded-full h-3 overflow-hidden">
-                  <div className="bg-gradient-to-r from-amber-500 to-amber-400 h-full rounded-full transition-all duration-700" style={{ width: `${(v / maxM) * 100}%` }} />
-                </div>
-                <div className="text-white text-xs w-20 text-right font-medium">{fmt(v)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        {/* Top Agents */}
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-          <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Award className="w-4 h-4 text-blue-400" />Top Agenti</h3>
-          <div className="space-y-3">
-            {sa.length === 0 ? <div className="text-slate-500 text-sm">Nessun dato</div> : sa.map(([a, v], i) => (
-              <div key={a} className="flex items-center gap-3">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-500 text-slate-900' : 'bg-slate-600 text-white'}`}>{i + 1}</div>
-                <Avatar nome={a} size="sm" />
-                <div className="flex-1 min-w-0"><div className="text-white text-sm truncate">{a}</div><ProgressBar value={v} max={maxAgent} color={i === 0 ? 'bg-amber-500' : 'bg-slate-500'} /></div>
-                <div className="text-amber-400 text-sm font-medium">{fmt(v)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      
-      {/* Top Zones */}
-      <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-        <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><MapPin className="w-4 h-4 text-emerald-400" />Zone più attive</h3>
-        <div className="flex flex-wrap gap-2">
-          {sz.length === 0 ? <div className="text-slate-500 text-sm">Nessun dato</div> : sz.map(([z, v], i) => (
-            <div key={z} className={`px-4 py-2 rounded-xl ${i === 0 ? 'bg-emerald-500/20 border border-emerald-500/30' : 'bg-slate-700'}`}>
-              <div className="text-white text-sm font-medium">{z}</div>
-              <div className={`text-xs ${i === 0 ? 'text-emerald-400' : 'text-slate-400'}`}>{fmt(v)} AED</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
-// ==================== VENDITE TAB ====================
-function VenditeTab({ sales, loading, filters, setFilters, updateSale, deleteSale, loadSales, exportToCSV, fmt, selectedSales, toggleSelectSale, selectAllSales, deleteSelectedSales }) {
-  return (
-    <>
-      <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4">
-        <div className="flex flex-wrap gap-2 items-center">
-          <button onClick={loadSales} className="bg-slate-700 hover:bg-slate-600 text-white rounded-lg px-3 py-2 transition-colors"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>
-          <button onClick={exportToCSV} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg px-3 py-2 transition-colors"><Download className="w-4 h-4" /></button>
-          {selectedSales.length > 0 && <button onClick={deleteSelectedSales} className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-2 flex items-center gap-1 text-sm transition-colors"><Trash2 className="w-4 h-4" />{selectedSales.length}</button>}
-          <div className="flex-1" />
-          <div className="relative"><Search className="w-4 h-4 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" /><input type="text" placeholder="Cerca..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="bg-slate-700 border border-slate-600 rounded-lg pl-8 pr-3 py-2 text-white text-sm w-32 focus:border-amber-500 transition-colors" /></div>
-          <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-slate-700 border border-slate-600 rounded-lg px-2 py-2 text-white text-sm">
-            <option value="">Tutti</option>
-            {pipelineStati.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-      </div>
-      <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+      <Card padding="p-0" className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full">
             <thead>
-              <tr className="bg-slate-700/50 text-left">
-                <th className="px-2 py-3"><button onClick={selectAllSales}>{selectedSales.length === sales.length && sales.length > 0 ? <CheckSquare className="w-4 h-4 text-amber-400" /> : <Square className="w-4 h-4 text-slate-400" />}</button></th>
-                <th className="text-slate-300 px-2 py-3 text-xs font-medium">Data</th>
-                <th className="text-slate-300 px-2 py-3 text-xs font-medium">Progetto</th>
-                <th className="text-slate-300 px-2 py-3 text-xs font-medium">Cliente</th>
-                <th className="text-slate-300 px-2 py-3 text-xs font-medium">Agente</th>
-                <th className="text-slate-300 px-2 py-3 text-right text-xs font-medium">Valore</th>
-                <th className="text-slate-300 px-2 py-3 text-center text-xs font-medium">%</th>
-                <th className="text-slate-300 px-2 py-3 text-center text-xs font-medium">Stato</th>
-                <th className="text-slate-300 px-2 py-3 text-center text-xs font-medium">Ref</th>
-                <th className="text-slate-300 px-2 py-3 text-center text-xs font-medium">Pag</th>
-                <th className="text-slate-300 px-2 py-3 text-center text-xs font-medium"></th>
+              <tr className="border-b border-[#27272A]">
+                <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Data</th>
+                <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Progetto</th>
+                <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Cliente</th>
+                <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Agente</th>
+                <th className="text-right text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Valore</th>
+                <th className="text-center text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">%</th>
+                <th className="text-center text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Stato</th>
+                <th className="text-center text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Ref</th>
+                <th className="text-center text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Pag</th>
+                <th className="text-center text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-[#27272A]">
               {sales.map(s => (
-                <tr key={s.id} className={`border-t border-slate-700 hover:bg-slate-700/30 transition-colors ${selectedSales.includes(s.id) ? 'bg-amber-500/10' : ''}`}>
-                  <td className="px-2 py-2"><button onClick={() => toggleSelectSale(s.id)}>{selectedSales.includes(s.id) ? <CheckSquare className="w-4 h-4 text-amber-400" /> : <Square className="w-4 h-4 text-slate-400" />}</button></td>
-                  <td className="px-2 py-2 text-white text-xs">{s.data?.substring(5,10)}</td>
-                  <td className="px-2 py-2 text-white text-xs truncate max-w-[80px]">{s.progetto}</td>
-                  <td className="px-2 py-2 text-blue-400 text-xs truncate max-w-[60px]">{s.cliente_nome || '-'}</td>
-                  <td className="px-2 py-2 text-slate-400 text-xs truncate max-w-[60px]">{s.agente || '-'}</td>
-                  <td className="px-2 py-2 text-amber-400 text-right text-xs font-medium">{s.valore > 0 ? fmt(s.valore) : '-'}</td>
-                  <td className="px-2 py-2 text-center"><select value={s.commission_pct || 5} onChange={(e) => updateSale(s.id, { commission_pct: parseInt(e.target.value) })} className="bg-slate-700 rounded px-1 py-0.5 text-white text-xs w-12">{commissions.map(c => <option key={c} value={c}>{c}%</option>)}</select></td>
-                  <td className="px-2 py-2 text-center"><select value={s.stato || 'lead'} onChange={(e) => updateSale(s.id, { stato: e.target.value })} className={`${pipelineColors[s.stato || 'lead']} rounded px-1 py-0.5 text-white text-xs w-16`}>{pipelineStati.map(st => <option key={st} value={st} className="bg-slate-800">{st}</option>)}</select></td>
-                  <td className="px-2 py-2 text-center"><select value={s.referente || ''} onChange={(e) => updateSale(s.id, { referente: e.target.value || null })} className="bg-slate-700 rounded px-1 py-0.5 text-xs w-10 text-white"><option value="">-</option><option value="Pellegrino">P</option><option value="Giovanni">G</option></select></td>
-                  <td className="px-2 py-2 text-center"><button onClick={() => updateSale(s.id, { pagato: !s.pagato })} className={`px-2 py-1 rounded text-xs transition-colors ${s.pagato ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'}`}>{s.pagato ? '✓' : '✗'}</button></td>
-                  <td className="px-2 py-2 text-center"><button onClick={() => deleteSale(s.id)} className="text-red-400 hover:text-red-300 transition-colors"><Trash2 className="w-3 h-3" /></button></td>
+                <tr key={s.id} className="hover:bg-white/5 transition-colors">
+                  <td className="px-4 py-3 text-sm text-zinc-400">{fmtShort(s.data)}</td>
+                  <td className="px-4 py-3"><span className="text-white text-sm font-medium">{s.progetto}</span><br /><span className="text-xs text-zinc-500">{s.developer}</span></td>
+                  <td className="px-4 py-3 text-sm text-blue-400">{s.cliente_nome || '-'}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-400">{s.agente || s.segnalatore || '-'}</td>
+                  <td className="px-4 py-3 text-right text-sm font-medium text-white">{s.valore > 0 ? fmt(s.valore) : '-'}</td>
+                  <td className="px-4 py-3 text-center">
+                    <select value={s.commission_pct || 5} onChange={(e) => updateSale(s.id, { commission_pct: parseInt(e.target.value) })} className="bg-zinc-800 rounded px-2 py-1 text-xs text-white w-14 focus:outline-none">
+                      {commissions.map(c => <option key={c} value={c}>{c}%</option>)}
+                    </select>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <select value={s.stato || 'lead'} onChange={(e) => updateSale(s.id, { stato: e.target.value })} className="rounded px-2 py-1 text-xs text-white w-20 focus:outline-none" style={{ background: theme.status[s.stato || 'lead']?.bg, color: theme.status[s.stato || 'lead']?.color }}>
+                      {pipelineStati.map(st => <option key={st} value={st} className="bg-zinc-900">{st}</option>)}
+                    </select>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <select value={s.referente || ''} onChange={(e) => updateSale(s.id, { referente: e.target.value || null })} className="bg-zinc-800 rounded px-2 py-1 text-xs text-white w-12 focus:outline-none">
+                      <option value="">-</option>
+                      <option value="Pellegrino">P</option>
+                      <option value="Giovanni">G</option>
+                    </select>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button onClick={() => updateSale(s.id, { pagato: !s.pagato })} className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${s.pagato ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'}`}>
+                      {s.pagato ? '✓' : '○'}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button onClick={() => deleteSale(s.id)} className="text-zinc-600 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
-    </>
+        {sales.length === 0 && <div className="text-center py-12 text-zinc-500">Nessuna vendita trovata</div>}
+      </Card>
+    </div>
   );
 }
 
-// ==================== PIPELINE TAB ====================
-function PipelineTab({ byStato, fmt, pipelineColors, pipelineLabels }) {
+// Pipeline Tab
+function PipelineTab({ byStato, onSelectLead }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
       {pipelineStati.map(st => (
-        <div key={st} className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-          <div className={`${pipelineColors[st]} px-3 py-2 text-white text-sm flex justify-between items-center`}>
-            <span className="font-medium">{pipelineLabels[st]}</span>
-            <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">{byStato[st]?.length || 0}</span>
+        <div key={st} className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ background: theme.status[st]?.color }} />
+              <span className="text-sm font-medium text-white capitalize">{st}</span>
+            </div>
+            <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{byStato[st]?.length || 0}</span>
           </div>
-          <div className="p-2 space-y-2 max-h-[50vh] overflow-y-auto">
+          <div className="space-y-2 min-h-[200px]">
             {byStato[st]?.map(s => (
-              <div key={s.id} className="bg-slate-700/50 hover:bg-slate-700 rounded-lg p-3 transition-colors cursor-pointer">
-                <div className="text-white text-sm font-medium truncate">{s.progetto}</div>
-                <div className="text-blue-400 text-xs truncate">{s.cliente_nome || '-'}</div>
-                {s.valore > 0 && <div className="text-amber-400 text-xs mt-1 font-medium">{fmt(s.valore)} AED</div>}
-              </div>
+              <Card key={s.id} hover onClick={() => onSelectLead(s)} padding="p-3" className="border-l-2" style={{ borderLeftColor: theme.status[st]?.color }}>
+                <p className="text-white text-sm font-medium truncate">{s.progetto || 'TBD'}</p>
+                <p className="text-zinc-500 text-xs truncate">{s.developer}</p>
+                {s.cliente_nome && <p className="text-blue-400 text-xs mt-1">{s.cliente_nome}</p>}
+                {s.valore > 0 && <p className="text-emerald-400 text-sm font-medium mt-2">{fmt(s.valore)} AED</p>}
+              </Card>
             ))}
-            {!byStato[st]?.length && <div className="text-slate-500 text-xs text-center py-4">Nessuno</div>}
+            {!byStato[st]?.length && <div className="text-center py-8 text-zinc-600 text-sm">Vuoto</div>}
           </div>
         </div>
       ))}
@@ -913,187 +1051,175 @@ function PipelineTab({ byStato, fmt, pipelineColors, pipelineLabels }) {
   );
 }
 
-// ==================== CLIENTI TAB ====================
-function ClientiTab({ clienti, loadClienti, createCliente, updateCliente, deleteCliente, showModal, setShowModal, editingCliente, setEditingCliente, selectedClienti, toggleSelectCliente, deleteSelectedClienti, onSelectCliente, filters, setFilters, showFilters, setShowFilters, uniqueAgenti, exportToCSV, sales, fmt }) {
-  const activeFilters = [filters.stato, filters.agente, filters.budgetMin, filters.budgetMax].filter(Boolean).length;
-  const getClientValue = (id) => sales.filter(s => s.cliente_id === id && (s.stato === 'venduto' || s.stato === 'incassato')).reduce((sum, s) => sum + Number(s.valore || 0), 0);
-  const getClientLeads = (id) => sales.filter(s => s.cliente_id === id).length;
-  
+// CRM Tab
+function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate }) {
+  const getClientStats = (id) => {
+    const cs = sales.filter(s => s.cliente_id === id);
+    const vendite = cs.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
+    return { leads: cs.length, value: vendite.reduce((sum, s) => sum + Number(s.valore || 0), 0) };
+  };
+
   return (
-    <>
-      <div className="flex flex-wrap gap-2 items-center mb-4">
-        <button onClick={() => { setEditingCliente(null); setShowModal(true); }} className="bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-lg px-4 py-2 flex items-center gap-2 font-semibold transition-colors"><UserPlus className="w-4 h-4" />Nuovo</button>
-        <button onClick={loadClienti} className="bg-slate-700 hover:bg-slate-600 text-white rounded-lg px-3 py-2 transition-colors"><RefreshCw className="w-4 h-4" /></button>
-        <button onClick={exportToCSV} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg px-3 py-2 transition-colors"><Download className="w-4 h-4" /></button>
-        <button onClick={() => setShowFilters(!showFilters)} className={`rounded-lg px-3 py-2 flex items-center gap-1 text-sm transition-colors ${activeFilters > 0 ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}>
-          <Filter className="w-4 h-4" />{activeFilters > 0 && <span className="bg-slate-900 text-amber-500 px-1.5 rounded text-xs">{activeFilters}</span>}
-        </button>
-        {selectedClienti.length > 0 && <button onClick={deleteSelectedClienti} className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-2 flex items-center gap-1 text-sm transition-colors"><Trash2 className="w-4 h-4" />{selectedClienti.length}</button>}
-        <div className="flex-1" />
-        <div className="text-slate-400 text-sm">{clienti.length} clienti</div>
-      </div>
-      
-      {showFilters && (
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 mb-4">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div className="col-span-2 md:col-span-1 relative"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input type="text" placeholder="Cerca..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-slate-700 border border-slate-600 rounded-lg pl-9 pr-3 py-2 text-white text-sm" /></div>
-            <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"><option value="">Tutti stati</option>{clienteStati.map(s => <option key={s} value={s}>{s}</option>)}</select>
-            <select value={filters.agente} onChange={(e) => setFilters({ ...filters, agente: e.target.value })} className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"><option value="">Tutti agenti</option>{uniqueAgenti.map(a => <option key={a} value={a}>{a}</option>)}</select>
-            <input type="number" placeholder="Budget min" value={filters.budgetMin} onChange={(e) => setFilters({ ...filters, budgetMin: e.target.value })} className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm" />
-            <input type="number" placeholder="Budget max" value={filters.budgetMax} onChange={(e) => setFilters({ ...filters, budgetMax: e.target.value })} className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm" />
-          </div>
-          {activeFilters > 0 && <button onClick={() => setFilters({ search: '', stato: '', budgetMin: '', budgetMax: '', agente: '' })} className="mt-3 text-amber-400 text-sm flex items-center gap-1 hover:text-amber-300"><X className="w-4 h-4" /> Rimuovi filtri</button>}
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <input type="text" placeholder="Cerca cliente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50" />
         </div>
-      )}
-      
+        <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none">
+          <option value="">Tutti gli stati</option>
+          {clienteStati.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <Button icon={UserPlus} onClick={onCreate}>Nuovo Cliente</Button>
+      </div>
+
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
         {clienti.map(c => {
-          const cv = getClientValue(c.id);
-          const cs = getClientLeads(c.id);
+          const stats = getClientStats(c.id);
           return (
-            <div key={c.id} onClick={() => onSelectCliente(c)} className={`bg-slate-800 border rounded-xl p-4 cursor-pointer hover:border-amber-500/50 transition-all active:scale-[0.99] ${selectedClienti.includes(c.id) ? 'border-amber-500' : 'border-slate-700'}`}>
+            <Card key={c.id} hover onClick={() => onSelect(c)} padding="p-4">
               <div className="flex items-start gap-3">
-                <button onClick={(e) => { e.stopPropagation(); toggleSelectCliente(c.id); }}>{selectedClienti.includes(c.id) ? <CheckSquare className="w-4 h-4 text-amber-400" /> : <Square className="w-4 h-4 text-slate-500" />}</button>
                 <Avatar nome={c.nome} cognome={c.cognome} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-white font-medium truncate">{c.nome} {c.cognome}</span>
-                    <span className={`px-2 py-0.5 rounded text-xs text-white ${clienteStatiColors[c.stato] || 'bg-slate-600'}`}>{c.stato}</span>
+                    <p className="text-white font-medium truncate">{c.nome} {c.cognome}</p>
+                    <StatusBadge status={c.stato} type="cliente" />
                   </div>
-                  {c.telefono && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-slate-400 text-sm">{c.telefono}</span>
-                      <a href={getWhatsAppLink(c.whatsapp || c.telefono)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-emerald-400 hover:text-emerald-300"><MessageCircle className="w-4 h-4" /></a>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3 text-xs">
-                    {c.budget_max && <span className="text-amber-400">{fmt(c.budget_max)} AED</span>}
-                    {cs > 0 && <span className="text-blue-400">{cs} lead</span>}
-                    {cv > 0 && <span className="text-emerald-400">{fmt(cv)} venduto</span>}
+                  {c.telefono && <p className="text-zinc-500 text-sm">{c.telefono}</p>}
+                  <div className="flex items-center gap-3 mt-2 text-xs">
+                    {stats.leads > 0 && <span className="text-blue-400">{stats.leads} lead</span>}
+                    {stats.value > 0 && <span className="text-emerald-400">{fmt(stats.value)} AED</span>}
+                    {c.budget_max && <span className="text-amber-400">Budget: {fmt(c.budget_max)}</span>}
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-500" />
+                <ChevronRight className="w-4 h-4 text-zinc-600" />
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
-      {clienti.length === 0 && <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center text-slate-500">Nessun cliente</div>}
-      {showModal && <ClienteModal cliente={editingCliente} onClose={() => { setShowModal(false); setEditingCliente(null); }} onSave={editingCliente ? (d) => updateCliente(editingCliente.id, d) : createCliente} />}
-    </>
+      {clienti.length === 0 && <EmptyState icon={Users} title="Nessun cliente" description="Aggiungi il tuo primo cliente" action="Nuovo Cliente" onAction={onCreate} />}
+    </div>
   );
 }
 
-// ==================== CLIENTE DETAIL ====================
-function ClienteDetail({ cliente, sales, tasks, onBack, onEdit, onDelete, updateCliente, fmt, fmtDate, onAddTask, onCompleteTask, onDeleteTask, onExportPDF }) {
+// Cliente Detail View
+function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, updateCliente, onAddTask, onCompleteTask, onDeleteTask, onExportPDF }) {
   const [tab, setTab] = useState('info');
   const totalValue = sales.filter(s => s.stato === 'venduto' || s.stato === 'incassato').reduce((sum, s) => sum + Number(s.valore || 0), 0);
-  const leadCount = sales.filter(s => s.stato === 'lead' || s.stato === 'trattativa').length;
-  const venditeCount = sales.filter(s => s.stato === 'venduto' || s.stato === 'incassato').length;
-  const pendingTasks = tasks.filter(t => t.stato === 'pending');
-  
+
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <button onClick={onBack} className="bg-slate-700 hover:bg-slate-600 text-white rounded-xl p-2 transition-colors"><ChevronLeft className="w-5 h-5" /></button>
-        <Avatar nome={cliente.nome} cognome={cliente.cognome} size="lg" />
-        <div className="flex-1">
-          <h1 className="text-xl font-bold text-white">{cliente.nome} {cliente.cognome}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className={`px-2 py-0.5 rounded text-xs text-white ${clienteStatiColors[cliente.stato] || 'bg-slate-600'}`}>{cliente.stato}</span>
-            {cliente.nazionalita && <span className="text-slate-400 text-sm">{cliente.nazionalita}</span>}
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" icon={ChevronLeft} onClick={onBack}>Indietro</Button>
+        <div className="flex-1" />
+        <Button variant="ghost" icon={FileText} onClick={onExportPDF}>PDF</Button>
+        <Button variant="ghost" icon={Edit2} onClick={onEdit}>Modifica</Button>
+        <Button variant="danger" icon={Trash2} onClick={onDelete} />
+      </div>
+
+      {/* Profile */}
+      <Card>
+        <div className="flex items-center gap-4 mb-6">
+          <Avatar nome={cliente.nome} cognome={cliente.cognome} size="xl" />
+          <div>
+            <h1 className="text-2xl font-semibold text-white">{cliente.nome} {cliente.cognome}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <StatusBadge status={cliente.stato} type="cliente" />
+              {cliente.nazionalita && <span className="text-zinc-500 text-sm">{cliente.nazionalita}</span>}
+            </div>
           </div>
         </div>
-        <button onClick={onExportPDF} className="bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-xl p-2 transition-colors" title="PDF"><FileText className="w-5 h-5" /></button>
-        <button onClick={onEdit} className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-xl p-2 transition-colors"><Edit2 className="w-5 h-5" /></button>
-        <button onClick={onDelete} className="bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl p-2 transition-colors"><Trash2 className="w-5 h-5" /></button>
-      </div>
-      
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-2 mb-6">
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 text-center"><div className="text-slate-400 text-xs">Lead</div><div className="text-xl font-bold text-blue-400">{leadCount}</div></div>
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 text-center"><div className="text-slate-400 text-xs">Vendite</div><div className="text-xl font-bold text-emerald-400">{venditeCount}</div></div>
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 text-center"><div className="text-slate-400 text-xs">Valore</div><div className="text-lg font-bold text-amber-400">{fmt(totalValue)}</div></div>
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 text-center"><div className="text-slate-400 text-xs">Task</div><div className="text-xl font-bold text-purple-400">{pendingTasks.length}</div></div>
-      </div>
-      
-      {/* Quick Actions */}
-      <div className="mb-6">
         <QuickActions phone={cliente.telefono} whatsapp={cliente.whatsapp || cliente.telefono} email={cliente.email} clienteName={cliente.nome} />
+      </Card>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card padding="p-4" className="text-center border-amber-500/20">
+          <p className="text-2xl font-semibold text-amber-400">{sales.length}</p>
+          <p className="text-zinc-500 text-sm">Lead</p>
+        </Card>
+        <Card padding="p-4" className="text-center border-emerald-500/20">
+          <p className="text-2xl font-semibold text-emerald-400">{fmt(totalValue)}</p>
+          <p className="text-zinc-500 text-sm">Valore</p>
+        </Card>
+        <Card padding="p-4" className="text-center border-pink-500/20">
+          <p className="text-2xl font-semibold text-pink-400">{tasks.filter(t => t.stato === 'pending').length}</p>
+          <p className="text-zinc-500 text-sm">Task</p>
+        </Card>
       </div>
-      
+
       {/* Tabs */}
-      <div className="flex gap-2 mb-4">
-        {[{ id: 'info', label: 'Info' }, { id: 'sales', label: `Lead (${sales.length})` }, { id: 'tasks', label: `Task (${tasks.length})` }].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === t.id ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-white hover:bg-slate-600'}`}>{t.label}</button>
+      <div className="flex gap-2 border-b border-[#27272A]">
+        {['info', 'lead', 'task'].map(t => (
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${tab === t ? 'text-white border-amber-500' : 'text-zinc-500 border-transparent hover:text-white'}`}>
+            {t === 'info' ? 'Informazioni' : t === 'lead' ? `Lead (${sales.length})` : `Task (${tasks.length})`}
+          </button>
         ))}
       </div>
-      
-      {/* Info Tab */}
+
+      {/* Tab Content */}
       {tab === 'info' && (
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 space-y-4">
+        <Card>
           <div className="grid grid-cols-2 gap-4">
-            <div><div className="text-slate-400 text-xs mb-1">Telefono</div><div className="text-white">{cliente.telefono || '-'}</div></div>
-            <div><div className="text-slate-400 text-xs mb-1">WhatsApp</div><div className="text-white">{cliente.whatsapp || cliente.telefono || '-'}</div></div>
-            <div><div className="text-slate-400 text-xs mb-1">Email</div><div className="text-white truncate">{cliente.email || '-'}</div></div>
-            <div><div className="text-slate-400 text-xs mb-1">Nazionalità</div><div className="text-white">{cliente.nazionalita || '-'}</div></div>
-            <div><div className="text-slate-400 text-xs mb-1">Budget Min</div><div className="text-amber-400">{cliente.budget_min ? fmt(cliente.budget_min) : '-'}</div></div>
-            <div><div className="text-slate-400 text-xs mb-1">Budget Max</div><div className="text-amber-400">{cliente.budget_max ? fmt(cliente.budget_max) : '-'}</div></div>
-            <div><div className="text-slate-400 text-xs mb-1">Agente</div><div className="text-white">{cliente.agente_riferimento || '-'}</div></div>
-            <div><div className="text-slate-400 text-xs mb-1">Fonte</div><div className="text-white">{cliente.fonte || '-'}</div></div>
+            <div><p className="text-zinc-500 text-xs mb-1">Telefono</p><p className="text-white">{cliente.telefono || '-'}</p></div>
+            <div><p className="text-zinc-500 text-xs mb-1">Email</p><p className="text-white truncate">{cliente.email || '-'}</p></div>
+            <div><p className="text-zinc-500 text-xs mb-1">Budget Min</p><p className="text-amber-400">{cliente.budget_min ? fmt(cliente.budget_min) : '-'}</p></div>
+            <div><p className="text-zinc-500 text-xs mb-1">Budget Max</p><p className="text-amber-400">{cliente.budget_max ? fmt(cliente.budget_max) : '-'}</p></div>
+            <div><p className="text-zinc-500 text-xs mb-1">Agente</p><p className="text-white">{cliente.agente_riferimento || '-'}</p></div>
+            <div><p className="text-zinc-500 text-xs mb-1">Fonte</p><p className="text-white">{cliente.fonte || '-'}</p></div>
           </div>
-          {cliente.note && <div className="pt-4 border-t border-slate-700"><div className="text-slate-400 text-xs mb-1">Note</div><div className="text-white text-sm whitespace-pre-wrap">{cliente.note}</div></div>}
-          <div className="pt-4 border-t border-slate-700">
-            <div className="text-slate-400 text-xs mb-2">Cambia stato</div>
+          {cliente.note && <div className="mt-4 pt-4 border-t border-[#27272A]"><p className="text-zinc-500 text-xs mb-1">Note</p><p className="text-white text-sm">{cliente.note}</p></div>}
+          <div className="mt-4 pt-4 border-t border-[#27272A]">
+            <p className="text-zinc-500 text-xs mb-2">Stato</p>
             <div className="flex flex-wrap gap-2">
-              {clienteStati.map(s => <button key={s} onClick={() => updateCliente(cliente.id, { stato: s })} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${cliente.stato === s ? `${clienteStatiColors[s]} text-white` : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}>{s}</button>)}
+              {clienteStati.map(s => (
+                <button key={s} onClick={() => updateCliente(cliente.id, { stato: s })} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${cliente.stato === s ? 'bg-amber-500 text-black' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}>{s}</button>
+              ))}
             </div>
           </div>
-        </div>
+        </Card>
       )}
-      
-      {/* Sales Tab */}
-      {tab === 'sales' && (
-        <div className="space-y-3">
-          {sales.length === 0 ? <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center text-slate-500">Nessun lead</div> : sales.map(s => (
-            <div key={s.id} className="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-slate-600 transition-colors">
+
+      {tab === 'lead' && (
+        <div className="space-y-2">
+          {sales.length === 0 ? <EmptyState icon={Target} title="Nessun lead" description="Non ci sono lead per questo cliente" /> : sales.map(s => (
+            <Card key={s.id} padding="p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="flex items-center gap-2"><span className="text-white font-medium">{s.progetto}</span><span className={`px-2 py-0.5 rounded text-xs text-white ${pipelineColors[s.stato || 'lead']}`}>{s.stato}</span></div>
-                  <div className="text-slate-400 text-sm">{s.developer} • {s.zona}</div>
+                  <div className="flex items-center gap-2"><p className="text-white font-medium">{s.progetto}</p><StatusBadge status={s.stato || 'lead'} /></div>
+                  <p className="text-zinc-500 text-sm">{s.developer} • {s.zona}</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-amber-400 font-semibold">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</div>
-                  <div className="text-slate-500 text-xs">{fmtDate(s.data)}</div>
+                  <p className="text-white font-medium">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
+                  <p className="text-zinc-500 text-xs">{fmtShort(s.data)}</p>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
-      
-      {/* Tasks Tab */}
-      {tab === 'tasks' && (
+
+      {tab === 'task' && (
         <div className="space-y-3">
-          <button onClick={onAddTask} className="w-full bg-amber-500/20 border border-amber-500/50 text-amber-400 rounded-xl py-3 flex items-center justify-center gap-2 text-sm hover:bg-amber-500/30 transition-colors"><Plus className="w-4 h-4" /> Nuovo Task</button>
-          {tasks.length === 0 ? <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center text-slate-500">Nessun task</div> : tasks.map(t => (
-            <div key={t.id} className={`bg-slate-800 border rounded-xl p-4 transition-colors ${t.stato === 'completato' ? 'border-slate-700 opacity-60' : isOverdue(t.scadenza) ? 'border-red-500/50' : 'border-slate-700'}`}>
+          <Button icon={Plus} onClick={onAddTask} className="w-full" variant="secondary">Nuovo Task</Button>
+          {tasks.length === 0 ? <EmptyState icon={ListTodo} title="Nessun task" description="Non ci sono task per questo cliente" /> : tasks.map(t => (
+            <Card key={t.id} padding="p-4" className={t.stato === 'completato' ? 'opacity-50' : isOverdue(t.scadenza) ? 'border-red-500/30' : ''}>
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className={`text-white font-medium ${t.stato === 'completato' ? 'line-through' : ''}`}>{t.titolo}</span>
-                    <span className={`px-2 py-0.5 rounded text-xs text-white ${taskPrioritaColors[t.priorita]}`}>{t.priorita}</span>
+                    <p className={`text-white font-medium ${t.stato === 'completato' ? 'line-through' : ''}`}>{t.titolo}</p>
+                    <StatusBadge status={t.priorita} type="priority" />
                   </div>
-                  {t.scadenza && <div className={`text-xs mt-1 ${isOverdue(t.scadenza) && t.stato !== 'completato' ? 'text-red-400' : 'text-slate-400'}`}><Clock className="w-3 h-3 inline mr-1" />{fmtDateTime(t.scadenza)}</div>}
-                  {t.note && <div className="text-blue-400 text-xs mt-1">📝 {t.note}</div>}
+                  {t.scadenza && <p className={`text-sm mt-1 ${isOverdue(t.scadenza) && t.stato !== 'completato' ? 'text-red-400' : 'text-zinc-500'}`}>{fmtDateTime(t.scadenza)}</p>}
                 </div>
                 <div className="flex gap-1">
-                  {t.stato !== 'completato' && <button onClick={() => onCompleteTask(t.id)} className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg p-2 transition-colors"><Check className="w-4 h-4" /></button>}
-                  <button onClick={() => onDeleteTask(t.id)} className="bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg p-2 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                  {t.stato !== 'completato' && <Button variant="ghost" size="sm" icon={Check} onClick={() => onCompleteTask(t.id)} />}
+                  <Button variant="ghost" size="sm" icon={Trash2} onClick={() => onDeleteTask(t.id)} />
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -1101,7 +1227,7 @@ function ClienteDetail({ cliente, sales, tasks, onBack, onEdit, onDelete, update
   );
 }
 
-// ==================== ADMIN TASKS TAB ====================
+// Admin Tasks Tab
 function AdminTasksTab({ tasks, clienti, users, onComplete, onDelete, onEdit, onCreate }) {
   const [filter, setFilter] = useState('pending');
   const filtered = tasks.filter(t => {
@@ -1112,53 +1238,64 @@ function AdminTasksTab({ tasks, clienti, users, onComplete, onDelete, onEdit, on
     return true;
   });
   const getCliente = (id) => clienti.find(c => c.id === id);
-  const pendingCount = tasks.filter(t => t.stato === 'pending').length;
-  const overdueCount = tasks.filter(t => t.stato === 'pending' && isOverdue(t.scadenza)).length;
-  const todayCount = tasks.filter(t => t.stato === 'pending' && isToday(t.scadenza)).length;
-  
+  const counts = {
+    pending: tasks.filter(t => t.stato === 'pending').length,
+    overdue: tasks.filter(t => t.stato === 'pending' && isOverdue(t.scadenza)).length,
+    today: tasks.filter(t => t.stato === 'pending' && isToday(t.scadenza)).length
+  };
+
   return (
-    <div>
-      <div className="flex flex-wrap gap-2 items-center mb-4">
-        <button onClick={onCreate} className="bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-lg px-4 py-2 flex items-center gap-2 font-semibold transition-colors"><Plus className="w-4 h-4" />Nuovo</button>
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3 items-center">
+        <Button icon={Plus} onClick={onCreate}>Nuovo Task</Button>
         <div className="flex-1" />
-        <div className="flex gap-1 flex-wrap">
-          <button onClick={() => setFilter('pending')} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${filter === 'pending' ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>Pending ({pendingCount})</button>
-          <button onClick={() => setFilter('overdue')} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${filter === 'overdue' ? 'bg-red-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>Scaduti ({overdueCount})</button>
-          <button onClick={() => setFilter('today')} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${filter === 'today' ? 'bg-amber-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>Oggi ({todayCount})</button>
-          <button onClick={() => setFilter('completed')} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${filter === 'completed' ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>Fatto</button>
+        <div className="flex gap-2">
+          {[
+            { id: 'pending', label: 'Pending', count: counts.pending, color: '#60A5FA' },
+            { id: 'overdue', label: 'Scaduti', count: counts.overdue, color: '#EF4444' },
+            { id: 'today', label: 'Oggi', count: counts.today, color: '#FBBF24' },
+            { id: 'completed', label: 'Fatto', color: '#34D399' }
+          ].map(f => (
+            <button key={f.id} onClick={() => setFilter(f.id)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${filter === f.id ? 'text-white' : 'text-zinc-500 hover:text-white'}`} style={filter === f.id ? { background: `${f.color}20`, color: f.color } : {}}>
+              {f.label} {f.count !== undefined && `(${f.count})`}
+            </button>
+          ))}
         </div>
       </div>
-      <div className="space-y-3">
-        {filtered.length === 0 ? <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center text-slate-500">Nessun task</div> : filtered.map(t => {
+
+      <div className="space-y-2">
+        {filtered.length === 0 ? (
+          <EmptyState icon={ListTodo} title="Nessun task" description={filter === 'pending' ? 'Tutti i task sono completati!' : 'Nessun task in questa categoria'} />
+        ) : filtered.map(t => {
           const cliente = getCliente(t.cliente_id);
           return (
-            <div key={t.id} className={`bg-slate-800 border rounded-xl p-4 transition-colors ${t.stato === 'completato' ? 'border-slate-700 opacity-60' : isOverdue(t.scadenza) ? 'border-red-500/50 bg-red-500/5' : 'border-slate-700 hover:border-slate-600'}`}>
-              <div className="flex justify-between items-start">
+            <Card key={t.id} padding="p-4" className={`${t.stato === 'completato' ? 'opacity-50' : ''} ${isOverdue(t.scadenza) && t.stato !== 'completato' ? 'border-red-500/30 bg-red-500/5' : ''}`}>
+              <div className="flex items-start gap-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-white font-medium ${t.stato === 'completato' ? 'line-through' : ''}`}>{t.titolo}</span>
-                    <span className={`px-2 py-0.5 rounded text-xs text-white ${taskPrioritaColors[t.priorita]}`}>{t.priorita}</span>
-                    {isOverdue(t.scadenza) && t.stato !== 'completato' && <span className="px-2 py-0.5 rounded text-xs bg-red-500 text-white animate-pulse">SCADUTO</span>}
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <p className={`text-white font-medium ${t.stato === 'completato' ? 'line-through' : ''}`}>{t.titolo}</p>
+                    <StatusBadge status={t.priorita} type="priority" />
+                    {isOverdue(t.scadenza) && t.stato !== 'completato' && <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400 animate-pulse">Scaduto</span>}
                   </div>
-                  {t.descrizione && <div className="text-slate-400 text-sm mt-1">{t.descrizione}</div>}
-                  {t.note && <div className="text-blue-400 text-sm mt-1 bg-blue-500/10 px-2 py-1 rounded">📝 {t.note}</div>}
-                  <div className="flex items-center gap-3 mt-2 text-xs flex-wrap">
-                    {t.scadenza && <span className={`flex items-center gap-1 ${isOverdue(t.scadenza) && t.stato !== 'completato' ? 'text-red-400' : 'text-slate-400'}`}><Clock className="w-3 h-3" />{fmtDateTime(t.scadenza)}</span>}
+                  {t.descrizione && <p className="text-zinc-500 text-sm">{t.descrizione}</p>}
+                  {t.note && <p className="text-blue-400 text-sm mt-1 bg-blue-500/10 px-2 py-1 rounded">📝 {t.note}</p>}
+                  <div className="flex items-center gap-4 mt-2 text-xs">
+                    {t.scadenza && <span className={`flex items-center gap-1 ${isOverdue(t.scadenza) && t.stato !== 'completato' ? 'text-red-400' : 'text-zinc-500'}`}><Clock className="w-3 h-3" />{fmtDateTime(t.scadenza)}</span>}
                     {t.assegnato_a && <span className="text-blue-400 flex items-center gap-1"><User className="w-3 h-3" />{t.assegnato_a}</span>}
-                    {cliente && <span className="text-purple-400">{cliente.nome}</span>}
+                    {cliente && <span className="text-amber-400">{cliente.nome}</span>}
                   </div>
                 </div>
                 <div className="flex gap-1">
                   {t.stato !== 'completato' && (
                     <>
-                      <button onClick={() => onEdit(t)} className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg p-2 transition-colors"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => onComplete(t.id)} className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg p-2 transition-colors"><Check className="w-4 h-4" /></button>
+                      <Button variant="ghost" size="sm" icon={Edit2} onClick={() => onEdit(t)} />
+                      <Button variant="ghost" size="sm" icon={Check} onClick={() => onComplete(t.id)} />
                     </>
                   )}
-                  <button onClick={() => onDelete(t.id)} className="bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg p-2 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                  <Button variant="ghost" size="sm" icon={Trash2} onClick={() => onDelete(t.id)} />
                 </div>
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
@@ -1166,240 +1303,696 @@ function AdminTasksTab({ tasks, clienti, users, onComplete, onDelete, onEdit, on
   );
 }
 
-// ==================== AGENT TASKS TAB ====================
+// Agent Tasks Tab
 function AgentTasksTab({ tasks, allTasks, clienti, onComplete, onAddNote }) {
   const [filter, setFilter] = useState('pending');
   const completedTasks = allTasks.filter(t => t.stato === 'completato');
-  const displayTasks = filter === 'completed' ? completedTasks : tasks.filter(t => {
-    if (filter === 'pending') return true;
-    if (filter === 'overdue') return isOverdue(t.scadenza);
-    return true;
-  });
+  const displayTasks = filter === 'completed' ? completedTasks : tasks.filter(t => filter === 'overdue' ? isOverdue(t.scadenza) : true);
   const getCliente = (id) => clienti.find(c => c.id === id);
-  const overdueCount = tasks.filter(t => isOverdue(t.scadenza)).length;
-  
+
   return (
-    <div>
-      <div className="flex flex-wrap gap-2 items-center mb-4">
-        <div className="flex-1"><span className="text-white font-semibold text-lg">I tuoi Task</span></div>
-        <div className="flex gap-1">
-          <button onClick={() => setFilter('pending')} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${filter === 'pending' ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>Pending ({tasks.length})</button>
-          <button onClick={() => setFilter('overdue')} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${filter === 'overdue' ? 'bg-red-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>Scaduti ({overdueCount})</button>
-          <button onClick={() => setFilter('completed')} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${filter === 'completed' ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>Fatto ({completedTasks.length})</button>
-        </div>
+    <>
+      <SectionHeader icon={ListTodo} title="I tuoi Task" accent="244,114,182" />
+      
+      <div className="flex gap-2 mb-4">
+        {[
+          { id: 'pending', label: 'Da fare', count: tasks.length },
+          { id: 'overdue', label: 'Scaduti', count: tasks.filter(t => isOverdue(t.scadenza)).length },
+          { id: 'completed', label: 'Completati', count: completedTasks.length }
+        ].map(f => (
+          <button key={f.id} onClick={() => setFilter(f.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${filter === f.id ? 'bg-pink-500/20 text-pink-400' : 'text-zinc-500 hover:text-white'}`}>
+            {f.label} ({f.count})
+          </button>
+        ))}
       </div>
-      <div className="space-y-3">
+
+      <div className="space-y-2">
         {displayTasks.length === 0 ? (
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
-            <Check className="w-12 h-12 text-emerald-500/50 mx-auto mb-3" />
-            <div className="text-slate-400">Nessun task {filter === 'pending' ? 'da completare' : filter === 'overdue' ? 'scaduto' : 'completato'}</div>
-          </div>
+          <EmptyState icon={Check} title={filter === 'pending' ? 'Tutto fatto!' : 'Nessun task'} description="Non ci sono task in questa categoria" />
         ) : displayTasks.map(t => {
           const cliente = getCliente(t.cliente_id);
           return (
-            <div key={t.id} className={`bg-slate-800 border rounded-xl p-4 transition-all ${t.stato === 'completato' ? 'border-slate-700 opacity-60' : isOverdue(t.scadenza) ? 'border-red-500/50 bg-red-500/5' : 'border-slate-700 hover:border-slate-600'}`}>
-              <div className="flex justify-between items-start gap-3">
+            <Card key={t.id} padding="p-4" className={t.stato === 'completato' ? 'opacity-50' : isOverdue(t.scadenza) ? 'border-red-500/30' : ''}>
+              <div className="flex items-start gap-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-white font-medium ${t.stato === 'completato' ? 'line-through' : ''}`}>{t.titolo}</span>
-                    <span className={`px-2 py-0.5 rounded text-xs text-white ${taskPrioritaColors[t.priorita]}`}>{t.priorita}</span>
-                    {isOverdue(t.scadenza) && t.stato !== 'completato' && <span className="px-2 py-0.5 rounded text-xs bg-red-500 text-white animate-pulse">SCADUTO</span>}
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className={`text-white font-medium ${t.stato === 'completato' ? 'line-through' : ''}`}>{t.titolo}</p>
+                    <StatusBadge status={t.priorita} type="priority" />
+                    {isOverdue(t.scadenza) && t.stato !== 'completato' && <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400">Scaduto</span>}
                   </div>
-                  {t.descrizione && <div className="text-slate-400 text-sm mt-1">{t.descrizione}</div>}
-                  {t.note && <div className="text-blue-400 text-sm mt-2 bg-blue-500/10 px-3 py-2 rounded-lg">📝 {t.note}</div>}
-                  <div className="flex items-center gap-3 mt-2 text-xs flex-wrap">
-                    {t.scadenza && <span className={`flex items-center gap-1 ${isOverdue(t.scadenza) && t.stato !== 'completato' ? 'text-red-400' : 'text-slate-400'}`}><Clock className="w-3 h-3" />{fmtDateTime(t.scadenza)}</span>}
-                    {cliente && <span className="text-purple-400 flex items-center gap-1"><User className="w-3 h-3" />{cliente.nome}</span>}
+                  {t.descrizione && <p className="text-zinc-500 text-sm">{t.descrizione}</p>}
+                  {t.note && <p className="text-blue-400 text-sm mt-2 bg-blue-500/10 px-3 py-2 rounded-lg">📝 {t.note}</p>}
+                  <div className="flex items-center gap-4 mt-2 text-xs">
+                    {t.scadenza && <span className={`flex items-center gap-1 ${isOverdue(t.scadenza) && t.stato !== 'completato' ? 'text-red-400' : 'text-zinc-500'}`}><Clock className="w-3 h-3" />{fmtDateTime(t.scadenza)}</span>}
+                    {cliente && <span className="text-amber-400">{cliente.nome}</span>}
                   </div>
                 </div>
                 {t.stato !== 'completato' && (
                   <div className="flex flex-col gap-2">
-                    <button onClick={() => onAddNote(t)} className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg p-3 transition-colors" title="Aggiungi nota"><MessageCircle className="w-5 h-5" /></button>
-                    <button onClick={() => onComplete(t.id)} className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg p-3 transition-colors" title="Completa"><Check className="w-5 h-5" /></button>
+                    <button onClick={() => onAddNote(t)} className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center hover:bg-blue-500/20 transition-colors"><MessageCircle className="w-5 h-5" /></button>
+                    <button onClick={() => onComplete(t.id)} className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center hover:bg-emerald-500/20 transition-colors"><Check className="w-5 h-5" /></button>
                   </div>
                 )}
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
-    </div>
+    </>
   );
 }
 
-// ==================== TASK MODAL ====================
-function TaskModal({ task, clienti, users, onClose, onSave, currentUser }) {
-  const [f, setF] = useState(task || { titolo: '', descrizione: '', scadenza: '', priorita: 'normale', cliente_id: '', assegnato_a: '' });
-  const save = async () => { if (!f.titolo) { alert('Titolo obbligatorio'); return; } await onSave({ ...f, cliente_id: f.cliente_id || null, scadenza: f.scadenza || null }); };
-  const inp = "w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:border-amber-500 transition-colors";
-  
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700 max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold text-white mb-4">{task?.id ? 'Modifica' : 'Nuovo'} Task</h3>
-        <div className="space-y-4">
-          <input type="text" placeholder="Titolo *" value={f.titolo} onChange={(e) => setF({ ...f, titolo: e.target.value })} className={inp} autoFocus />
-          <textarea placeholder="Descrizione" value={f.descrizione || ''} onChange={(e) => setF({ ...f, descrizione: e.target.value })} className={`${inp} h-20`} />
-          <div>
-            <label className="text-slate-400 text-xs mb-1 block">Scadenza</label>
-            <input type="datetime-local" value={f.scadenza ? f.scadenza.slice(0, 16) : ''} onChange={(e) => setF({ ...f, scadenza: e.target.value ? new Date(e.target.value).toISOString() : '' })} className={inp} />
-          </div>
-          <div>
-            <label className="text-slate-400 text-xs mb-2 block">Priorità</label>
-            <div className="flex gap-2">
-              {taskPriorita.map(p => <button key={p} type="button" onClick={() => setF({ ...f, priorita: p })} className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${f.priorita === p ? `${taskPrioritaColors[p]} text-white` : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}>{p}</button>)}
-            </div>
-          </div>
-          <select value={f.cliente_id || ''} onChange={(e) => setF({ ...f, cliente_id: e.target.value })} className={inp}>
-            <option value="">Nessun cliente</option>
-            {clienti.map(c => <option key={c.id} value={c.id}>{c.nome} {c.cognome}</option>)}
-          </select>
-          <div>
-            <label className="text-slate-400 text-xs mb-1 block">Assegna a (riceverà email)</label>
-            <select value={f.assegnato_a || ''} onChange={(e) => setF({ ...f, assegnato_a: e.target.value })} className={inp}>
-              <option value="">Non assegnato</option>
-              {users.filter(u => u.ruolo !== 'admin').map(u => <option key={u.id} value={u.nome}>{u.nome} ({u.ruolo})</option>)}
-            </select>
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-3 transition-colors">Annulla</button>
-          <button onClick={save} className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-xl py-3 font-semibold transition-colors">Salva</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ==================== CLIENTE MODAL ====================
-function ClienteModal({ cliente, onClose, onSave }) {
-  const [f, setF] = useState(cliente || { nome: '', cognome: '', email: '', telefono: '', whatsapp: '', nazionalita: '', budget_min: '', budget_max: '', stato: 'nuovo', fonte: '', note: '' });
-  const save = async () => { if (!f.nome) { alert('Nome obbligatorio'); return; } await onSave(f); };
-  const inp = "w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:border-amber-500 transition-colors";
-  
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700 max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold text-white mb-4">{cliente ? 'Modifica' : 'Nuovo'} Cliente</h3>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <input type="text" placeholder="Nome *" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} className={inp} />
-            <input type="text" placeholder="Cognome" value={f.cognome || ''} onChange={(e) => setF({ ...f, cognome: e.target.value })} className={inp} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input type="tel" placeholder="Telefono" value={f.telefono || ''} onChange={(e) => setF({ ...f, telefono: e.target.value })} className={inp} />
-            <input type="tel" placeholder="WhatsApp" value={f.whatsapp || ''} onChange={(e) => setF({ ...f, whatsapp: e.target.value })} className={inp} />
-          </div>
-          <input type="email" placeholder="Email" value={f.email || ''} onChange={(e) => setF({ ...f, email: e.target.value })} className={inp} />
-          <input type="text" placeholder="Nazionalità" value={f.nazionalita || ''} onChange={(e) => setF({ ...f, nazionalita: e.target.value })} className={inp} />
-          <div className="grid grid-cols-2 gap-3">
-            <input type="number" placeholder="Budget Min" value={f.budget_min || ''} onChange={(e) => setF({ ...f, budget_min: e.target.value })} className={inp} />
-            <input type="number" placeholder="Budget Max" value={f.budget_max || ''} onChange={(e) => setF({ ...f, budget_max: e.target.value })} className={inp} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <select value={f.stato || 'nuovo'} onChange={(e) => setF({ ...f, stato: e.target.value })} className={inp}>{clienteStati.map(s => <option key={s} value={s}>{s}</option>)}</select>
-            <input type="text" placeholder="Fonte" value={f.fonte || ''} onChange={(e) => setF({ ...f, fonte: e.target.value })} className={inp} />
-          </div>
-          <textarea placeholder="Note" value={f.note || ''} onChange={(e) => setF({ ...f, note: e.target.value })} className={`${inp} h-20`} />
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-3 transition-colors">Annulla</button>
-          <button onClick={save} className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-xl py-3 font-semibold transition-colors">Salva</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ==================== USER MANAGEMENT ====================
-function UserManagement({ users, loadUsers, createUser, updateUser, deleteUser, showUserModal, setShowUserModal, editingUser, setEditingUser, selectedUsers, toggleSelectUser, deleteSelectedUsers }) {
+// Team Tab
+function TeamTab({ users, onCreate, onEdit, onDelete }) {
   const [copiedId, setCopiedId] = useState(null);
-  const copy = (u) => { navigator.clipboard.writeText(`KeyPrime\n${getBaseUrl()}\n${u.username} / ${u.password}`); setCopiedId(u.id); setTimeout(() => setCopiedId(null), 2000); };
-  
+  const copy = (u) => {
+    navigator.clipboard.writeText(`KeyPrime\n${getBaseUrl()}\n${u.username} / ${u.password}`);
+    setCopiedId(u.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold text-white">Gestione Utenti</h2>
-        <div className="flex gap-2">
-          {selectedUsers.length > 0 && <button onClick={deleteSelectedUsers} className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-2 flex items-center gap-1 text-sm transition-colors"><Trash2 className="w-4 h-4" />{selectedUsers.length}</button>}
-          <button onClick={() => { setEditingUser(null); setShowUserModal(true); }} className="bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-lg px-4 py-2 flex items-center gap-2 font-semibold transition-colors"><UserPlus className="w-4 h-4" />Nuovo</button>
-        </div>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <p className="text-zinc-500">{users.length} membri</p>
+        <Button icon={UserPlus} onClick={onCreate}>Nuovo Utente</Button>
       </div>
-      <div className="space-y-3">
+
+      <div className="space-y-2">
         {users.map(u => (
-          <div key={u.id} className={`bg-slate-800 border rounded-xl p-4 transition-all ${selectedUsers.includes(u.id) ? 'border-amber-500' : 'border-slate-700 hover:border-slate-600'}`}>
+          <Card key={u.id} padding="p-4">
             <div className="flex items-center gap-4">
-              <button onClick={() => toggleSelectUser(u.id)}>{selectedUsers.includes(u.id) ? <CheckSquare className="w-5 h-5 text-amber-400" /> : <Square className="w-5 h-5 text-slate-500" />}</button>
-              <Avatar nome={u.nome} />
+              <Avatar nome={u.nome} size="lg" />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-white font-medium">{u.nome}</span>
-                  <span className={`px-2 py-0.5 rounded text-xs ${u.ruolo === 'admin' ? 'bg-amber-500/20 text-amber-400' : u.ruolo === 'agente' ? 'bg-blue-500/20 text-blue-400' : 'bg-emerald-500/20 text-emerald-400'}`}>{u.ruolo}</span>
-                  {!u.attivo && <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400">Disattivo</span>}
+                  <p className="text-white font-medium">{u.nome}</p>
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${u.ruolo === 'admin' ? 'bg-violet-500/20 text-violet-400' : u.ruolo === 'agente' ? 'bg-blue-500/20 text-blue-400' : 'bg-emerald-500/20 text-emerald-400'}`}>{u.ruolo}</span>
+                  {!u.attivo && <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400">Disattivo</span>}
                 </div>
-                <div className="text-slate-400 text-sm mt-1">{u.username} / {u.password}{u.email && ` • ${u.email}`}</div>
+                <p className="text-zinc-500 text-sm mt-1">{u.username} / {u.password}{u.email && ` • ${u.email}`}</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => copy(u)} className="bg-slate-700 hover:bg-slate-600 text-white rounded-lg p-2 transition-colors">{copiedId === u.id ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}</button>
-                <button onClick={() => { setEditingUser(u); setShowUserModal(true); }} className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg p-2 transition-colors"><Edit2 className="w-4 h-4" /></button>
-                {u.ruolo !== 'admin' && <button onClick={() => deleteUser(u.id)} className="bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg p-2 transition-colors"><Trash2 className="w-4 h-4" /></button>}
+                <Button variant="ghost" size="sm" icon={copiedId === u.id ? Check : Copy} onClick={() => copy(u)} />
+                <Button variant="ghost" size="sm" icon={Edit2} onClick={() => onEdit(u)} />
+                {u.ruolo !== 'admin' && <Button variant="ghost" size="sm" icon={Trash2} onClick={() => onDelete(u.id)} />}
               </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
-      {showUserModal && <UserModal user={editingUser} onClose={() => { setShowUserModal(false); setEditingUser(null); }} onSave={editingUser ? (d) => updateUser(editingUser.id, d) : createUser} />}
     </div>
   );
 }
 
-// ==================== USER MODAL ====================
-function UserModal({ user, onClose, onSave }) {
-  const [f, setF] = useState(user || { nome: '', username: '', password: '', email: '', ruolo: 'agente', referente: 'Pellegrino', attivo: true });
-  const save = async () => { if (!f.nome || !f.username || !f.password) { alert('Compila i campi obbligatori'); return; } const ok = await onSave(f); if (ok) onClose(); };
-  const inp = "w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:border-amber-500 transition-colors";
-  
+// ==================== MODALS & FORMS ====================
+
+// Login Form
+function LoginForm({ onLogin, loading }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
+
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4">{user ? 'Modifica' : 'Nuovo'} Utente</h3>
-        <div className="space-y-3">
-          <input type="text" placeholder="Nome *" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} className={inp} />
-          <input type="email" placeholder="Email (per notifiche)" value={f.email || ''} onChange={(e) => setF({ ...f, email: e.target.value })} className={inp} />
-          <div className="grid grid-cols-2 gap-3">
-            <input type="text" placeholder="Username *" value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} className={inp} />
-            <input type="text" placeholder="Password *" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} className={inp} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <select value={f.ruolo} onChange={(e) => setF({ ...f, ruolo: e.target.value })} className={inp}><option value="agente">Agente</option><option value="segnalatore">Segnalatore</option></select>
-            <select value={f.referente} onChange={(e) => setF({ ...f, referente: e.target.value })} className={inp}><option value="Pellegrino">Pellegrino</option><option value="Giovanni">Giovanni</option></select>
-          </div>
-          {user && (
-            <div className="flex items-center gap-3 bg-slate-700/50 rounded-xl p-3">
-              <input type="checkbox" id="att" checked={f.attivo} onChange={(e) => setF({ ...f, attivo: e.target.checked })} className="w-4 h-4 rounded" />
-              <label htmlFor="att" className="text-slate-300 text-sm">Utente attivo</label>
-            </div>
-          )}
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-3 transition-colors">Annulla</button>
-          <button onClick={save} className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-xl py-3 font-semibold transition-colors">Salva</button>
+    <form onSubmit={(e) => { e.preventDefault(); onLogin(username, password); }} className="space-y-4">
+      <Input label="Username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Inserisci username" />
+      <div>
+        <label className="block text-sm text-zinc-400 mb-2">Password</label>
+        <div className="relative">
+          <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 pr-12 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] transition-all" />
+          <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors">
+            {showPwd ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </button>
         </div>
       </div>
+      <Button type="submit" disabled={loading || !username || !password} className="w-full py-3">
+        {loading ? 'Accesso...' : 'Accedi'}
+      </Button>
+    </form>
+  );
+}
+
+// Lead Detail Sheet
+function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert, isAdmin }) {
+  const mc = (sale?.stato === 'venduto' || sale?.stato === 'incassato') ? Number(sale.valore) * (sale.commission_pct || 5) / 100 * rate : 0;
+  
+  return (
+    <BottomSheet isOpen={!!sale} onClose={onClose} title={sale?.progetto || 'Lead'}>
+      <div className="space-y-4">
+        {/* Status */}
+        <div className="flex items-center justify-between">
+          <StatusBadge status={sale?.stato || 'lead'} />
+          <span className="text-zinc-500 text-sm">{fmtDate(sale?.data)}</span>
+        </div>
+
+        {/* Value */}
+        <Card className="border-amber-500/20 bg-amber-500/5">
+          <p className="text-zinc-400 text-sm">Valore</p>
+          <p className="text-2xl font-semibold text-white mt-1">{sale?.valore > 0 ? `${fmt(sale.valore)} AED` : 'TBD'}</p>
+          {mc > 0 && <p className="text-emerald-400 text-sm mt-1">Commissione: {fmt(mc)} AED {sale?.pagato ? '✓' : ''}</p>}
+        </Card>
+
+        {/* Details */}
+        <div className="grid grid-cols-2 gap-3">
+          <Card padding="p-3"><p className="text-zinc-500 text-xs">Developer</p><p className="text-white">{sale?.developer}</p></Card>
+          <Card padding="p-3"><p className="text-zinc-500 text-xs">Zona</p><p className="text-white">{sale?.zona}</p></Card>
+        </div>
+
+        {/* Cliente */}
+        {cliente && (
+          <Card>
+            <p className="text-zinc-500 text-xs mb-2">Cliente</p>
+            <div className="flex items-center gap-3 mb-3">
+              <Avatar nome={cliente.nome} cognome={cliente.cognome} />
+              <div>
+                <p className="text-white font-medium">{cliente.nome} {cliente.cognome}</p>
+                <p className="text-zinc-500 text-sm">{cliente.telefono}</p>
+              </div>
+            </div>
+            <QuickActions phone={cliente.telefono} whatsapp={cliente.whatsapp || cliente.telefono} email={cliente.email} clienteName={cliente.nome} />
+          </Card>
+        )}
+
+        {/* Status Change */}
+        <div>
+          <p className="text-zinc-500 text-xs mb-2">Cambia stato</p>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {pipelineStati.slice(0, -1).map(st => (
+              <button key={st} onClick={() => { onUpdateSale(sale.id, { stato: st }); if (st !== sale.stato) onClose(); }} className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${sale?.stato === st ? 'text-white' : 'text-zinc-500 hover:text-white'}`} style={sale?.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#27272A' }}>
+                {st}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Actions */}
+        {['prenotato', 'trattativa'].includes(sale?.stato) && (
+          <Button onClick={onConvert} icon={DollarSign} className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white">
+            Registra Vendita
+          </Button>
+        )}
+
+        {isAdmin && (
+          <Button variant="danger" icon={Trash2} className="w-full">Elimina Lead</Button>
+        )}
+      </div>
+    </BottomSheet>
+  );
+}
+
+// Convert Modal
+function ConvertModal({ sale, onConvert, onCancel }) {
+  const [value, setValue] = useState(sale?.valore || '');
+  
+  return (
+    <Modal isOpen={!!sale} onClose={onCancel} title="🎉 Registra Vendita" size="sm">
+      <div className="space-y-4">
+        <Card padding="p-3" className="bg-zinc-800/50">
+          <p className="text-white font-medium">{sale?.progetto}</p>
+          <p className="text-zinc-500 text-sm">{sale?.developer} • {sale?.zona}</p>
+        </Card>
+        <Input label="Valore finale (AED)" type="number" value={value} onChange={(e) => setValue(e.target.value)} placeholder="es. 1500000" autoFocus />
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={onCancel} className="flex-1">Annulla</Button>
+          <Button onClick={() => value && onConvert(sale.id, parseFloat(value))} disabled={!value} className="flex-1 bg-emerald-500 hover:bg-emerald-600">Conferma</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// Notifications Panel
+function NotificationsPanel({ tasks, unreadIds, onClose, onGoToTask }) {
+  return (
+    <BottomSheet isOpen={true} onClose={onClose} title="Notifiche">
+      {tasks.length === 0 ? (
+        <EmptyState icon={Bell} title="Nessuna notifica" description="Sei in pari con tutto!" />
+      ) : (
+        <div className="space-y-2">
+          {tasks.map(t => (
+            <Card key={t.id} hover onClick={onGoToTask} padding="p-3" className={unreadIds.includes(t.id) ? 'border-l-2 border-l-pink-500' : ''}>
+              <div className="flex items-start gap-3">
+                <div className={`w-2 h-2 rounded-full mt-1.5 ${isOverdue(t.scadenza) ? 'bg-red-500' : 'bg-amber-500'}`} />
+                <div className="flex-1">
+                  <p className="text-white text-sm font-medium">{t.titolo}</p>
+                  <p className={`text-xs ${isOverdue(t.scadenza) ? 'text-red-400' : 'text-zinc-500'}`}>
+                    {t.scadenza ? fmtDateTime(t.scadenza) : 'Senza scadenza'}
+                    {isOverdue(t.scadenza) && ' • Scaduto!'}
+                  </p>
+                </div>
+                <StatusBadge status={t.priorita} type="priority" />
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </BottomSheet>
+  );
+}
+
+// Password Modal
+function PasswordModal({ currentPassword, onSave, onClose }) {
+  const [oldPwd, setOldPwd] = useState('');
+  const [newPwd, setNewPwd] = useState('');
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const [error, setError] = useState('');
+
+  const save = () => {
+    if (oldPwd !== currentPassword) { setError('Password attuale errata'); return; }
+    if (newPwd.length < 6) { setError('Minimo 6 caratteri'); return; }
+    if (newPwd !== confirmPwd) { setError('Le password non coincidono'); return; }
+    onSave(newPwd);
+  };
+
+  return (
+    <Modal isOpen onClose={onClose} title="Cambia Password" size="sm">
+      <div className="space-y-4">
+        {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-4 py-3 text-sm">{error}</div>}
+        <Input label="Password attuale" type="password" value={oldPwd} onChange={(e) => setOldPwd(e.target.value)} />
+        <Input label="Nuova password" type="password" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} />
+        <Input label="Conferma password" type="password" value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} />
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={onClose} className="flex-1">Annulla</Button>
+          <Button onClick={save} className="flex-1">Salva</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// Note Modal
+function NoteModal({ task, onSave, onClose }) {
+  const [note, setNote] = useState(task?.note || '');
+  
+  return (
+    <Modal isOpen onClose={onClose} title="Aggiungi Nota" size="sm">
+      <div className="space-y-4">
+        <Card padding="p-3" className="bg-zinc-800/50">
+          <p className="text-white font-medium">{task?.titolo}</p>
+        </Card>
+        <div>
+          <label className="block text-sm text-zinc-400 mb-2">Nota</label>
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Scrivi una nota..." className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] h-24 resize-none" autoFocus />
+        </div>
+        <p className="text-zinc-600 text-xs">L'admin riceverà una notifica email</p>
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={onClose} className="flex-1">Annulla</Button>
+          <Button onClick={() => onSave(task.id, note)} icon={Send} className="flex-1">Invia</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// Cliente Modal
+function ClienteModal({ cliente, onSave, onClose }) {
+  const [form, setForm] = useState(cliente || { nome: '', cognome: '', email: '', telefono: '', whatsapp: '', nazionalita: '', budget_min: '', budget_max: '', stato: 'nuovo', fonte: '', note: '' });
+  
+  const save = async () => {
+    if (!form.nome) { alert('Nome obbligatorio'); return; }
+    await onSave(form);
+  };
+
+  return (
+    <Modal isOpen onClose={onClose} title={cliente ? 'Modifica Cliente' : 'Nuovo Cliente'}>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Nome *" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
+          <Input label="Cognome" value={form.cognome || ''} onChange={(e) => setForm({ ...form, cognome: e.target.value })} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Telefono" type="tel" value={form.telefono || ''} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />
+          <Input label="WhatsApp" type="tel" value={form.whatsapp || ''} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
+        </div>
+        <Input label="Email" type="email" value={form.email || ''} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        <Input label="Nazionalità" value={form.nazionalita || ''} onChange={(e) => setForm({ ...form, nazionalita: e.target.value })} />
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Budget Min" type="number" value={form.budget_min || ''} onChange={(e) => setForm({ ...form, budget_min: e.target.value })} />
+          <Input label="Budget Max" type="number" value={form.budget_max || ''} onChange={(e) => setForm({ ...form, budget_max: e.target.value })} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Select label="Stato" value={form.stato || 'nuovo'} onChange={(e) => setForm({ ...form, stato: e.target.value })}>
+            {clienteStati.map(s => <option key={s} value={s}>{s}</option>)}
+          </Select>
+          <Input label="Fonte" value={form.fonte || ''} onChange={(e) => setForm({ ...form, fonte: e.target.value })} />
+        </div>
+        <div>
+          <label className="block text-sm text-zinc-400 mb-2">Note</label>
+          <textarea value={form.note || ''} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3F3F46]" />
+        </div>
+        <div className="flex gap-3 pt-2">
+          <Button variant="secondary" onClick={onClose} className="flex-1">Annulla</Button>
+          <Button onClick={save} className="flex-1">Salva</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// Task Modal
+function TaskModal({ task, clienti, users, onSave, onClose }) {
+  const [form, setForm] = useState(task || { titolo: '', descrizione: '', scadenza: '', priorita: 'normale', cliente_id: '', assegnato_a: '' });
+
+  const save = async () => {
+    if (!form.titolo) { alert('Titolo obbligatorio'); return; }
+    await onSave({ ...form, cliente_id: form.cliente_id || null, scadenza: form.scadenza || null });
+  };
+
+  return (
+    <Modal isOpen onClose={onClose} title={task?.id ? 'Modifica Task' : 'Nuovo Task'}>
+      <div className="space-y-4">
+        <Input label="Titolo *" value={form.titolo} onChange={(e) => setForm({ ...form, titolo: e.target.value })} autoFocus />
+        <div>
+          <label className="block text-sm text-zinc-400 mb-2">Descrizione</label>
+          <textarea value={form.descrizione || ''} onChange={(e) => setForm({ ...form, descrizione: e.target.value })} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3F3F46]" />
+        </div>
+        <Input label="Scadenza" type="datetime-local" value={form.scadenza ? form.scadenza.slice(0, 16) : ''} onChange={(e) => setForm({ ...form, scadenza: e.target.value ? new Date(e.target.value).toISOString() : '' })} />
+        <div>
+          <label className="block text-sm text-zinc-400 mb-2">Priorità</label>
+          <div className="flex gap-2">
+            {taskPriorita.map(p => (
+              <button key={p} onClick={() => setForm({ ...form, priorita: p })} className={`flex-1 px-3 py-2 rounded-xl text-sm transition-all ${form.priorita === p ? 'text-white' : 'text-zinc-500'}`} style={form.priorita === p ? { background: theme.priority[p]?.bg, color: theme.priority[p]?.color } : { background: '#27272A' }}>
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+        <Select label="Cliente" value={form.cliente_id || ''} onChange={(e) => setForm({ ...form, cliente_id: e.target.value })}>
+          <option value="">Nessun cliente</option>
+          {clienti.map(c => <option key={c.id} value={c.id}>{c.nome} {c.cognome}</option>)}
+        </Select>
+        <Select label="Assegna a" value={form.assegnato_a || ''} onChange={(e) => setForm({ ...form, assegnato_a: e.target.value })}>
+          <option value="">Non assegnato</option>
+          {users.filter(u => u.ruolo !== 'admin').map(u => <option key={u.id} value={u.nome}>{u.nome} ({u.ruolo})</option>)}
+        </Select>
+        <div className="flex gap-3 pt-2">
+          <Button variant="secondary" onClick={onClose} className="flex-1">Annulla</Button>
+          <Button onClick={save} className="flex-1">Salva</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// User Modal
+function UserModal({ user, onSave, onClose }) {
+  const [form, setForm] = useState(user || { nome: '', username: '', password: '', email: '', ruolo: 'agente', referente: 'Pellegrino', attivo: true });
+
+  const save = async () => {
+    if (!form.nome || !form.username || !form.password) { alert('Compila i campi obbligatori'); return; }
+    await onSave(form);
+  };
+
+  return (
+    <Modal isOpen onClose={onClose} title={user ? 'Modifica Utente' : 'Nuovo Utente'}>
+      <div className="space-y-4">
+        <Input label="Nome *" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
+        <Input label="Email" type="email" value={form.email || ''} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Per notifiche" />
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Username *" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
+          <Input label="Password *" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Select label="Ruolo" value={form.ruolo} onChange={(e) => setForm({ ...form, ruolo: e.target.value })}>
+            <option value="agente">Agente</option>
+            <option value="segnalatore">Segnalatore</option>
+          </Select>
+          <Select label="Referente" value={form.referente} onChange={(e) => setForm({ ...form, referente: e.target.value })}>
+            <option value="Pellegrino">Pellegrino</option>
+            <option value="Giovanni">Giovanni</option>
+          </Select>
+        </div>
+        {user && (
+          <Card padding="p-3" className="flex items-center gap-3">
+            <input type="checkbox" id="attivo" checked={form.attivo} onChange={(e) => setForm({ ...form, attivo: e.target.checked })} className="w-4 h-4 rounded" />
+            <label htmlFor="attivo" className="text-zinc-300 text-sm">Utente attivo</label>
+          </Card>
+        )}
+        <div className="flex gap-3 pt-2">
+          <Button variant="secondary" onClick={onClose} className="flex-1">Annulla</Button>
+          <Button onClick={save} className="flex-1">Salva</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ==================== LEAD & SALE FORMS ====================
+
+// Client Search Component
+function ClientSearch({ clienti, onSelect, onCreateNew, selectedClient }) {
+  const [search, setSearch] = useState('');
+  const [show, setShow] = useState(false);
+  const filtered = search.length >= 2 ? clienti.filter(c => `${c.nome} ${c.cognome} ${c.telefono}`.toLowerCase().includes(search.toLowerCase())).slice(0, 5) : [];
+
+  if (selectedClient) {
+    return (
+      <Card padding="p-3" className="border-emerald-500/20 bg-emerald-500/5">
+        <div className="flex items-center gap-3">
+          <Avatar nome={selectedClient.nome} cognome={selectedClient.cognome} size="sm" />
+          <div className="flex-1">
+            <p className="text-white font-medium">{selectedClient.nome} {selectedClient.cognome}</p>
+            <p className="text-emerald-400 text-sm">{selectedClient.telefono}</p>
+          </div>
+          <button onClick={() => onSelect(null)} className="text-zinc-500 hover:text-white"><X className="w-5 h-5" /></button>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+        <input type="text" placeholder="Cerca cliente..." value={search} onChange={(e) => { setSearch(e.target.value); setShow(true); }} onFocus={() => setShow(true)} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46]" />
+      </div>
+      
+      {show && search.length >= 2 && (
+        <div className="absolute z-10 w-full mt-2 bg-[#18181B] border border-[#27272A] rounded-xl overflow-hidden shadow-xl">
+          {filtered.map(c => (
+            <button key={c.id} onClick={() => { onSelect(c); setSearch(''); setShow(false); }} className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-[#27272A] last:border-0 flex items-center gap-3 transition-colors">
+              <Avatar nome={c.nome} cognome={c.cognome} size="sm" />
+              <div>
+                <p className="text-white text-sm">{c.nome} {c.cognome}</p>
+                <p className="text-zinc-500 text-xs">{c.telefono}</p>
+              </div>
+            </button>
+          ))}
+          {filtered.length === 0 && <div className="px-4 py-3 text-zinc-500 text-sm">Nessun risultato</div>}
+          <button onClick={() => { onCreateNew(); setShow(false); }} className="w-full text-left px-4 py-3 bg-blue-500/10 text-blue-400 flex items-center gap-2 hover:bg-blue-500/20 transition-colors">
+            <UserPlus className="w-4 h-4" /> Nuovo cliente
+          </button>
+        </div>
+      )}
+      
+      {!search && (
+        <button onClick={onCreateNew} className="w-full mt-3 border border-dashed border-[#3F3F46] rounded-xl py-3 text-zinc-500 text-sm flex items-center justify-center gap-2 hover:border-amber-500 hover:text-amber-400 transition-colors">
+          <UserPlus className="w-4 h-4" /> Crea nuovo cliente
+        </button>
+      )}
     </div>
   );
 }
 
-// Add CSS for animations
+// Select with Other Option
+function SelectWithOther({ value, onChange, options, placeholder, label }) {
+  const [showCustom, setShowCustom] = useState(false);
+  const [customValue, setCustomValue] = useState('');
+
+  useEffect(() => {
+    if (value && !options.includes(value) && value !== 'Altro') {
+      setShowCustom(true);
+      setCustomValue(value);
+    }
+  }, [value, options]);
+
+  return (
+    <div>
+      {label && <label className="block text-sm text-zinc-400 mb-2">{label}</label>}
+      <select value={showCustom ? 'Altro' : value} onChange={(e) => {
+        if (e.target.value === 'Altro') { setShowCustom(true); setCustomValue(''); onChange(''); }
+        else { setShowCustom(false); onChange(e.target.value); }
+      }} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3F3F46] appearance-none">
+        <option value="">{placeholder}</option>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+      {showCustom && (
+        <input type="text" value={customValue} onChange={(e) => { setCustomValue(e.target.value); onChange(e.target.value); }} placeholder="Specifica..." className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm mt-2 focus:outline-none focus:border-[#3F3F46]" autoFocus />
+      )}
+    </div>
+  );
+}
+
+// Lead Form
+function LeadForm({ type, userName, clienti, onSubmit }) {
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [form, setForm] = useState({
+    data: new Date().toISOString().split('T')[0],
+    developer: '', progetto: '', zona: '', valore: '', stato: 'lead',
+    cliente_nome: '', cliente_cognome: '', cliente_email: '', cliente_telefono: '',
+    cliente_whatsapp: '', cliente_nazionalita: '', cliente_budget_min: '', cliente_budget_max: '', cliente_note: ''
+  });
+
+  const submit = (e) => {
+    e?.preventDefault();
+    if (!selectedClient && !form.cliente_nome) { alert('Seleziona o crea un cliente'); return; }
+    onSubmit({
+      ...form,
+      cliente_id: selectedClient?.id,
+      cliente_nome: selectedClient?.nome || form.cliente_nome,
+      developer: form.developer || 'TBD',
+      progetto: form.progetto || 'TBD',
+      zona: form.zona || 'TBD',
+      valore: form.valore ? parseFloat(form.valore) : 0,
+      agente: type === 'agente' ? userName : null,
+      segnalatore: type === 'segnalatore' ? userName : null
+    });
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-6">
+      {/* Cliente */}
+      <Card>
+        <h4 className="text-white font-medium mb-4 flex items-center gap-2">
+          <User className="w-4 h-4 text-amber-400" /> Cliente
+        </h4>
+        <ClientSearch clienti={clienti} selectedClient={selectedClient} onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }} onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }} />
+        
+        {showNewClient && !selectedClient && (
+          <div className="mt-4 pt-4 border-t border-[#27272A] space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Input placeholder="Nome *" value={form.cliente_nome} onChange={(e) => setForm({ ...form, cliente_nome: e.target.value })} />
+              <Input placeholder="Cognome" value={form.cliente_cognome} onChange={(e) => setForm({ ...form, cliente_cognome: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input type="tel" placeholder="Telefono" value={form.cliente_telefono} onChange={(e) => setForm({ ...form, cliente_telefono: e.target.value })} />
+              <Input type="email" placeholder="Email" value={form.cliente_email} onChange={(e) => setForm({ ...form, cliente_email: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input type="number" placeholder="Budget Min" value={form.cliente_budget_min} onChange={(e) => setForm({ ...form, cliente_budget_min: e.target.value })} />
+              <Input type="number" placeholder="Budget Max" value={form.cliente_budget_max} onChange={(e) => setForm({ ...form, cliente_budget_max: e.target.value })} />
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Immobile */}
+      <Card>
+        <h4 className="text-white font-medium mb-4 flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-blue-400" /> Immobile
+        </h4>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <SelectWithOther value={form.developer} onChange={(v) => setForm({ ...form, developer: v })} options={developers} placeholder="Developer" />
+            <SelectWithOther value={form.zona} onChange={(v) => setForm({ ...form, zona: v })} options={zones} placeholder="Zona" />
+          </div>
+          <Input placeholder="Progetto" value={form.progetto} onChange={(e) => setForm({ ...form, progetto: e.target.value })} />
+          <Input type="number" placeholder="Valore (AED)" value={form.valore} onChange={(e) => setForm({ ...form, valore: e.target.value })} />
+        </div>
+      </Card>
+
+      {/* Stato */}
+      <Card>
+        <h4 className="text-white font-medium mb-4">Stato iniziale</h4>
+        <div className="flex flex-wrap gap-2">
+          {pipelineStati.slice(0, 4).map(st => (
+            <button key={st} type="button" onClick={() => setForm({ ...form, stato: st })} className={`px-4 py-2 rounded-xl text-sm transition-all ${form.stato === st ? 'text-white' : 'text-zinc-500'}`} style={form.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#27272A' }}>
+              {st}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      <button type="submit" id="submitBtn" className="hidden">Submit</button>
+    </form>
+  );
+}
+
+// Sale Form
+function SaleForm({ type, userName, clienti, onSubmit }) {
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [form, setForm] = useState({
+    data: new Date().toISOString().split('T')[0],
+    developer: '', progetto: '', zona: '', valore: '',
+    nuovo_cliente_nome: '', nuovo_cliente_cognome: '', nuovo_cliente_telefono: '', nuovo_cliente_email: ''
+  });
+
+  const submit = (e) => {
+    e?.preventDefault();
+    if (!selectedClient && !form.nuovo_cliente_nome) { alert('Seleziona o inserisci il cliente'); return; }
+    if (!form.developer || !form.progetto || !form.zona || !form.valore) { alert('Compila tutti i campi dell\'immobile'); return; }
+    onSubmit({
+      data: form.data,
+      developer: form.developer,
+      progetto: form.progetto,
+      zona: form.zona,
+      valore: parseFloat(form.valore),
+      agente: type === 'agente' ? userName : null,
+      segnalatore: type === 'segnalatore' ? userName : null,
+      cliente_id: selectedClient?.id,
+      cliente_nome: selectedClient?.nome || form.nuovo_cliente_nome,
+      nuovo_cliente_nome: form.nuovo_cliente_nome,
+      nuovo_cliente_cognome: form.nuovo_cliente_cognome,
+      nuovo_cliente_telefono: form.nuovo_cliente_telefono,
+      nuovo_cliente_email: form.nuovo_cliente_email
+    });
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-6">
+      {/* Cliente */}
+      <Card>
+        <h4 className="text-white font-medium mb-4 flex items-center gap-2">
+          <User className="w-4 h-4 text-amber-400" /> Cliente Acquirente
+        </h4>
+        <ClientSearch clienti={clienti} selectedClient={selectedClient} onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }} onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }} />
+        
+        {showNewClient && !selectedClient && (
+          <div className="mt-4 pt-4 border-t border-[#27272A] space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Input placeholder="Nome *" value={form.nuovo_cliente_nome} onChange={(e) => setForm({ ...form, nuovo_cliente_nome: e.target.value })} />
+              <Input placeholder="Cognome" value={form.nuovo_cliente_cognome} onChange={(e) => setForm({ ...form, nuovo_cliente_cognome: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input type="tel" placeholder="Telefono" value={form.nuovo_cliente_telefono} onChange={(e) => setForm({ ...form, nuovo_cliente_telefono: e.target.value })} />
+              <Input type="email" placeholder="Email" value={form.nuovo_cliente_email} onChange={(e) => setForm({ ...form, nuovo_cliente_email: e.target.value })} />
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Vendita */}
+      <Card>
+        <h4 className="text-white font-medium mb-4 flex items-center gap-2">
+          <DollarSign className="w-4 h-4 text-emerald-400" /> Dettagli Vendita
+        </h4>
+        <div className="space-y-3">
+          <Input label="Data" type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
+          <SelectWithOther label="Developer *" value={form.developer} onChange={(v) => setForm({ ...form, developer: v })} options={developers} placeholder="Seleziona developer" />
+          <Input label="Progetto *" value={form.progetto} onChange={(e) => setForm({ ...form, progetto: e.target.value })} placeholder="Nome progetto" />
+          <SelectWithOther label="Zona *" value={form.zona} onChange={(v) => setForm({ ...form, zona: v })} options={zones} placeholder="Seleziona zona" />
+          <Input label="Valore (AED) *" type="number" value={form.valore} onChange={(e) => setForm({ ...form, valore: e.target.value })} placeholder="es. 1500000" />
+        </div>
+      </Card>
+
+      <button type="submit" id="submitBtn" className="hidden">Submit</button>
+    </form>
+  );
+}
+
+// ==================== CSS ANIMATIONS ====================
 const style = document.createElement('style');
 style.textContent = `
   @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   @keyframes slideRight { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+  @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   .animate-slideUp { animation: slideUp 0.3s ease-out; }
-  .animate-slideDown { animation: slideDown 0.2s ease-out; }
   .animate-slideRight { animation: slideRight 0.3s ease-out; }
+  .animate-scaleIn { animation: scaleIn 0.2s ease-out; }
   .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+  * { -webkit-tap-highlight-color: transparent; }
+  input, select, textarea { font-size: 16px !important; }
 `;
 if (typeof document !== 'undefined') document.head.appendChild(style);
