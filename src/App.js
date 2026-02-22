@@ -982,6 +982,7 @@ export default function App() {
     const byStato = pipelineStati.reduce((a, st) => { a[st] = sales.filter(s => (s.stato || 'lead') === st); return a; }, {});
     const byMonth = sales.reduce((a, s) => { const m = s.data?.substring(0, 7) || 'N/A'; a[m] = (a[m] || 0) + Number(s.valore); return a; }, {});
     const byAgente = sales.reduce((a, s) => { if (s.agente) a[s.agente] = (a[s.agente] || 0) + Number(s.valore); return a; }, {});
+    const byZona = sales.reduce((a, s) => { if (s.zona) a[s.zona] = (a[s.zona] || 0) + Number(s.valore); return a; }, {});
     const pendingTasks = tasks.filter(t => t.stato === 'pending');
 
     const tabs = [
