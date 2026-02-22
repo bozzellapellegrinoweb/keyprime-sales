@@ -578,7 +578,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Modals
@@ -849,7 +849,7 @@ export default function App() {
       <div className="min-h-screen bg-[#09090B] flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
           <div className="text-center mb-10">
-            <img src="/logo.png" alt="KeyPrime" className="h-12 mx-auto mb-4" />
+            <img src="/logo.png" alt="KeyPrime" className="h-20 mx-auto mb-4" />
             <p className="text-zinc-500 text-sm">Real Estate CRM</p>
           </div>
           
@@ -912,7 +912,7 @@ export default function App() {
         <div className="sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A]">
           <div className="flex items-center justify-between px-4 py-4 max-w-5xl mx-auto">
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="KeyPrime" className="h-10" />
+              <img src="/logo.png" alt="KeyPrime" className="h-16" />
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white transition-colors">
@@ -1159,7 +1159,7 @@ export default function App() {
         {/* Sidebar - Desktop */}
         <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#0F0F11] p-4">
           <div className="mb-8">
-            <img src="/logo.png" alt="KeyPrime" className="h-12" />
+            <img src="/logo.png" alt="KeyPrime" className="h-20" />
           </div>
           
           <nav className="space-y-1 flex-1">
@@ -1186,7 +1186,7 @@ export default function App() {
           <div className="lg:hidden sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A]">
             <div className="flex items-center justify-between px-4 py-4">
               <button onClick={() => setMobileMenuOpen(true)} className="text-zinc-400"><Menu className="w-6 h-6" /></button>
-              <img src="/logo.png" alt="KeyPrime" className="h-10" />
+              <img src="/logo.png" alt="KeyPrime" className="h-16" />
               <button onClick={() => setShowNotifications(true)} className="relative text-zinc-400">
                 <Bell className="w-5 h-5" />
                 {notificationCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">{notificationCount}</span>}
@@ -1401,7 +1401,7 @@ export default function App() {
             <div className="absolute inset-0 bg-black/60" onClick={() => setMobileMenuOpen(false)} />
             <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#0F0F11] p-4 animate-slideRight">
               <div className="flex items-center justify-between mb-8">
-                <img src="/logo.png" alt="KeyPrime" className="h-10" />
+                <img src="/logo.png" alt="KeyPrime" className="h-16" />
                 <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-400"><X className="w-5 h-5" /></button>
               </div>
               <nav className="space-y-1">
@@ -2079,13 +2079,16 @@ function AgentDetailView({ agent, sales, onBack }) {
 // ==================== MODALS & FORMS ====================
 
 
-// Leaflet Map Component (no CSP issues, free!)
+// Leaflet Map Component - Airbnb Style
 function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const markersLayer = useRef(null);
+  const markersMap = useRef({});
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState(null);
+  const [hoveredProject, setHoveredProject] = useState(null);
+  const [popupProject, setPopupProject] = useState(null);
 
   const projectsByLocation = React.useMemo(() => {
     const grouped = {};
@@ -2093,19 +2096,26 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
       const locName = p.location?.full_name || p.location?.name || 'Unknown';
       const coords = getLocationCoords(locName);
       if (coords) {
-        const key = `${coords.lat},${coords.lng}`;
-        if (!grouped[key]) grouped[key] = { coords, location: locName, projects: [] };
-        grouped[key].projects.push(p);
+        // Add small random offset to prevent overlap
+        const offsetLat = (Math.random() - 0.5) * 0.01;
+        const offsetLng = (Math.random() - 0.5) * 0.01;
+        grouped[p.project_id] = { 
+          ...p, 
+          coords: { 
+            lat: coords.lat + offsetLat, 
+            lng: coords.lng + offsetLng,
+            zoom: coords.zoom 
+          } 
+        };
       }
     });
-    return Object.values(grouped);
+    return grouped;
   }, [projects]);
 
   // Load Leaflet
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
     
-    // Add Leaflet CSS
     if (!document.getElementById('leaflet-css')) {
       const link = document.createElement('link');
       link.id = 'leaflet-css';
@@ -2114,38 +2124,35 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
       document.head.appendChild(link);
     }
 
-    // Add Leaflet JS
     if (!window.L) {
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
       script.async = true;
-      script.onload = () => initMap();
+      script.onload = () => setTimeout(initMap, 100);
       script.onerror = () => setMapError('Errore caricamento Leaflet');
       document.head.appendChild(script);
     } else {
-      initMap();
+      setTimeout(initMap, 100);
     }
 
     function initMap() {
+      if (!mapContainer.current || map.current) return;
       try {
-        // Small delay to ensure CSS is loaded
-        setTimeout(() => {
-          if (!mapContainer.current || map.current) return;
-          
-          map.current = window.L.map(mapContainer.current, {
-            center: [DUBAI_CENTER.lat, DUBAI_CENTER.lng],
-            zoom: DEFAULT_ZOOM,
-            zoomControl: true
-          });
+        map.current = window.L.map(mapContainer.current, {
+          center: [DUBAI_CENTER.lat, DUBAI_CENTER.lng],
+          zoom: DEFAULT_ZOOM,
+          zoomControl: false
+        });
 
-          window.L.tileLayer(LEAFLET_TILE_URL, {
-            attribution: LEAFLET_ATTRIBUTION,
-            maxZoom: 19
-          }).addTo(map.current);
+        window.L.control.zoom({ position: 'bottomright' }).addTo(map.current);
 
-          markersLayer.current = window.L.layerGroup().addTo(map.current);
-          setMapLoaded(true);
-        }, 100);
+        window.L.tileLayer(LEAFLET_TILE_URL, {
+          attribution: LEAFLET_ATTRIBUTION,
+          maxZoom: 19
+        }).addTo(map.current);
+
+        markersLayer.current = window.L.layerGroup().addTo(map.current);
+        setMapLoaded(true);
       } catch (err) {
         console.error('Map init error:', err);
         setMapError('Errore inizializzazione mappa');
@@ -2160,75 +2167,64 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
     };
   }, []);
 
-  // Add markers when map is loaded
+  // Add markers - Airbnb style price bubbles
   useEffect(() => {
     if (!map.current || !mapLoaded || !window.L || !markersLayer.current) return;
 
-    // Clear existing markers
     markersLayer.current.clearLayers();
+    markersMap.current = {};
 
-    // Add markers for each location group
-    projectsByLocation.forEach(group => {
-      const { coords, location, projects: groupProjects } = group;
-      const count = groupProjects.length;
-      const minPrice = Math.min(...groupProjects.filter(p => p.price_from > 0).map(p => p.price_from));
-      const priceText = minPrice > 0 && minPrice !== Infinity ? (minPrice/1000000).toFixed(1) + 'M' : '';
+    Object.values(projectsByLocation).forEach(project => {
+      const { coords } = project;
+      const price = project.price_from;
+      const priceText = price > 0 ? (price >= 1000000 ? (price/1000000).toFixed(1) + 'M' : Math.round(price/1000) + 'K') : '?';
+      const isSelected = selectedProject?.project_id === project.project_id;
+      const isHovered = hoveredProject === project.project_id;
       
-      // Create custom icon
       const iconHtml = `
-        <div style="
-          background: linear-gradient(135deg, #F97316, #EA580C);
-          color: white;
-          padding: 6px 10px;
-          border-radius: 8px;
-          font-size: 12px;
-          font-weight: 600;
-          box-shadow: 0 4px 12px rgba(249,115,22,0.4);
-          white-space: nowrap;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          cursor: pointer;
-          transform: translate(-50%, -100%);
-        ">
-          <span style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; font-size: 10px;">${count}</span>
-          ${priceText ? '<span>da ' + priceText + '</span>' : '<span>' + location.split(',')[0].substring(0, 15) + '</span>'}
+        <div class="airbnb-marker ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''}" data-id="${project.project_id}">
+          <span>${priceText}</span>
         </div>
-        <div style="
-          width: 0;
-          height: 0;
-          border-left: 8px solid transparent;
-          border-right: 8px solid transparent;
-          border-top: 8px solid #EA580C;
-          margin-left: calc(50% - 8px);
-        "></div>
       `;
 
       const customIcon = window.L.divIcon({
         html: iconHtml,
-        className: 'custom-marker',
-        iconSize: [120, 50],
-        iconAnchor: [60, 50]
+        className: 'airbnb-marker-container',
+        iconSize: [70, 32],
+        iconAnchor: [35, 32]
       });
 
       const marker = window.L.marker([coords.lat, coords.lng], { icon: customIcon })
         .addTo(markersLayer.current);
 
       marker.on('click', () => {
-        if (onAreaClick) onAreaClick(groupProjects, location);
-        map.current.flyTo([coords.lat, coords.lng], coords.zoom || 14, { duration: 1 });
+        setPopupProject(project);
+        if (onSelectProject) onSelectProject(project);
       });
+
+      marker.on('mouseover', () => setHoveredProject(project.project_id));
+      marker.on('mouseout', () => setHoveredProject(null));
+
+      markersMap.current[project.project_id] = marker;
     });
-  }, [mapLoaded, projectsByLocation, onAreaClick]);
+  }, [mapLoaded, projectsByLocation, selectedProject, hoveredProject, onSelectProject]);
 
   // Fly to selected project
   useEffect(() => {
     if (!map.current || !mapLoaded || !selectedProject) return;
-    const coords = getLocationCoords(selectedProject.location?.full_name || selectedProject.location?.name);
-    if (coords) {
-      map.current.flyTo([coords.lat, coords.lng], coords.zoom || 14, { duration: 1 });
+    const project = projectsByLocation[selectedProject.project_id];
+    if (project?.coords) {
+      map.current.flyTo([project.coords.lat, project.coords.lng], 14, { duration: 0.5 });
     }
-  }, [selectedProject, mapLoaded]);
+  }, [selectedProject, mapLoaded, projectsByLocation]);
+
+  // Close popup when clicking elsewhere
+  const handleMapClick = () => setPopupProject(null);
+
+  const formatPrice = (price) => {
+    if (!price || price === 0) return 'TBD';
+    return parseFloat(price).toLocaleString();
+  };
 
   if (mapError) {
     return (
@@ -2242,41 +2238,130 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
   }
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full" onClick={handleMapClick}>
       <div ref={mapContainer} className="absolute inset-0" style={{ background: '#1a1a1a' }} />
+      
       {!mapLoaded && (
-        <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center">
+        <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center z-[1000]">
           <RefreshCw className="w-8 h-8 text-orange-400 animate-spin" />
         </div>
       )}
-      <div className="absolute top-4 left-4 z-[1000]">
+
+      {/* Project Popup Card - Airbnb style */}
+      {popupProject && (
+        <div className="absolute top-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-[1000] animate-fadeIn">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="relative h-40">
+              {popupProject.images?.[0]?.medium_image_url ? (
+                <img src={popupProject.images[0].medium_image_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                  <Building2 className="w-12 h-12 text-zinc-600" />
+                </div>
+              )}
+              <button onClick={(e) => { e.stopPropagation(); setPopupProject(null); }} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full text-white hover:bg-black/70">
+                <X className="w-4 h-4" />
+              </button>
+              <div className="absolute bottom-2 left-2 px-2 py-1 bg-orange-500 text-white text-xs font-medium rounded-lg">
+                {popupProject.construction_phase_key === 'completed' ? '✓ Completato' : popupProject.construction_phase_key === 'under_construction' ? '🏗️ In Costruzione' : '🚀 Lancio'}
+              </div>
+            </div>
+            <div className="p-4">
+              <h3 className="text-white font-semibold truncate">{popupProject.title}</h3>
+              <p className="text-zinc-400 text-sm truncate">{popupProject.location?.full_name}</p>
+              <div className="flex items-center justify-between mt-3">
+                <p className="text-orange-400 font-bold">AED {formatPrice(popupProject.price_from)}</p>
+                <Button size="sm" onClick={(e) => { e.stopPropagation(); onSelectProject(popupProject); }}>
+                  Dettagli
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Map Stats */}
+      <div className="absolute bottom-4 left-4 z-[1000]">
         <div className="bg-zinc-900/90 backdrop-blur border border-zinc-700 rounded-xl px-3 py-2">
-          <p className="text-white text-sm font-medium">{projects.length} progetti</p>
-          <p className="text-zinc-400 text-xs">{projectsByLocation.length} zone</p>
+          <p className="text-white text-sm font-medium">{Object.keys(projectsByLocation).length} progetti sulla mappa</p>
         </div>
       </div>
+
       <style>{`
-        .custom-marker { background: transparent !important; border: none !important; }
-        .leaflet-control-zoom { border: none !important; }
-        .leaflet-control-zoom a { background: #27272A !important; color: white !important; border: 1px solid #3F3F46 !important; }
+        .airbnb-marker-container { background: transparent !important; border: none !important; }
+        .airbnb-marker {
+          background: white;
+          color: #18181B;
+          padding: 6px 12px;
+          border-radius: 24px;
+          font-size: 13px;
+          font-weight: 700;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+          text-align: center;
+        }
+        .airbnb-marker:hover, .airbnb-marker.hovered {
+          background: #18181B;
+          color: white;
+          transform: scale(1.1);
+          z-index: 1000 !important;
+        }
+        .airbnb-marker.selected {
+          background: #F97316;
+          color: white;
+          transform: scale(1.15);
+          z-index: 1001 !important;
+        }
+        .leaflet-control-zoom { border: none !important; border-radius: 12px !important; overflow: hidden; }
+        .leaflet-control-zoom a { 
+          background: #27272A !important; 
+          color: white !important; 
+          border: none !important;
+          width: 36px !important;
+          height: 36px !important;
+          line-height: 36px !important;
+        }
         .leaflet-control-zoom a:hover { background: #3F3F46 !important; }
+        .leaflet-control-zoom-in { border-radius: 12px 12px 0 0 !important; }
+        .leaflet-control-zoom-out { border-radius: 0 0 12px 12px !important; }
       `}</style>
     </div>
   );
 }
 
-// Project Card Compact for Split View
-function ProjectCardCompact({ project, isSelected, onClick }) {
+// Project Card Compact for Split View - with hover sync
+function ProjectCardCompact({ project, isSelected, onClick, onHover }) {
   const formatPrice = (price) => { if (!price || price === 0) return 'TBD'; const num = parseFloat(price); if (num >= 1000000) return (num/1000000).toFixed(1) + 'M'; return num.toLocaleString(); };
   const formatBedrooms = (bedrooms) => { if (!bedrooms?.available?.length) return null; const beds = bedrooms.available; if (beds.length === 1) return beds[0] === 0 ? 'Studio' : beds[0] + 'BR'; const min = Math.min(...beds); const max = Math.max(...beds); return min === 0 ? 'Studio-' + max + 'BR' : min + '-' + max + 'BR'; };
+  const formatDelivery = (d) => { if (!d) return null; const date = new Date(d); return 'Q' + Math.ceil((date.getMonth()+1)/3) + ' ' + date.getFullYear(); };
   return (
-    <div onClick={onClick} className={'p-3 rounded-xl cursor-pointer transition-all ' + (isSelected ? 'bg-orange-500/20 border border-orange-500/50' : 'bg-zinc-800/50 border border-transparent hover:bg-zinc-800')}>
+    <div 
+      onClick={onClick} 
+      onMouseEnter={() => onHover && onHover(project.project_id)}
+      onMouseLeave={() => onHover && onHover(null)}
+      className={'p-3 rounded-xl cursor-pointer transition-all ' + (isSelected ? 'bg-orange-500/20 border-2 border-orange-500' : 'bg-zinc-800/50 border border-transparent hover:bg-zinc-800 hover:border-zinc-600')}
+    >
       <div className="flex gap-3">
-        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700">{project.images?.[0]?.medium_image_url ? <img src={project.images[0].medium_image_url} alt="" className="w-full h-full object-cover" /> : <Building2 className="w-6 h-6 text-zinc-600 m-auto" />}</div>
+        <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700">
+          {project.images?.[0]?.medium_image_url ? (
+            <img src={project.images[0].medium_image_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center"><Building2 className="w-8 h-8 text-zinc-600" /></div>
+          )}
+        </div>
         <div className="flex-1 min-w-0">
           <p className="text-white font-medium text-sm truncate">{project.title}</p>
           <p className="text-zinc-500 text-xs truncate">{project.location?.full_name}</p>
-          <p className="text-orange-400 font-semibold text-sm mt-1">{project.price_from > 0 ? 'AED ' + formatPrice(project.price_from) : 'TBD'}</p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <p className="text-orange-400 font-bold text-sm">{project.price_from > 0 ? 'AED ' + formatPrice(project.price_from) : 'TBD'}</p>
+            {formatBedrooms(project.bedrooms) && <span className="text-zinc-500 text-xs">• {formatBedrooms(project.bedrooms)}</span>}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            {formatDelivery(project.delivery_date) && <span className="text-xs text-blue-400">📅 {formatDelivery(project.delivery_date)}</span>}
+            {project.developer?.name && <span className="text-xs text-zinc-500 truncate">• {project.developer.name}</span>}
+          </div>
         </div>
       </div>
     </div>
