@@ -2701,7 +2701,6 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
   );
 }
 
-// Assign Listing to Client Modal
 function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
   const [selectedCliente, setSelectedCliente] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -2740,68 +2739,68 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-md animate-scaleIn">
-          )}
-
-          {/* Image Gallery Thumbnails */}
-          {images.length > 1 && (
-            <div className="mb-6">
-              <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                <Eye className="w-4 h-4 text-orange-400" /> Galleria
-                <span className="text-zinc-500 text-sm font-normal">({images.length} immagini)</span>
-              </h3>
-              <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-                {images.slice(0, 12).map((img, idx) => (
-                  <button key={idx} onClick={() => { setActiveImageIndex(idx); setShowFullGallery(true); }} className="relative h-20 rounded-lg overflow-hidden group">
-                    <img src={img.small_image_url || img.medium_image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                      <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <h3 className="text-lg font-semibold text-white">Crea Lead da Annuncio</h3>
+          <button onClick={onClose} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+        </div>
+        
+        <div className="p-4 space-y-4">
+          {/* Listing Summary */}
+          <div className="flex gap-3 p-3 bg-zinc-800/50 rounded-xl">
+            {listing.images?.[0]?.small_image_url && <img src={listing.images[0].small_image_url} alt="" className="w-16 h-16 rounded-lg object-cover" />}
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-medium line-clamp-1">{listing.title}</p>
+              <p className="text-zinc-500 text-xs line-clamp-1">{listing.location?.path_name}</p>
+              <p className="text-orange-400 text-sm font-medium mt-1">AED {parseFloat(listing.price).toLocaleString()}</p>
+            </div>
+          </div>
+          
+          {/* Client Selection */}
+          <div>
+            <label className="text-sm text-zinc-400 mb-2 block">Associa a Cliente (opzionale)</label>
+            <input type="text" placeholder="Cerca cliente..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCreateNew(false); }} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            
+            {searchQuery && !createNew && (
+              <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
+                {filteredClienti.slice(0, 5).map(c => (
+                  <button key={c.id} onClick={() => { setSelectedCliente(c); setSearchQuery(`${c.nome} ${c.cognome}`); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${selectedCliente?.id === c.id ? 'bg-orange-500/20 text-orange-400' : 'hover:bg-zinc-800 text-zinc-300'}`}>
+                    <Avatar nome={c.nome} cognome={c.cognome} size="xs" />
+                    <span className="text-sm">{c.nome} {c.cognome}</span>
                   </button>
                 ))}
-                {images.length > 12 && (
-                  <button onClick={() => setShowFullGallery(true)} className="h-20 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 hover:bg-zinc-700 transition-colors">
-                    <span className="text-sm font-medium">+{images.length - 12}</span>
+                {filteredClienti.length === 0 && (
+                  <button onClick={() => { setCreateNew(true); setNewCliente(n => ({ ...n, nome: searchQuery.split(' ')[0], cognome: searchQuery.split(' ')[1] || '' })); }} className="w-full text-left p-2 rounded-lg text-orange-400 hover:bg-zinc-800 text-sm">
+                    + Crea nuovo cliente "{searchQuery}"
                   </button>
                 )}
               </div>
-            </div>
-          )}
-
-          {/* Amenities if available */}
-          {listing.amenities?.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-white font-semibold mb-3">Servizi e Amenities</h3>
-              <div className="flex flex-wrap gap-2">
-                {listing.amenities.map((a, i) => (
-                  <span key={i} className="px-3 py-1.5 bg-zinc-800/50 text-zinc-300 text-sm rounded-full">{a}</span>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-zinc-800">
-            <Button className="flex-1 py-3 bg-orange-500 hover:bg-orange-600" onClick={onCreateLead}>
-              <Plus className="w-5 h-5 mr-2" /> Crea Lead
-            </Button>
-            <Button variant="secondary" className="flex-1 py-3" onClick={() => {
-              const bedsText = formatBedrooms(listing.bedrooms) || 'Varie tipologie';
-              const deliveryText = formatDelivery(listing.delivery_date) || 'TBD';
-              const paymentText = listing.payment_plans?.plans?.[0]?.summary ? 
-                `💳 ${listing.payment_plans.plans[0].summary.down_payment}% anticipo` : '';
-              const text = `🏗️ *${listing.title}*\n\n📍 ${listing.location?.full_name}\n💰 ${listing.price_from > 0 ? `da AED ${formatPrice(listing.price_from)}` : 'Prezzo su richiesta'}\n🏠 ${bedsText}\n📅 Consegna: ${deliveryText}\n🏢 Developer: ${listing.developer?.name || 'TBD'}\n${paymentText}\n\n_Progetto Off-Plan Dubai_\n\n🔗 Per info: contattami!`;
-              window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-            }}>
-              <MessageCircle className="w-5 h-5 mr-2" /> WhatsApp
-            </Button>
+            )}
           </div>
+          
+          {/* New Client Form */}
+          {createNew && (
+            <div className="space-y-3 p-3 bg-zinc-800/30 rounded-xl">
+              <p className="text-sm text-zinc-400">Nuovo Cliente</p>
+              <div className="grid grid-cols-2 gap-2">
+                <input type="text" placeholder="Nome" value={newCliente.nome} onChange={(e) => setNewCliente(n => ({ ...n, nome: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+                <input type="text" placeholder="Cognome" value={newCliente.cognome} onChange={(e) => setNewCliente(n => ({ ...n, cognome: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+              </div>
+              <input type="tel" placeholder="Telefono" value={newCliente.telefono} onChange={(e) => setNewCliente(n => ({ ...n, telefono: e.target.value }))} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+              <input type="email" placeholder="Email" value={newCliente.email} onChange={(e) => setNewCliente(n => ({ ...n, email: e.target.value }))} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+            </div>
+          )}
+        </div>
+        
+        <div className="flex gap-3 p-4 border-t border-zinc-800">
+          <Button variant="secondary" className="flex-1" onClick={onClose}>Annulla</Button>
+          <Button className="flex-1" onClick={handleCreate}>Crea Lead</Button>
         </div>
       </div>
     </div>
   );
 }
 
-// Assign Listing to Client Modal
+// Login Form
 function LoginForm({ onLogin, loading }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
