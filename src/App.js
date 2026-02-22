@@ -8,7 +8,11 @@ const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbG
 const RESEND_API_KEY = 're_jCpLJKfw_MfWu2jbSzPPgz6pLHQXMAXJb';
 const EMAIL_FROM = 'onboarding@resend.dev';
 const ADMIN_EMAIL = 'bozzellapellegrino@gmail.com';
-const MAPBOX_TOKEN = 'pk.eyJ1IjoibWFwc3Byb2plY3RrZXkiLCJhIjoiY21sdHl4aDM5MDRvbDNmczRtYXR6ZWp4cyJ9.HpQdRN36TYMnNCs1VtwtKA';
+const MAPBOX_TOKEN = 'pk.eyJ1IjoibWFwc3Byb2plY3RrZXkiLCJhIjoiY21sdHl4aDM5MDRvbDNmczRtYXR6ZWp4cyJ9.HpQdRN36TYMnNCs1VtwtKA'; // Keep for future use
+
+// Leaflet Config (no token needed - free!)
+const LEAFLET_TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const LEAFLET_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 // PropertyFinder API Config
 const PF_API_HOST = 'uae-real-estate-api-propertyfinder-ae-data.p.rapidapi.com';
@@ -2075,11 +2079,11 @@ function AgentDetailView({ agent, sales, onBack }) {
 // ==================== MODALS & FORMS ====================
 
 
-// Mapbox Map Component
+// Leaflet Map Component (no CSP issues, free!)
 function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) {
   const mapContainer = useRef(null);
   const map = useRef(null);
-  const markers = useRef([]);
+  const markersLayer = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState(null);
 
@@ -2097,69 +2101,166 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
     return Object.values(grouped);
   }, [projects]);
 
+  // Load Leaflet
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
-    const script = document.createElement('script');
-    script.src = 'https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js';
-    script.async = true;
-    const link = document.createElement('link');
-    link.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-    script.onload = () => {
+    
+    // Add Leaflet CSS
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-css';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+
+    // Add Leaflet JS
+    if (!window.L) {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.async = true;
+      script.onload = () => initMap();
+      script.onerror = () => setMapError('Errore caricamento Leaflet');
+      document.head.appendChild(script);
+    } else {
+      initMap();
+    }
+
+    function initMap() {
       try {
-        window.mapboxgl.accessToken = MAPBOX_TOKEN;
-        map.current = new window.mapboxgl.Map({
-          container: mapContainer.current,
-          style: 'mapbox://styles/mapbox/dark-v11',
-          center: [DUBAI_CENTER.lng, DUBAI_CENTER.lat],
-          zoom: DEFAULT_ZOOM,
-          attributionControl: false
-        });
-        map.current.addControl(new window.mapboxgl.NavigationControl(), 'top-right');
-        map.current.on('load', () => setMapLoaded(true));
-        map.current.on('error', () => setMapError('Errore caricamento mappa'));
-      } catch (err) { setMapError('Errore inizializzazione mappa'); }
+        // Small delay to ensure CSS is loaded
+        setTimeout(() => {
+          if (!mapContainer.current || map.current) return;
+          
+          map.current = window.L.map(mapContainer.current, {
+            center: [DUBAI_CENTER.lat, DUBAI_CENTER.lng],
+            zoom: DEFAULT_ZOOM,
+            zoomControl: true
+          });
+
+          window.L.tileLayer(LEAFLET_TILE_URL, {
+            attribution: LEAFLET_ATTRIBUTION,
+            maxZoom: 19
+          }).addTo(map.current);
+
+          markersLayer.current = window.L.layerGroup().addTo(map.current);
+          setMapLoaded(true);
+        }, 100);
+      } catch (err) {
+        console.error('Map init error:', err);
+        setMapError('Errore inizializzazione mappa');
+      }
+    }
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
     };
-    script.onerror = () => setMapError('Errore caricamento Mapbox');
-    document.head.appendChild(script);
-    return () => { if (map.current) { map.current.remove(); map.current = null; } };
   }, []);
 
+  // Add markers when map is loaded
   useEffect(() => {
-    if (!map.current || !mapLoaded || !window.mapboxgl) return;
-    markers.current.forEach(m => m.remove());
-    markers.current = [];
+    if (!map.current || !mapLoaded || !window.L || !markersLayer.current) return;
+
+    // Clear existing markers
+    markersLayer.current.clearLayers();
+
+    // Add markers for each location group
     projectsByLocation.forEach(group => {
       const { coords, location, projects: groupProjects } = group;
-      const el = document.createElement('div');
-      el.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:pointer;transform:translate(-50%,-100%)';
       const count = groupProjects.length;
       const minPrice = Math.min(...groupProjects.filter(p => p.price_from > 0).map(p => p.price_from));
       const priceText = minPrice > 0 && minPrice !== Infinity ? (minPrice/1000000).toFixed(1) + 'M' : '';
-      el.innerHTML = '<div style="background:linear-gradient(135deg,#F97316,#EA580C);color:white;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;box-shadow:0 4px 12px rgba(249,115,22,0.4);white-space:nowrap;display:flex;align-items:center;gap:6px"><span style="background:rgba(255,255,255,0.2);padding:2px 6px;border-radius:4px;font-size:10px">' + count + '</span>' + (priceText ? '<span>da ' + priceText + '</span>' : '<span>' + location.split(',')[0] + '</span>') + '</div><div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #EA580C"></div>';
-      el.addEventListener('click', () => {
-        if (onAreaClick) onAreaClick(groupProjects, location);
-        map.current.flyTo({ center: [coords.lng, coords.lat], zoom: coords.zoom || 14, duration: 1000 });
+      
+      // Create custom icon
+      const iconHtml = `
+        <div style="
+          background: linear-gradient(135deg, #F97316, #EA580C);
+          color: white;
+          padding: 6px 10px;
+          border-radius: 8px;
+          font-size: 12px;
+          font-weight: 600;
+          box-shadow: 0 4px 12px rgba(249,115,22,0.4);
+          white-space: nowrap;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          cursor: pointer;
+          transform: translate(-50%, -100%);
+        ">
+          <span style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; font-size: 10px;">${count}</span>
+          ${priceText ? '<span>da ' + priceText + '</span>' : '<span>' + location.split(',')[0].substring(0, 15) + '</span>'}
+        </div>
+        <div style="
+          width: 0;
+          height: 0;
+          border-left: 8px solid transparent;
+          border-right: 8px solid transparent;
+          border-top: 8px solid #EA580C;
+          margin-left: calc(50% - 8px);
+        "></div>
+      `;
+
+      const customIcon = window.L.divIcon({
+        html: iconHtml,
+        className: 'custom-marker',
+        iconSize: [120, 50],
+        iconAnchor: [60, 50]
       });
-      const marker = new window.mapboxgl.Marker({ element: el, anchor: 'bottom' }).setLngLat([coords.lng, coords.lat]).addTo(map.current);
-      markers.current.push(marker);
+
+      const marker = window.L.marker([coords.lat, coords.lng], { icon: customIcon })
+        .addTo(markersLayer.current);
+
+      marker.on('click', () => {
+        if (onAreaClick) onAreaClick(groupProjects, location);
+        map.current.flyTo([coords.lat, coords.lng], coords.zoom || 14, { duration: 1 });
+      });
     });
   }, [mapLoaded, projectsByLocation, onAreaClick]);
 
+  // Fly to selected project
   useEffect(() => {
     if (!map.current || !mapLoaded || !selectedProject) return;
     const coords = getLocationCoords(selectedProject.location?.full_name || selectedProject.location?.name);
-    if (coords) map.current.flyTo({ center: [coords.lng, coords.lat], zoom: coords.zoom || 14, duration: 1000 });
+    if (coords) {
+      map.current.flyTo([coords.lat, coords.lng], coords.zoom || 14, { duration: 1 });
+    }
   }, [selectedProject, mapLoaded]);
 
-  if (mapError) return <div className="w-full h-full bg-zinc-900 flex items-center justify-center"><div className="text-center"><AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" /><p className="text-red-400">{mapError}</p></div></div>;
-  
+  if (mapError) {
+    return (
+      <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+          <p className="text-red-400">{mapError}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full">
-      <div ref={mapContainer} className="absolute inset-0" />
-      {!mapLoaded && <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center"><RefreshCw className="w-8 h-8 text-orange-400 animate-spin" /></div>}
-      <div className="absolute top-4 left-4 z-10"><div className="bg-zinc-900/90 backdrop-blur border border-zinc-700 rounded-xl px-3 py-2"><p className="text-white text-sm font-medium">{projects.length} progetti</p><p className="text-zinc-400 text-xs">{projectsByLocation.length} zone</p></div></div>
+      <div ref={mapContainer} className="absolute inset-0" style={{ background: '#1a1a1a' }} />
+      {!mapLoaded && (
+        <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center">
+          <RefreshCw className="w-8 h-8 text-orange-400 animate-spin" />
+        </div>
+      )}
+      <div className="absolute top-4 left-4 z-[1000]">
+        <div className="bg-zinc-900/90 backdrop-blur border border-zinc-700 rounded-xl px-3 py-2">
+          <p className="text-white text-sm font-medium">{projects.length} progetti</p>
+          <p className="text-zinc-400 text-xs">{projectsByLocation.length} zone</p>
+        </div>
+      </div>
+      <style>{`
+        .custom-marker { background: transparent !important; border: none !important; }
+        .leaflet-control-zoom { border: none !important; }
+        .leaflet-control-zoom a { background: #27272A !important; color: white !important; border: 1px solid #3F3F46 !important; }
+        .leaflet-control-zoom a:hover { background: #3F3F46 !important; }
+      `}</style>
     </div>
   );
 }
