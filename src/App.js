@@ -2021,79 +2021,112 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
     minPrice: '',
     maxPrice: '',
     bedrooms: '',
-    propertyType: ''
+    developer: ''
   });
   const [selectedListing, setSelectedListing] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(null);
-  const [page, setPage] = useState(1);
+  const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [totalResults, setTotalResults] = useState(0);
 
   // Dubai areas for filter
   const dubaiAreas = [
     'Dubai Marina', 'Downtown Dubai', 'Business Bay', 'Palm Jumeirah', 
-    'JBR', 'Dubai Hills', 'MBR City', 'Creek Harbour', 'Jumeirah Village Circle',
-    'Dubai South', 'Damac Hills', 'Arabian Ranches', 'Meydan', 'DIFC'
+    'JBR', 'Dubai Hills Estate', 'Mohammed Bin Rashid City', 'Dubai Creek Harbour', 
+    'Jumeirah Village Circle', 'Dubai South', 'DAMAC Hills', 'Arabian Ranches', 
+    'Meydan', 'DIFC', 'Al Marjan Island', 'Dubai Islands', 'Expo City'
   ];
 
-  const propertyTypes = ['Apartment', 'Villa', 'Townhouse', 'Penthouse', 'Studio'];
+  // Top developers
+  const topDevelopers = [
+    'Emaar Properties', 'Damac Properties', 'Sobha Realty', 'Nakheel', 
+    'Meraas', 'Aldar Properties', 'Azizi Developments', 'Binghatti', 
+    'Ellington', 'Omniyat Group', 'RAK Properties'
+  ];
+  
   const bedroomOptions = ['Studio', '1', '2', '3', '4', '5+'];
 
-  // Search PropertyFinder API
+  // Search PropertyFinder Projects API
   const searchListings = async (resetPage = true) => {
     setLoading(true);
     setError(null);
     
-    const currentPage = resetPage ? 1 : page;
-    if (resetPage) setPage(1);
+    const currentOffset = resetPage ? 0 : offset;
+    if (resetPage) setOffset(0);
     
     try {
-      let url = `https://${PF_API_HOST}/search_properties?`;
+      // Use search_projects endpoint for off-plan
       const params = new URLSearchParams();
       
-      // Only off-plan
-      params.append('completion_status', 'off_plan,off_plan_primary');
-      params.append('listing_category', 'Residential Buy');
       params.append('limit', '20');
-      params.append('page', currentPage.toString());
+      params.append('offset', currentOffset.toString());
       
-      // Apply filters
-      if (filters.location) params.append('location', filters.location);
-      if (filters.minPrice) params.append('min_price', filters.minPrice);
-      if (filters.maxPrice) params.append('max_price', filters.maxPrice);
-      if (filters.bedrooms) {
-        if (filters.bedrooms === 'Studio') {
-          params.append('bedrooms', '0');
-        } else if (filters.bedrooms === '5+') {
-          params.append('min_bedrooms', '5');
-        } else {
-          params.append('bedrooms', filters.bedrooms);
-        }
-      }
-      if (filters.propertyType) params.append('property_type', filters.propertyType);
+      // Apply filters - only use supported params
+      // Note: Check RapidAPI docs for exact supported params
+      if (filters.minPrice) params.append('price_from', filters.minPrice);
+      if (filters.maxPrice) params.append('price_to', filters.maxPrice);
       
-      const response = await fetch(url + params.toString(), {
+      const url = `https://${PF_API_HOST}/search_projects?${params.toString()}`;
+      
+      console.log('Fetching:', url);
+      
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
           'x-rapidapi-host': PF_API_HOST,
           'x-rapidapi-key': PF_API_KEY
         }
       });
       
-      if (!response.ok) throw new Error('Errore caricamento annunci');
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`API Error: ${response.status}`);
+      }
       
       const data = await response.json();
+      console.log('API Response:', data);
       
-      // Filter only off-plan results
-      const offPlanListings = (data.data || []).filter(l => 
-        l.completion_status === 'off_plan' || l.completion_status === 'off_plan_primary'
-      );
+      const projects = data.data || [];
+      
+      // Filter client-side for location/bedrooms/developer if needed
+      let filteredProjects = projects;
+      
+      if (filters.location) {
+        const loc = filters.location.toLowerCase();
+        filteredProjects = filteredProjects.filter(p => 
+          p.location?.full_name?.toLowerCase().includes(loc) ||
+          p.location?.name?.toLowerCase().includes(loc) ||
+          p.title?.toLowerCase().includes(loc)
+        );
+      }
+      
+      if (filters.bedrooms) {
+        const targetBed = filters.bedrooms === 'Studio' ? 0 : 
+                          filters.bedrooms === '5+' ? 5 : 
+                          parseInt(filters.bedrooms);
+        filteredProjects = filteredProjects.filter(p => {
+          if (!p.bedrooms?.available) return true;
+          if (filters.bedrooms === '5+') {
+            return p.bedrooms.available.some(b => b >= 5);
+          }
+          return p.bedrooms.available.includes(targetBed);
+        });
+      }
+      
+      if (filters.developer) {
+        const dev = filters.developer.toLowerCase();
+        filteredProjects = filteredProjects.filter(p => 
+          p.developer?.name?.toLowerCase().includes(dev)
+        );
+      }
       
       if (resetPage) {
-        setListings(offPlanListings);
+        setListings(filteredProjects);
       } else {
-        setListings(prev => [...prev, ...offPlanListings]);
+        setListings(prev => [...prev, ...filteredProjects]);
       }
       
       setTotalResults(data.pagination?.total || 0);
@@ -2101,7 +2134,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
       
     } catch (err) {
       console.error('PF API Error:', err);
-      setError('Impossibile caricare gli annunci. Riprova.');
+      setError('Impossibile caricare i progetti. Controlla la console per dettagli.');
     } finally {
       setLoading(false);
     }
@@ -2109,7 +2142,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
 
   // Load more
   const loadMore = () => {
-    setPage(p => p + 1);
+    setOffset(o => o + 20);
     searchListings(false);
   };
 
@@ -2119,26 +2152,45 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
   }, []);
 
   // Check if listing is saved
-  const isListingSaved = (propertyId) => {
-    return savedListings?.some(s => s.property_id === propertyId);
+  const isListingSaved = (projectId) => {
+    return savedListings?.some(s => s.property_id === projectId);
   };
 
   // Format price
   const formatPrice = (price) => {
+    if (!price || price === 0) return 'TBD';
     const num = parseFloat(price);
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
     return num.toLocaleString();
   };
 
-  // Extract developer from description or location
-  const extractDeveloper = (listing) => {
-    const desc = listing.description?.toLowerCase() || '';
-    const devs = ['emaar', 'damac', 'sobha', 'meraas', 'nakheel', 'azizi', 'danube', 'binghatti', 'omniyat', 'ellington', 'select group', 'mag'];
-    for (const dev of devs) {
-      if (desc.includes(dev)) return dev.charAt(0).toUpperCase() + dev.slice(1);
+  // Format bedrooms array
+  const formatBedrooms = (bedrooms) => {
+    if (!bedrooms?.available?.length) return null;
+    const beds = bedrooms.available;
+    if (beds.length === 1) {
+      return beds[0] === 0 ? 'Studio' : `${beds[0]} BR`;
     }
-    return listing.location?.name || 'Developer';
+    const min = Math.min(...beds);
+    const max = Math.max(...beds);
+    if (min === 0) return `Studio - ${max} BR`;
+    return `${min} - ${max} BR`;
+  };
+
+  // Format delivery date
+  const formatDelivery = (dateStr) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    const quarter = Math.ceil((date.getMonth() + 1) / 3);
+    return `Q${quarter} ${date.getFullYear()}`;
+  };
+
+  // Format payment plan
+  const formatPaymentPlan = (plans) => {
+    if (!plans?.plans?.[0]) return null;
+    const plan = plans.plans[0].summary;
+    return `${plan.down_payment}/${plan.during_construction}/${plan.handover}`;
   };
 
   return (
@@ -2164,9 +2216,9 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
             {dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
           
-          <select value={filters.propertyType} onChange={(e) => setFilters(f => ({ ...f, propertyType: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">
-            <option value="">Tutti i tipi</option>
-            {propertyTypes.map(t => <option key={t} value={t}>{t}</option>)}
+          <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">
+            <option value="">Tutti i developer</option>
+            {topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
           
           <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">
@@ -2211,52 +2263,82 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
       {/* Results Grid */}
       {listings.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {listings.map(listing => (
-            <Card key={listing.property_id} hover className="overflow-hidden group">
+          {listings.map(project => (
+            <Card key={project.project_id} hover className="overflow-hidden group">
               {/* Image */}
               <div className="relative h-40 -mx-4 -mt-4 mb-3 overflow-hidden">
-                {listing.images?.[0]?.medium_image_url ? (
-                  <img src={listing.images[0].medium_image_url} alt={listing.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                {project.images?.[0]?.medium_image_url ? (
+                  <img src={project.images[0].medium_image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
                   <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
                     <Building2 className="w-12 h-12 text-zinc-600" />
                   </div>
                 )}
-                {/* Badge */}
-                <div className="absolute top-2 left-2 px-2 py-1 bg-orange-500/90 text-white text-xs font-medium rounded-lg">
-                  Off-Plan
+                {/* Badge - Construction status */}
+                <div className={`absolute top-2 left-2 px-2 py-1 text-white text-xs font-medium rounded-lg ${
+                  project.construction_phase_key === 'completed' ? 'bg-green-500/90' :
+                  project.construction_phase_key === 'under_construction' ? 'bg-orange-500/90' :
+                  'bg-blue-500/90'
+                }`}>
+                  {project.construction_phase_key === 'completed' ? 'Completato' :
+                   project.construction_phase_key === 'under_construction' ? 'In Costruzione' :
+                   'Lancio'}
                 </div>
+                {/* Delivery date badge */}
+                {formatDelivery(project.delivery_date) && (
+                  <div className="absolute top-2 right-12 px-2 py-1 bg-black/70 text-white text-xs rounded-lg">
+                    {formatDelivery(project.delivery_date)}
+                  </div>
+                )}
                 {/* Save button */}
-                <button onClick={(e) => { e.stopPropagation(); isListingSaved(listing.property_id) ? onRemoveListing(listing.property_id) : onSaveListing(listing); }} className={`absolute top-2 right-2 p-2 rounded-full transition-colors ${isListingSaved(listing.property_id) ? 'bg-orange-500 text-white' : 'bg-black/50 text-white hover:bg-orange-500'}`}>
-                  <svg className="w-4 h-4" fill={isListingSaved(listing.property_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                <button onClick={(e) => { e.stopPropagation(); isListingSaved(project.project_id) ? onRemoveListing(project.project_id) : onSaveListing(project); }} className={`absolute top-2 right-2 p-2 rounded-full transition-colors ${isListingSaved(project.project_id) ? 'bg-orange-500 text-white' : 'bg-black/50 text-white hover:bg-orange-500'}`}>
+                  <svg className="w-4 h-4" fill={isListingSaved(project.project_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
                 </button>
               </div>
               
               {/* Content */}
               <div className="space-y-2">
-                <p className="text-white font-medium line-clamp-1">{listing.title}</p>
-                <p className="text-zinc-500 text-sm line-clamp-1">{listing.location?.path_name || listing.location?.full_name}</p>
+                <p className="text-white font-medium line-clamp-1">{project.title}</p>
+                <p className="text-zinc-500 text-sm line-clamp-1">{project.location?.full_name}</p>
                 
                 <div className="flex items-center gap-3 text-xs text-zinc-400">
-                  {listing.bedrooms && listing.bedrooms !== 'None' && (
-                    <span>{listing.bedrooms === '0' ? 'Studio' : `${listing.bedrooms} BR`}</span>
+                  {formatBedrooms(project.bedrooms) && (
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                      {formatBedrooms(project.bedrooms)}
+                    </span>
                   )}
-                  {listing.size && <span>{parseFloat(listing.size).toLocaleString()} sqft</span>}
-                  {listing.property_type && <span>{listing.property_type}</span>}
+                  {project.payment_plans && (
+                    <span className="flex items-center gap-1" title="Payment Plan: Down/Construction/Handover">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                      {formatPaymentPlan(project.payment_plans)}
+                    </span>
+                  )}
                 </div>
                 
                 <div className="flex items-center justify-between pt-2">
-                  <p className="text-orange-400 font-semibold">AED {formatPrice(listing.price)}</p>
-                  <span className="text-zinc-600 text-xs">{extractDeveloper(listing)}</span>
+                  <div>
+                    <p className="text-orange-400 font-semibold">
+                      {project.price_from > 0 ? `da AED ${formatPrice(project.price_from)}` : 'Prezzo su richiesta'}
+                    </p>
+                  </div>
+                  {project.developer?.name && (
+                    <div className="flex items-center gap-1.5">
+                      {project.developer.logo && (
+                        <img src={project.developer.logo} alt="" className="w-4 h-4 rounded object-contain bg-white" />
+                      )}
+                      <span className="text-zinc-500 text-xs truncate max-w-[100px]">{project.developer.name}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               
               {/* Actions */}
               <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
-                <Button variant="ghost" size="sm" className="flex-1" onClick={() => setSelectedListing(listing)}>
+                <Button variant="ghost" size="sm" className="flex-1" onClick={() => setSelectedListing(project)}>
                   <Eye className="w-4 h-4 mr-1" /> Dettagli
                 </Button>
-                <Button variant="secondary" size="sm" className="flex-1" onClick={() => setShowAssignModal(listing)}>
+                <Button variant="secondary" size="sm" className="flex-1" onClick={() => setShowAssignModal(project)}>
                   <Plus className="w-4 h-4 mr-1" /> Lead
                 </Button>
               </div>
@@ -2281,7 +2363,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
 
       {/* Listing Detail Modal */}
       {selectedListing && (
-        <ListingDetailModal listing={selectedListing} onClose={() => setSelectedListing(null)} onCreateLead={() => { setShowAssignModal(selectedListing); setSelectedListing(null); }} isSaved={isListingSaved(selectedListing.property_id)} onToggleSave={() => isListingSaved(selectedListing.property_id) ? onRemoveListing(selectedListing.property_id) : onSaveListing(selectedListing)} />
+        <ListingDetailModal listing={selectedListing} onClose={() => setSelectedListing(null)} onCreateLead={() => { setShowAssignModal(selectedListing); setSelectedListing(null); }} isSaved={isListingSaved(selectedListing.project_id)} onToggleSave={() => isListingSaved(selectedListing.project_id) ? onRemoveListing(selectedListing.project_id) : onSaveListing(selectedListing)} />
       )}
 
       {/* Assign to Client Modal */}
@@ -2292,9 +2374,52 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
   );
 }
 
-// Listing Detail Modal
+// Listing Detail Modal (for Off-Plan Projects)
 function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleSave }) {
-  const formatPrice = (price) => parseFloat(price).toLocaleString();
+  const formatPrice = (price) => {
+    if (!price || price === 0) return 'Su richiesta';
+    return parseFloat(price).toLocaleString();
+  };
+  
+  // Format bedrooms from array
+  const formatBedrooms = (bedrooms) => {
+    if (!bedrooms?.available?.length) return null;
+    const beds = bedrooms.available;
+    if (beds.length === 1) {
+      return beds[0] === 0 ? 'Studio' : `${beds[0]} BR`;
+    }
+    const min = Math.min(...beds);
+    const max = Math.max(...beds);
+    if (min === 0) return `Studio - ${max} BR`;
+    return `${min} - ${max} BR`;
+  };
+
+  // Format delivery date
+  const formatDelivery = (dateStr) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    const quarter = Math.ceil((date.getMonth() + 1) / 3);
+    return `Q${quarter} ${date.getFullYear()}`;
+  };
+
+  // Format payment plan
+  const formatPaymentPlan = (plans) => {
+    if (!plans?.plans?.[0]) return null;
+    const plan = plans.plans[0].summary;
+    return `${plan.down_payment}% anticipo / ${plan.during_construction}% costruzione / ${plan.handover}% consegna`;
+  };
+
+  // Get construction status label
+  const getStatusLabel = (status) => {
+    switch(status) {
+      case 'completed': return { text: 'Completato', color: 'bg-green-500' };
+      case 'under_construction': return { text: 'In Costruzione', color: 'bg-orange-500' };
+      case 'not_started': return { text: 'Lancio', color: 'bg-blue-500' };
+      default: return { text: 'Off-Plan', color: 'bg-orange-500' };
+    }
+  };
+
+  const status = getStatusLabel(listing.construction_phase_key);
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -2314,7 +2439,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
             <X className="w-5 h-5" />
           </button>
           <div className="absolute bottom-4 left-4 right-4">
-            <span className="px-2 py-1 bg-orange-500 text-white text-xs font-medium rounded-lg">Off-Plan</span>
+            <span className={`px-2 py-1 ${status.color} text-white text-xs font-medium rounded-lg`}>{status.text}</span>
             <h2 className="text-xl font-semibold text-white mt-2 line-clamp-2">{listing.title}</h2>
           </div>
         </div>
@@ -2324,7 +2449,9 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           {/* Price & Location */}
           <div className="flex items-start justify-between mb-6">
             <div>
-              <p className="text-2xl font-bold text-orange-400">AED {formatPrice(listing.price)}</p>
+              <p className="text-2xl font-bold text-orange-400">
+                {listing.price_from > 0 ? `da AED ${formatPrice(listing.price_from)}` : 'Prezzo su richiesta'}
+              </p>
               <p className="text-zinc-400 mt-1">{listing.location?.full_name}</p>
             </div>
             <button onClick={onToggleSave} className={`p-3 rounded-xl transition-colors ${isSaved ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-orange-400'}`}>
@@ -2334,47 +2461,74 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           
           {/* Details Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            {listing.bedrooms && listing.bedrooms !== 'None' && (
+            {formatBedrooms(listing.bedrooms) && (
               <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
                 <p className="text-zinc-500 text-xs">Camere</p>
-                <p className="text-white font-medium">{listing.bedrooms === '0' ? 'Studio' : listing.bedrooms}</p>
+                <p className="text-white font-medium">{formatBedrooms(listing.bedrooms)}</p>
               </div>
             )}
-            {listing.bathrooms && listing.bathrooms !== 'None' && listing.bathrooms !== 'none' && (
+            {formatDelivery(listing.delivery_date) && (
               <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
-                <p className="text-zinc-500 text-xs">Bagni</p>
-                <p className="text-white font-medium">{listing.bathrooms}</p>
+                <p className="text-zinc-500 text-xs">Consegna</p>
+                <p className="text-white font-medium">{formatDelivery(listing.delivery_date)}</p>
               </div>
             )}
-            {listing.size && (
+            {listing.down_payment_percentage > 0 && (
               <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
-                <p className="text-zinc-500 text-xs">Dimensione</p>
-                <p className="text-white font-medium">{parseFloat(listing.size).toLocaleString()} sqft</p>
+                <p className="text-zinc-500 text-xs">Anticipo</p>
+                <p className="text-white font-medium">{listing.down_payment_percentage}%</p>
               </div>
             )}
             <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
-              <p className="text-zinc-500 text-xs">Tipo</p>
-              <p className="text-white font-medium">{listing.property_type}</p>
+              <p className="text-zinc-500 text-xs">Stato</p>
+              <p className="text-white font-medium">{status.text}</p>
             </div>
           </div>
-          
-          {/* Description */}
-          {listing.description && (
-            <div className="mb-6">
-              <h3 className="text-white font-medium mb-2">Descrizione</h3>
-              <p className="text-zinc-400 text-sm whitespace-pre-line line-clamp-6">{listing.description}</p>
+
+          {/* Developer Info */}
+          {listing.developer && (
+            <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl mb-6">
+              {listing.developer.logo && (
+                <img src={listing.developer.logo} alt={listing.developer.name} className="w-12 h-12 rounded-lg object-contain bg-white p-1" />
+              )}
+              <div className="flex-1">
+                <p className="text-zinc-500 text-xs">Developer</p>
+                <p className="text-white font-medium">{listing.developer.name}</p>
+              </div>
             </div>
           )}
-          
-          {/* Agent Info */}
-          {listing.agent && (
-            <div className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl mb-6">
-              {listing.agent.image_url && <img src={listing.agent.image_url} alt={listing.agent.name} className="w-10 h-10 rounded-full object-cover" />}
-              <div className="flex-1">
-                <p className="text-white text-sm font-medium">{listing.agent.name}</p>
-                <p className="text-zinc-500 text-xs">{listing.agent.email}</p>
+
+          {/* Payment Plan */}
+          {listing.payment_plans?.plans?.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-white font-medium mb-3">Piano di Pagamento</h3>
+              <div className="space-y-2">
+                {listing.payment_plans.plans.map((plan, idx) => (
+                  <div key={idx} className="p-3 bg-zinc-800/50 rounded-xl">
+                    <p className="text-zinc-400 text-xs mb-1">{plan.title}</p>
+                    <div className="flex gap-4 text-sm">
+                      <span className="text-green-400">{plan.summary.down_payment}% Anticipo</span>
+                      <span className="text-orange-400">{plan.summary.during_construction}% Costruzione</span>
+                      <span className="text-blue-400">{plan.summary.handover}% Consegna</span>
+                      {plan.summary.after_handover > 0 && (
+                        <span className="text-purple-400">{plan.summary.after_handover}% Post-consegna</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-              {listing.agent.is_super_agent && <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-full">Super Agent</span>}
+            </div>
+          )}
+
+          {/* Image Gallery */}
+          {listing.images?.length > 1 && (
+            <div className="mb-6">
+              <h3 className="text-white font-medium mb-3">Galleria ({listing.images_count} immagini)</h3>
+              <div className="grid grid-cols-4 gap-2">
+                {listing.images.slice(0, 8).map((img, idx) => (
+                  <img key={idx} src={img.small_image_url || img.medium_image_url} alt="" className="w-full h-20 object-cover rounded-lg" />
+                ))}
+              </div>
             </div>
           )}
           
@@ -2384,7 +2538,9 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               <Plus className="w-4 h-4 mr-2" /> Crea Lead
             </Button>
             <Button variant="secondary" className="flex-1" onClick={() => {
-              const text = `🏗️ *${listing.title}*\n\n📍 ${listing.location?.full_name}\n💰 AED ${parseFloat(listing.price).toLocaleString()}\n📐 ${listing.size ? parseFloat(listing.size).toLocaleString() + ' sqft' : 'N/A'}\n🛏️ ${listing.bedrooms === 'None' ? 'Studio' : listing.bedrooms + ' BR'}\n\n_Off-Plan Property_`;
+              const bedsText = formatBedrooms(listing.bedrooms) || 'Varie tipologie';
+              const deliveryText = formatDelivery(listing.delivery_date) || 'TBD';
+              const text = `🏗️ *${listing.title}*\n\n📍 ${listing.location?.full_name}\n💰 ${listing.price_from > 0 ? `da AED ${formatPrice(listing.price_from)}` : 'Prezzo su richiesta'}\n🏠 ${bedsText}\n📅 Consegna: ${deliveryText}\n🏢 ${listing.developer?.name || 'Developer'}\n\n_Progetto Off-Plan_`;
               window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
             }}>
               <MessageCircle className="w-4 h-4 mr-2" /> Condividi
