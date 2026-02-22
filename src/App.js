@@ -238,21 +238,25 @@ export default function App() {
   const addSale = async (sd) => { 
     setSaveStatus('Salvataggio...'); 
     let cliente_id = sd.cliente_id || null;
+    let cliente_nome = sd.cliente_nome || '';
     
     // Se non c'è cliente selezionato, creane uno nuovo con i dati forniti
-    if (!cliente_id && sd.cliente_nome) {
+    if (!cliente_id && sd.nuovo_cliente_nome) {
       const { data: cd } = await supabase.from('clienti').insert([{ 
-        nome: sd.cliente_nome, 
-        cognome: sd.cliente_cognome || '', 
-        telefono: sd.cliente_telefono || '',
-        email: sd.cliente_email || '',
-        stato: 'acquistato',  // Stato acquistato per vendita
+        nome: sd.nuovo_cliente_nome, 
+        cognome: sd.nuovo_cliente_cognome || '', 
+        telefono: sd.nuovo_cliente_telefono || '',
+        email: sd.nuovo_cliente_email || '',
+        stato: 'acquistato',
         fonte: 'Vendita Diretta', 
         agente_riferimento: user?.nome, 
         created_by: user?.nome, 
         referente: user?.referente 
       }]).select().single(); 
-      if (cd) cliente_id = cd.id;
+      if (cd) {
+        cliente_id = cd.id;
+        cliente_nome = cd.nome;
+      }
     }
     
     // Se c'è un cliente esistente, aggiorna il suo stato a "acquistato"
@@ -260,9 +264,17 @@ export default function App() {
       await supabase.from('clienti').update({ stato: 'acquistato' }).eq('id', sd.cliente_id);
     }
     
+    // Inserisci solo le colonne che esistono nella tabella sales
     const { error: e } = await supabase.from('sales').insert([{ 
-      ...sd, 
+      data: sd.data,
+      developer: sd.developer,
+      progetto: sd.progetto,
+      zona: sd.zona,
+      valore: sd.valore,
+      agente: sd.agente,
+      segnalatore: sd.segnalatore,
       cliente_id,
+      cliente_nome,
       referente: user?.referente, 
       commission_pct: 5, 
       inserted_by: user?.nome, 
@@ -451,7 +463,7 @@ function PasswordModal({ currentPassword, onSave, onClose }) {
   return <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"><div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full border border-slate-700"><h3 className="text-lg font-semibold text-white mb-4">Cambia Password</h3>{e && <div className="bg-red-500/20 text-red-300 rounded-lg px-3 py-2 mb-4 text-sm">{e}</div>}<div className="space-y-3"><input type="password" placeholder="Password attuale" value={op} onChange={(e) => setOp(e.target.value)} className={inp} /><input type="password" placeholder="Nuova password" value={np} onChange={(e) => setNp(e.target.value)} className={inp} /><input type="password" placeholder="Conferma" value={cp} onChange={(e) => setCp(e.target.value)} className={inp} /><div className="flex gap-3 pt-2"><button onClick={onClose} className="flex-1 bg-slate-700 text-white rounded-xl py-3 text-sm">Annulla</button><button onClick={save} className="flex-1 bg-amber-500 text-slate-900 rounded-xl py-3 font-semibold text-sm">Salva</button></div></div></div></div>;
 }
 
-// LEAD FORM - con ricerca cliente
+// LEAD FORM - con ricerca cliente (solo clienti del proprio agente)
 function LeadFormClean({ type, userName, clienti, onSubmit }) {
   const [selectedClient, setSelectedClient] = useState(null);
   const [showNewClient, setShowNewClient] = useState(false);
@@ -461,6 +473,9 @@ function LeadFormClean({ type, userName, clienti, onSubmit }) {
     cliente_nome: '', cliente_cognome: '', cliente_email: '', cliente_telefono: '', 
     cliente_whatsapp: '', cliente_nazionalita: '', cliente_budget_min: '', cliente_budget_max: '', cliente_note: '' 
   });
+  
+  // Filtra clienti: solo quelli creati da questo agente/segnalatore
+  const myClienti = clienti.filter(c => c.created_by === userName || c.agente_riferimento === userName);
   
   const sub = (e) => { 
     e?.preventDefault(); 
@@ -488,7 +503,7 @@ function LeadFormClean({ type, userName, clienti, onSubmit }) {
         <div className="bg-slate-800/50 rounded-xl p-4">
           <h4 className="text-white font-medium mb-3 flex items-center gap-2"><User className="w-4 h-4" /> Cliente</h4>
           <ClientSearch 
-            clienti={clienti} 
+            clienti={myClienti} 
             selectedClient={selectedClient}
             onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }}
             onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }}
@@ -538,30 +553,37 @@ function LeadFormClean({ type, userName, clienti, onSubmit }) {
   );
 }
 
-// SALE FORM - con ricerca cliente o creazione
+// SALE FORM - con ricerca cliente o creazione (solo clienti del proprio agente)
 function SaleFormClean({ type, userName, clienti, onSubmit }) {
   const [selectedClient, setSelectedClient] = useState(null);
   const [showNewClient, setShowNewClient] = useState(false);
   const [f, setF] = useState({ 
     data: new Date().toISOString().split('T')[0], 
     developer: '', progetto: '', zona: '', valore: '',
-    cliente_nome: '', cliente_cognome: '', cliente_telefono: '', cliente_email: ''
+    nuovo_cliente_nome: '', nuovo_cliente_cognome: '', nuovo_cliente_telefono: '', nuovo_cliente_email: ''
   });
+  
+  // Filtra clienti: solo quelli creati da questo agente/segnalatore
+  const myClienti = clienti.filter(c => c.created_by === userName || c.agente_riferimento === userName);
   
   const sub = (e) => { 
     e?.preventDefault(); 
-    if (!selectedClient && !f.cliente_nome) { alert('Seleziona o inserisci il cliente'); return; }
+    if (!selectedClient && !f.nuovo_cliente_nome) { alert('Seleziona o inserisci il cliente'); return; }
     if (!f.developer || !f.progetto || !f.zona || !f.valore) { alert('Compila tutti i campi obbligatori'); return; } 
     onSubmit({ 
-      ...f, 
-      cliente_id: selectedClient?.id || null,
-      cliente_nome: selectedClient?.nome || f.cliente_nome,
-      cliente_cognome: selectedClient?.cognome || f.cliente_cognome,
-      cliente_telefono: selectedClient?.telefono || f.cliente_telefono,
-      cliente_email: selectedClient?.email || f.cliente_email,
+      data: f.data,
+      developer: f.developer,
+      progetto: f.progetto,
+      zona: f.zona,
       valore: parseFloat(f.valore), 
       agente: type === 'agente' ? userName : null, 
-      segnalatore: type === 'segnalatore' ? userName : null 
+      segnalatore: type === 'segnalatore' ? userName : null,
+      cliente_id: selectedClient?.id || null,
+      cliente_nome: selectedClient?.nome || f.nuovo_cliente_nome,
+      nuovo_cliente_nome: f.nuovo_cliente_nome,
+      nuovo_cliente_cognome: f.nuovo_cliente_cognome,
+      nuovo_cliente_telefono: f.nuovo_cliente_telefono,
+      nuovo_cliente_email: f.nuovo_cliente_email
     }); 
   };
   
@@ -574,7 +596,7 @@ function SaleFormClean({ type, userName, clienti, onSubmit }) {
         <div className="bg-slate-800/50 rounded-xl p-4">
           <h4 className="text-white font-medium mb-3 flex items-center gap-2"><User className="w-4 h-4" /> Cliente Acquirente</h4>
           <ClientSearch 
-            clienti={clienti} 
+            clienti={myClienti} 
             selectedClient={selectedClient}
             onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }}
             onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }}
@@ -583,10 +605,10 @@ function SaleFormClean({ type, userName, clienti, onSubmit }) {
           {showNewClient && !selectedClient && (
             <div className="mt-4 pt-4 border-t border-slate-700 space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <input type="text" placeholder="Nome *" value={f.cliente_nome} onChange={(e) => setF({ ...f, cliente_nome: e.target.value })} className={inp} required />
-                <input type="text" placeholder="Cognome *" value={f.cliente_cognome} onChange={(e) => setF({ ...f, cliente_cognome: e.target.value })} className={inp} />
-                <input type="tel" placeholder="Telefono" value={f.cliente_telefono} onChange={(e) => setF({ ...f, cliente_telefono: e.target.value })} className={inp} />
-                <input type="email" placeholder="Email" value={f.cliente_email} onChange={(e) => setF({ ...f, cliente_email: e.target.value })} className={inp} />
+                <input type="text" placeholder="Nome *" value={f.nuovo_cliente_nome} onChange={(e) => setF({ ...f, nuovo_cliente_nome: e.target.value })} className={inp} required />
+                <input type="text" placeholder="Cognome" value={f.nuovo_cliente_cognome} onChange={(e) => setF({ ...f, nuovo_cliente_cognome: e.target.value })} className={inp} />
+                <input type="tel" placeholder="Telefono" value={f.nuovo_cliente_telefono} onChange={(e) => setF({ ...f, nuovo_cliente_telefono: e.target.value })} className={inp} />
+                <input type="email" placeholder="Email" value={f.nuovo_cliente_email} onChange={(e) => setF({ ...f, nuovo_cliente_email: e.target.value })} className={inp} />
               </div>
             </div>
           )}
