@@ -495,7 +495,7 @@ export default function App() {
         <div className="sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A]">
           <div className="flex items-center justify-between px-4 py-4 max-w-5xl mx-auto">
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="KeyPrime" className="h-8" />
+              <img src="/logo.png" alt="KeyPrime" className="h-10" />
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white transition-colors">
@@ -730,7 +730,7 @@ export default function App() {
         {/* Sidebar - Desktop */}
         <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#0F0F11] p-4">
           <div className="mb-8">
-            <img src="/logo.png" alt="KeyPrime" className="h-8" />
+            <img src="/logo.png" alt="KeyPrime" className="h-12" />
           </div>
           
           <nav className="space-y-1 flex-1">
@@ -757,7 +757,7 @@ export default function App() {
           <div className="lg:hidden sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A]">
             <div className="flex items-center justify-between px-4 py-4">
               <button onClick={() => setMobileMenuOpen(true)} className="text-zinc-400"><Menu className="w-6 h-6" /></button>
-              <img src="/logo.png" alt="KeyPrime" className="h-8" />
+              <img src="/logo.png" alt="KeyPrime" className="h-10" />
               <button onClick={() => setShowNotifications(true)} className="relative text-zinc-400">
                 <Bell className="w-5 h-5" />
                 {notificationCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">{notificationCount}</span>}
@@ -913,7 +913,7 @@ export default function App() {
             <div className="absolute inset-0 bg-black/60" onClick={() => setMobileMenuOpen(false)} />
             <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#0F0F11] p-4 animate-slideRight">
               <div className="flex items-center justify-between mb-8">
-                <img src="/logo.png" alt="KeyPrime" className="h-8" />
+                <img src="/logo.png" alt="KeyPrime" className="h-10" />
                 <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-400"><X className="w-5 h-5" /></button>
               </div>
               <nav className="space-y-1">
