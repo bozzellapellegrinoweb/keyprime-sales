@@ -995,10 +995,10 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <StatCard label="Lead Attivi" value={mySales.filter(s => s.stato !== 'venduto' && s.stato !== 'incassato').length} icon={Target} accent="#60A5FA" onClick={() => setActiveTab('leads')} />
-                  <StatCard label="Vendite" value={myVendite.length} icon={TrendingUp} accent="#34D399" />
-                  <StatCard label="Commissioni" value={fmt(totalComm)} icon={DollarSign} accent="#FBBF24" />
-                  <StatCard label="Task" value={myTasks.length} icon={ListTodo} accent="#F472B6" onClick={() => setActiveTab('tasks')} />
+                  <MetricCard label="Lead Attivi" value={mySales.filter(s => s.stato !== 'venduto' && s.stato !== 'incassato').length} icon={Target} color="#60A5FA" onClick={() => setActiveTab('leads')} />
+                  <MetricCard label="Vendite" value={myVendite.length} icon={TrendingUp} color="#34D399" />
+                  <MetricCard label="Commissioni" value={fmt(totalComm)} icon={DollarSign} color="#FBBF24" />
+                  <MetricCard label="Task" value={myTasks.length} icon={ListTodo} color="#F472B6" onClick={() => setActiveTab('tasks')} />
                 </div>
 
                 <Card>
