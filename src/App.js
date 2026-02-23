@@ -6,26 +6,14 @@ const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbG
 
 // OneSignal Config
 const ONESIGNAL_APP_ID = '071cd2c3-4a3d-4d2f-8deb-fa575aec578d';
-const ONESIGNAL_API_KEY = 'os_v2_org_smhi42kgobfc3j2hrydqjbsdgnpywruusi5ezzuyl6zgh3hjjmjl7whervr34juizss3emayoctdt2c6hpbt7rkovk3uwjbmdodg2ky';
 
-// Send Push Notification via OneSignal
+// Send Push Notification via Serverless Function
 const sendPushNotification = async (title, message, url = null) => {
   try {
-    const payload = {
-      app_id: ONESIGNAL_APP_ID,
-      contents: { en: message, it: message },
-      headings: { en: title, it: title },
-      included_segments: ['All'],
-    };
-    if (url) payload.url = url;
-    
-    await fetch('https://onesignal.com/api/v1/notifications', {
+    await fetch('/api/send-push', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${ONESIGNAL_API_KEY}`
-      },
-      body: JSON.stringify(payload)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, message, url })
     });
     console.log('Push sent:', title);
   } catch (err) {
