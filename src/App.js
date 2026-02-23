@@ -740,41 +740,49 @@ export default function App() {
 
   // Sales Handlers
   const addLead = async (ld) => {
-    let cliente_id = ld.cliente_id;
-    if (!cliente_id && ld.cliente_nome) {
-      const { data: cd } = await supabase.from('clienti').insert([{
-        nome: ld.cliente_nome, cognome: ld.cliente_cognome, email: ld.cliente_email, telefono: ld.cliente_telefono,
-        whatsapp: ld.cliente_whatsapp, nazionalita: ld.cliente_nazionalita, budget_min: ld.cliente_budget_min ? parseFloat(ld.cliente_budget_min) : null,
-        budget_max: ld.cliente_budget_max ? parseFloat(ld.cliente_budget_max) : null, note: ld.cliente_note,
-        stato: 'nuovo', fonte: 'Agente', agente_riferimento: user?.nome, created_by: user?.nome, referente: user?.referente
-      }]).select().single();
-      if (cd) cliente_id = cd.id;
-    }
-    await supabase.from('sales').insert([{
-      data: ld.data, developer: ld.developer, progetto: ld.progetto, zona: ld.zona, valore: ld.valore || 0,
-      agente: ld.agente, segnalatore: ld.segnalatore, referente: user?.referente, commission_pct: 5,
-      inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: ld.stato || 'lead', cliente_id
-    }]);
-    showToast('Lead aggiunto'); setShowForm(null); loadSales(); loadClienti();
+    try {
+      let cliente_id = ld.cliente_id;
+      if (!cliente_id && ld.cliente_nome) {
+        const { data: cd, error: clienteError } = await supabase.from('clienti').insert([{
+          nome: ld.cliente_nome, cognome: ld.cliente_cognome, email: ld.cliente_email, telefono: ld.cliente_telefono,
+          whatsapp: ld.cliente_whatsapp, nazionalita: ld.cliente_nazionalita, budget_min: ld.cliente_budget_min ? parseFloat(ld.cliente_budget_min) : null,
+          budget_max: ld.cliente_budget_max ? parseFloat(ld.cliente_budget_max) : null, note: ld.cliente_note,
+          stato: 'nuovo', fonte: 'Agente', agente_riferimento: user?.nome, created_by: user?.nome, referente: user?.referente
+        }]).select().single();
+        if (clienteError) { console.error('Cliente error:', clienteError); }
+        if (cd) cliente_id = cd.id;
+      }
+      const { error } = await supabase.from('sales').insert([{
+        data: ld.data, developer: ld.developer, progetto: ld.progetto, zona: ld.zona, valore: ld.valore || 0,
+        agente: ld.agente, segnalatore: ld.segnalatore, referente: user?.referente, commission_pct: 5,
+        inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: ld.stato || 'lead', cliente_id
+      }]);
+      if (error) { console.error('Insert error:', error); showToast('Errore: ' + error.message); return; }
+      showToast('Lead aggiunto'); setShowForm(null); loadSales(); loadClienti();
+    } catch (err) { console.error('addLead error:', err); showToast('Errore salvataggio'); }
   };
 
   const addSale = async (sd) => {
-    let cliente_id = sd.cliente_id;
-    if (!cliente_id && sd.nuovo_cliente_nome) {
-      const { data: cd } = await supabase.from('clienti').insert([{
-        nome: sd.nuovo_cliente_nome, cognome: sd.nuovo_cliente_cognome || '', telefono: sd.nuovo_cliente_telefono || '',
-        email: sd.nuovo_cliente_email || '', stato: 'acquistato', fonte: 'Vendita',
-        agente_riferimento: user?.nome, created_by: user?.nome, referente: user?.referente
-      }]).select().single();
-      if (cd) cliente_id = cd.id;
-    }
-    if (sd.cliente_id) await supabase.from('clienti').update({ stato: 'acquistato' }).eq('id', sd.cliente_id);
-    await supabase.from('sales').insert([{
-      data: sd.data, developer: sd.developer, progetto: sd.progetto, zona: sd.zona, valore: sd.valore,
-      agente: sd.agente, segnalatore: sd.segnalatore, cliente_id, cliente_nome: sd.cliente_nome,
-      referente: user?.referente, commission_pct: 5, inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: 'venduto'
-    }]);
-    showToast('Vendita registrata'); setShowForm(null); loadSales(); loadClienti();
+    try {
+      let cliente_id = sd.cliente_id;
+      if (!cliente_id && sd.nuovo_cliente_nome) {
+        const { data: cd, error: clienteError } = await supabase.from('clienti').insert([{
+          nome: sd.nuovo_cliente_nome, cognome: sd.nuovo_cliente_cognome || '', telefono: sd.nuovo_cliente_telefono || '',
+          email: sd.nuovo_cliente_email || '', stato: 'acquistato', fonte: 'Vendita',
+          agente_riferimento: user?.nome, created_by: user?.nome, referente: user?.referente
+        }]).select().single();
+        if (clienteError) { console.error('Cliente error:', clienteError); }
+        if (cd) cliente_id = cd.id;
+      }
+      if (sd.cliente_id) await supabase.from('clienti').update({ stato: 'acquistato' }).eq('id', sd.cliente_id);
+      const { error } = await supabase.from('sales').insert([{
+        data: sd.data, developer: sd.developer, progetto: sd.progetto, zona: sd.zona, valore: sd.valore,
+        agente: sd.agente, segnalatore: sd.segnalatore, cliente_id, cliente_nome: sd.cliente_nome,
+        referente: user?.referente, commission_pct: 5, inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: 'venduto'
+      }]);
+      if (error) { console.error('Insert error:', error); showToast('Errore: ' + error.message); return; }
+      showToast('Vendita registrata'); setShowForm(null); loadSales(); loadClienti();
+    } catch (err) { console.error('addSale error:', err); showToast('Errore salvataggio'); }
   };
 
   const convertLeadToSale = async (id, v) => {
@@ -877,6 +885,7 @@ export default function App() {
     const tabs = [
       { id: 'home', icon: LayoutDashboard, label: 'Home', accent: theme.sections.dashboard.accent },
       { id: 'leads', icon: Target, label: 'Lead', accent: theme.sections.pipeline.accent },
+      { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: myTasks.length },
       { id: 'settings', icon: Settings, label: 'Account', accent: theme.sections.utenti.accent }
     ];
@@ -1065,6 +1074,9 @@ export default function App() {
 
           {/* TASKS TAB */}
           {activeTab === 'tasks' && <AgentTasksTab tasks={myTasks} allTasks={tasks.filter(t => t.assegnato_a === user?.nome)} clienti={clienti} onComplete={completeTask} onAddNote={(t) => setShowNoteModal(t)} />}
+
+          {/* OFF-PLAN TAB */}
+          {activeTab === 'offplan' && <OffPlanTab clienti={myClienti} onCreateLead={handleOffPlanLead} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeSavedListing} user={user} />}
 
           {/* SETTINGS TAB */}
           {activeTab === 'settings' && (
