@@ -1389,19 +1389,7 @@ export default function App() {
             {activeTab === 'vendite' && <VenditeTab sales={filteredSales} filters={filters} setFilters={setFilters} updateSale={updateSale} deleteSale={deleteSale} loading={loading} />}
 
             {/* PIPELINE */}
-            {activeTab === 'pipeline' && (
-              <LeadsTableView 
-                leads={sales} 
-                clienti={clienti} 
-                onSelectLead={setShowLeadDetail}
-                onUpdateStatus={(id, stato) => updateSale(id, { stato })}
-                onDelete={deleteSale}
-                onAssign={(ids, userId) => ids.forEach(id => updateSale(id, { assegnato_a: userId }))}
-                theme={theme}
-                users={users}
-                isAdmin={true}
-              />
-            )}
+            {activeTab === 'pipeline' && <PipelineTab byStato={byStato} onSelectLead={setShowLeadDetail} onUpdateSaleStatus={(id, stato) => updateSale(id, { stato })} />}
 
             {/* CRM */}
             {activeTab === 'crm' && (showClienteDetail ? <ClienteDetailView cliente={showClienteDetail} sales={sales.filter(s => s.cliente_id === showClienteDetail.id)} tasks={tasks.filter(t => t.cliente_id === showClienteDetail.id)} onBack={() => setShowClienteDetail(null)} onEdit={() => setShowClienteModal(showClienteDetail)} onDelete={() => deleteCliente(showClienteDetail.id)} updateCliente={updateCliente} onAddTask={() => setShowTaskModal({ cliente_id: showClienteDetail.id })} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(showClienteDetail, sales.filter(s => s.cliente_id === showClienteDetail.id), tasks.filter(t => t.cliente_id === showClienteDetail.id))} /> : <CRMTab clienti={filteredClienti} filters={clienteFilters} setFilters={setClienteFilters} sales={sales} onSelect={setShowClienteDetail} onCreate={() => setShowClienteModal({})} />)}
