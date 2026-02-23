@@ -32,13 +32,22 @@ export default async function handler(req, res) {
   try {
     const startTime = Date.now();
     
-    const { count } = await supabase
-      .from('pf_projects')
-      .select('*', { count: 'exact', head: true });
+    // Allow manual offset override via query param
+    const manualOffset = req.query.offset ? parseInt(req.query.offset) : null;
     
-    const offset = count || 0;
+    let offset;
+    if (manualOffset !== null) {
+      offset = manualOffset;
+    } else {
+      const { count } = await supabase
+        .from('pf_projects')
+        .select('*', { count: 'exact', head: true });
+      offset = count || 0;
+    }
+    
     let totalSynced = 0;
     let currentOffset = offset;
+    let lastError = null;
     
     for (let i = 0; i < 40; i++) {
       const url = `https://${PF_API_HOST}/projects?limit=50&offset=${currentOffset}`;
@@ -49,23 +58,36 @@ export default async function handler(req, res) {
         }
       });
       
-      if (!response.ok) break;
+      if (!response.ok) {
+        lastError = `API returned ${response.status}`;
+        break;
+      }
       
       const data = await response.json();
       const projects = data.data || [];
       
-      if (projects.length === 0) break;
+      if (projects.length === 0) {
+        lastError = 'No projects returned';
+        break;
+      }
       
       const transformed = projects.map(transformProject);
       
-      await supabase
+      const { error } = await supabase
         .from('pf_projects')
         .upsert(transformed, { onConflict: 'project_id' });
+      
+      if (error) {
+        lastError = error.message;
+      }
       
       totalSynced += projects.length;
       currentOffset += 50;
       
-      if (!data.pagination?.has_next) break;
+      if (!data.pagination?.has_next) {
+        lastError = 'No more pages';
+        break;
+      }
       
       await new Promise(r => setTimeout(r, 100));
     }
@@ -77,9 +99,11 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       startedFrom: offset,
+      endedAt: currentOffset,
       synced: totalSynced,
       totalInDb: newCount,
-      duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's'
+      duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
+      note: lastError
     });
     
   } catch (err) {
@@ -89,3 +113,8 @@ export default async function handler(req, res) {
     });
   }
 }
+```
+
+Dopo il commit, prova:
+```
+https://keyprime-sales-1npw.vercel.app/api/sync-projects?offset=2500
