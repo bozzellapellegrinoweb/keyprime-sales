@@ -28,101 +28,71 @@ function transformProject(p) {
   };
 }
 
-async function fetchProjectsPage(offset) {
-  const url = `https://${PF_API_HOST}/projects?limit=50&offset=${offset}`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'x-rapidapi-host': PF_API_HOST,
-      'x-rapidapi-key': PF_API_KEY
-    }
-  });
-  if (!response.ok) throw new Error(`API Error: ${response.status}`);
-  return response.json();
-}
-
 export default async function handler(req, res) {
-  const startTime = Date.now();
-  const mode = req.query.mode || 'update';
-  
-  // Get current count to resume from where we left off
-  const { count: currentCount } = await supabase
-    .from('pf_projects')
-    .select('*', { count: 'exact', head: true });
-  
-  // For 'full' mode, start from current count (resume)
-  // For 'update' mode, start from 0 (check for new projects)
-  let offset = mode === 'full' ? (currentCount || 0) : 0;
-  const startOffset = offset;
-  
-  let totalSynced = 0;
-  let errors = 0;
-  let pages = 0;
-  const maxPages = 50; // ~2500 projects per call
-  
   try {
-    while (pages < maxPages) {
-      const data = await fetchProjectsPage(offset);
+    const startTime = Date.now();
+    
+    // Get current count
+    const { count } = await supabase
+      .from('pf_projects')
+      .select('*', { count: 'exact', head: true });
+    
+    const offset = count || 0;
+    let totalSynced = 0;
+    let currentOffset = offset;
+    
+    // Sync up to 40 pages (2000 projects) per call
+    for (let i = 0; i < 40; i++) {
+      const url = `https://${PF_API_HOST}/projects?limit=50&offset=${currentOffset}`;
+      const response = await fetch(url, {
+        headers: {
+          'x-rapidapi-host': PF_API_HOST,
+          'x-rapidapi-key': PF_API_KEY
+        }
+      });
+      
+      if (!response.ok) break;
+      
+      const data = await response.json();
       const projects = data.data || [];
       
       if (projects.length === 0) break;
       
       const transformed = projects.map(transformProject);
       
-      const { error } = await supabase
+      await supabase
         .from('pf_projects')
-        .upsert(transformed, { 
-          onConflict: 'project_id',
-          ignoreDuplicates: false 
-        });
+        .upsert(transformed, { onConflict: 'project_id' });
       
-      if (error) {
-        errors++;
-      } else {
-        totalSynced += projects.length;
-      }
+      totalSynced += projects.length;
+      currentOffset += 50;
       
-      if (!data.pagination?.has_next) {
-        // Reached the end!
-        break;
-      }
-      
-      offset += 50;
-      pages++;
+      if (!data.pagination?.has_next) break;
       
       await new Promise(r => setTimeout(r, 100));
     }
-    
-    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     
     const { count: newCount } = await supabase
       .from('pf_projects')
       .select('*', { count: 'exact', head: true });
     
-    const isComplete = pages < maxPages;
-    
     return res.status(200).json({
       success: true,
-      mode,
-      resumedFrom: startOffset,
+      startedFrom: offset,
       synced: totalSynced,
-      errors,
-      duration: `${duration}s`,
       totalInDb: newCount,
-      isComplete,
-      message: isComplete ? '✅ Sync completato!' : `⏳ Richiama ancora per continuare (${newCount}/47000)`
+      duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's'
     });
     
   } catch (err) {
     return res.status(500).json({ 
       success: false, 
-      error: err.message,
-      synced: totalSynced 
+      error: err.message 
     });
   }
 }
 ```
 
-Clicca **"Commit changes"**, aspetta 1 minuto, poi richiama:
+Poi richiama l'URL:
 ```
 https://keyprime-sales-1npw.vercel.app/api/sync-projects?mode=full
