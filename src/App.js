@@ -889,7 +889,7 @@ export default function App() {
       { id: 'settings', icon: Settings, label: 'Account', accent: theme.sections.utenti.accent }
     ];
 
-    // Form View
+    // Form View (same for mobile/desktop)
     if (showForm) {
       return (
         <div className="min-h-screen bg-[#09090B]">
@@ -916,180 +916,183 @@ export default function App() {
     }
 
     return (
-      <div className="min-h-screen bg-[#09090B] pb-24">
-        {/* Header */}
-        <div className="sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A]">
-          <div className="flex items-center justify-between px-4 py-4 max-w-5xl mx-auto">
-            <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="KeyPrime" className="h-16" />
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white transition-colors">
-                <Bell className="w-5 h-5" />
-                {notificationCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
-              </button>
+      <div className="min-h-screen bg-[#09090B] lg:flex">
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#0F0F11] p-4 fixed h-full">
+          <div className="mb-8">
+            <img src="/logo.png" alt="KeyPrime" className="h-16" />
+          </div>
+          <nav className="space-y-1 flex-1">
+            {tabs.map(t => (
+              <NavItem key={t.id} icon={t.icon} label={t.label} active={activeTab === t.id} onClick={() => setActiveTab(t.id)} accent={t.accent} badge={t.badge} />
+            ))}
+          </nav>
+          <div className="pt-4 border-t border-[#27272A]">
+            <div className="flex items-center gap-3 px-2 py-2">
               <Avatar nome={user?.nome} size="sm" />
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-sm font-medium truncate">{user?.nome}</p>
+                <p className="text-zinc-500 text-xs capitalize">{type}</p>
+              </div>
+              <button onClick={handleLogout} className="text-zinc-500 hover:text-white"><LogOut className="w-4 h-4" /></button>
             </div>
           </div>
-        </div>
+        </aside>
 
-        {/* Content */}
-        <div className="p-4 max-w-5xl mx-auto space-y-6">
-          
-          {/* HOME TAB */}
-          {activeTab === 'home' && (
-            <>
-              {/* Welcome */}
-              <div className="pt-2">
-                <p className="text-zinc-500 text-sm">Bentornato,</p>
-                <h1 className="text-2xl font-semibold text-white">{user?.nome} 👋</h1>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => setShowForm('lead')} className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 rounded-2xl p-5 text-left hover:border-blue-500/40 transition-all">
-                  <Target className="w-6 h-6 text-blue-400 mb-3" />
-                  <span className="text-white font-medium block">Nuovo Lead</span>
-                  <span className="text-zinc-500 text-sm">Aggiungi prospect</span>
+        {/* Main Content */}
+        <div className="flex-1 lg:ml-64 pb-24 lg:pb-0">
+          {/* Mobile Header */}
+          <div className="lg:hidden sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A]">
+            <div className="flex items-center justify-between px-4 py-4">
+              <img src="/logo.png" alt="KeyPrime" className="h-12" />
+              <div className="flex items-center gap-3">
+                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white">
+                  <Bell className="w-5 h-5" />
+                  {notificationCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
                 </button>
-                <button onClick={() => setShowForm('vendita')} className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/20 rounded-2xl p-5 text-left hover:border-emerald-500/40 transition-all">
-                  <DollarSign className="w-6 h-6 text-emerald-400 mb-3" />
-                  <span className="text-white font-medium block">Vendita</span>
-                  <span className="text-zinc-500 text-sm">Registra vendita</span>
+                <Avatar nome={user?.nome} size="sm" />
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Header */}
+          <div className="hidden lg:block sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A]">
+            <div className="flex items-center justify-between px-6 py-4">
+              <div>
+                <h1 className="text-xl font-semibold text-white capitalize">{activeTab === 'home' ? `Ciao, ${user?.nome}` : tabs.find(t => t.id === activeTab)?.label}</h1>
+                <p className="text-zinc-500 text-sm">
+                  {activeTab === 'home' && 'Il tuo riepilogo'}
+                  {activeTab === 'leads' && `${mySales.length} lead totali`}
+                  {activeTab === 'offplan' && 'Progetti Off-Plan'}
+                  {activeTab === 'tasks' && `${myTasks.length} task pendenti`}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white bg-[#27272A] rounded-xl">
+                  <Bell className="w-5 h-5" />
+                  {notificationCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
                 </button>
+                <Button onClick={() => setShowForm('lead')} icon={Plus}>Nuovo Lead</Button>
+                <Button onClick={() => setShowForm('vendita')} variant="secondary" icon={DollarSign}>Vendita</Button>
               </div>
+            </div>
+          </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-3">
-                <MetricCard label="Lead Attivi" value={mySales.filter(s => s.stato !== 'venduto' && s.stato !== 'incassato').length} icon={Target} color="#60A5FA" onClick={() => setActiveTab('leads')} />
-                <MetricCard label="Vendite" value={myVendite.length} icon={TrendingUp} color="#34D399" onClick={() => setActiveTab('leads')} />
-              </div>
-
-              {/* Commission */}
-              <Card>
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-white font-medium">Commissioni</span>
-                  <span className="text-zinc-400 text-sm">{fmt(totalComm)} AED totali</span>
+          {/* Content */}
+          <div className="p-4 lg:p-6 space-y-6">
+            {/* HOME TAB */}
+            {activeTab === 'home' && (
+              <>
+                <div className="lg:hidden grid grid-cols-2 gap-3">
+                  <button onClick={() => setShowForm('lead')} className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 rounded-2xl p-5 text-left">
+                    <Target className="w-6 h-6 text-blue-400 mb-3" />
+                    <span className="text-white font-medium block">Nuovo Lead</span>
+                  </button>
+                  <button onClick={() => setShowForm('vendita')} className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/20 rounded-2xl p-5 text-left">
+                    <DollarSign className="w-6 h-6 text-emerald-400 mb-3" />
+                    <span className="text-white font-medium block">Vendita</span>
+                  </button>
                 </div>
-                <ProgressBar value={pagate} max={totalComm || 1} color="#34D399" />
-                <div className="flex justify-between mt-3 text-sm">
-                  <span className="text-emerald-400">Pagate: {fmt(pagate)}</span>
-                  <span className="text-zinc-500">Pending: {fmt(totalComm - pagate)}</span>
-                </div>
-              </Card>
 
-              {/* Task Alert */}
-              {myTasks.length > 0 && (
-                <Card hover onClick={() => setActiveTab('tasks')} className="border-pink-500/20 bg-pink-500/5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-pink-500/20 flex items-center justify-center">
-                      <ListTodo className="w-6 h-6 text-pink-400" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-white font-medium">{myTasks.length} task da completare</p>
-                      <p className="text-zinc-500 text-sm">{overdueTasks.filter(t => t.assegnato_a === user?.nome).length > 0 && `${overdueTasks.filter(t => t.assegnato_a === user?.nome).length} scaduti`}</p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-zinc-500" />
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <StatCard label="Lead Attivi" value={mySales.filter(s => s.stato !== 'venduto' && s.stato !== 'incassato').length} icon={Target} accent="#60A5FA" onClick={() => setActiveTab('leads')} />
+                  <StatCard label="Vendite" value={myVendite.length} icon={TrendingUp} accent="#34D399" />
+                  <StatCard label="Commissioni" value={fmt(totalComm)} icon={DollarSign} accent="#FBBF24" />
+                  <StatCard label="Task" value={myTasks.length} icon={ListTodo} accent="#F472B6" onClick={() => setActiveTab('tasks')} />
+                </div>
+
+                <Card>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-white font-medium">Commissioni</span>
+                    <span className="text-zinc-400 text-sm">{fmt(totalComm)} AED totali</span>
+                  </div>
+                  <ProgressBar value={pagate} max={totalComm || 1} color="#34D399" />
+                  <div className="flex justify-between mt-3 text-sm">
+                    <span className="text-emerald-400">Pagate: {fmt(pagate)} AED</span>
+                    <span className="text-zinc-500">Pending: {fmt(totalComm - pagate)} AED</span>
                   </div>
                 </Card>
-              )}
 
-              {/* Recent Leads */}
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-white">Lead Recenti</h2>
-                  <button onClick={() => setActiveTab('leads')} className="text-sm text-violet-400 flex items-center gap-1">Tutti <ChevronRight className="w-4 h-4" /></button>
-                </div>
-                {mySales.length === 0 ? (
-                  <EmptyState icon={Target} title="Nessun lead" description="Inizia aggiungendo il tuo primo lead" action="Nuovo Lead" onAction={() => setShowForm('lead')} />
-                ) : (
-                  <div className="space-y-2">
-                    {mySales.slice(0, 5).map(s => (
+                {myTasks.length > 0 && (
+                  <Card hover onClick={() => setActiveTab('tasks')} className="border-pink-500/20 bg-pink-500/5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-pink-500/20 flex items-center justify-center">
+                        <ListTodo className="w-6 h-6 text-pink-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-white font-medium">{myTasks.length} task da completare</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-zinc-500" />
+                    </div>
+                  </Card>
+                )}
+
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold text-white">Lead Recenti</h2>
+                    <button onClick={() => setActiveTab('leads')} className="text-sm text-violet-400">Tutti →</button>
+                  </div>
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    {mySales.slice(0, 6).map(s => (
                       <Card key={s.id} hover onClick={() => setShowLeadDetail(s)} padding="p-4">
                         <div className="flex items-center gap-4">
                           <div className="w-1 h-12 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-white font-medium truncate">{s.progetto || 'TBD'}</p>
-                            <p className="text-zinc-500 text-sm truncate">{s.developer} • {s.zona}</p>
+                            <p className="text-white font-medium truncate">{s.progetto}</p>
+                            <p className="text-zinc-500 text-sm">{s.developer}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-white font-medium">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
+                            <p className="text-emerald-400 font-medium">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
                             <StatusBadge status={s.stato || 'lead'} />
                           </div>
                         </div>
                       </Card>
                     ))}
                   </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* LEADS TAB */}
-          {activeTab === 'leads' && (
-            <>
-              <SectionHeader icon={Target} title="I tuoi Lead" accent="96,165,250" action actionLabel="Nuovo" onAction={() => setShowForm('lead')} />
-              
-              {/* Pipeline Summary */}
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {pipelineStati.slice(0, 4).map(st => (
-                  <div key={st} className="flex-1 min-w-[80px] bg-[#18181B] border border-[#27272A] rounded-xl p-3 text-center">
-                    <div className="text-lg font-semibold text-white">{byStato[st]?.length || 0}</div>
-                    <div className="text-xs text-zinc-500 capitalize">{st}</div>
-                  </div>
-                ))}
-              </div>
-
-              {mySales.length === 0 ? (
-                <EmptyState icon={Target} title="Nessun lead" description="Aggiungi il tuo primo lead per iniziare" action="Nuovo Lead" onAction={() => setShowForm('lead')} />
-              ) : (
-                <div className="space-y-2">
-                  {mySales.map(s => {
-                    const mc = (s.stato === 'venduto' || s.stato === 'incassato') ? Number(s.valore) * (s.commission_pct || 5) / 100 * rate : 0;
-                    return (
-                      <Card key={s.id} hover onClick={() => setShowLeadDetail(s)} padding="p-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-1 h-14 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="text-white font-medium truncate">{s.progetto || 'TBD'}</p>
-                              <StatusBadge status={s.stato || 'lead'} />
-                            </div>
-                            <p className="text-zinc-500 text-sm">{s.developer} • {s.zona}</p>
-                            {s.cliente_nome && <p className="text-blue-400 text-sm mt-1">{s.cliente_nome}</p>}
-                          </div>
-                          <div className="text-right">
-                            <p className="text-white font-semibold">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
-                            {mc > 0 && <p className="text-emerald-400 text-xs">{fmt(mc)} AED</p>}
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
                 </div>
-              )}
-            </>
-          )}
+              </>
+            )}
 
-          {/* TASKS TAB */}
-          {activeTab === 'tasks' && <AgentTasksTab tasks={myTasks} allTasks={tasks.filter(t => t.assegnato_a === user?.nome)} clienti={clienti} onComplete={completeTask} onAddNote={(t) => setShowNoteModal(t)} />}
+            {/* LEADS TAB */}
+            {activeTab === 'leads' && (
+              <>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {pipelineStati.map(st => (
+                    <button key={st} className="px-4 py-2 rounded-xl text-sm whitespace-nowrap" style={{ background: theme.status[st]?.bg, color: theme.status[st]?.color }}>
+                      {st} ({byStato[st]?.length || 0})
+                    </button>
+                  ))}
+                </div>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {mySales.map(s => (
+                    <Card key={s.id} hover onClick={() => setShowLeadDetail(s)} padding="p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-1 h-14 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-medium truncate">{s.progetto}</p>
+                          <p className="text-zinc-500 text-sm">{s.developer} • {s.zona}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-emerald-400 font-semibold">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
+                          <StatusBadge status={s.stato || 'lead'} />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            )}
 
-          {/* OFF-PLAN TAB */}
-          {activeTab === 'offplan' && <OffPlanTab clienti={myClienti} onCreateLead={createLeadFromListing} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeListing} user={user} />}
-
-          {/* SETTINGS TAB */}
-          {activeTab === 'settings' && (
-            <>
-              <div className="pt-2 mb-6">
-                <h1 className="text-2xl font-semibold text-white">Account</h1>
-              </div>
-              
-              <Card>
+            {activeTab === 'tasks' && <AgentTasksTab tasks={myTasks} allTasks={tasks.filter(t => t.assegnato_a === user?.nome)} clienti={clienti} onComplete={completeTask} onAddNote={(t) => setShowNoteModal(t)} />}
+            {activeTab === 'offplan' && <OffPlanTab clienti={myClienti} onCreateLead={createLeadFromListing} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeListing} user={user} />}
+            
+            {activeTab === 'settings' && (
+              <Card className="max-w-lg">
                 <div className="flex items-center gap-4 mb-6">
-                  <Avatar nome={user?.nome} size="xl" />
+                  <Avatar nome={user?.nome} size="lg" />
                   <div>
                     <p className="text-xl font-semibold text-white">{user?.nome}</p>
-                    <p className="text-zinc-500">{type} • {user?.email || 'No email'}</p>
+                    <p className="text-zinc-500">{type}</p>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -1097,26 +1100,22 @@ export default function App() {
                   <Button variant="danger" icon={LogOut} onClick={handleLogout} className="w-full justify-start">Esci</Button>
                 </div>
               </Card>
-            </>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-[#09090B]/95 backdrop-blur-xl border-t border-[#27272A] px-4 py-2 z-30">
-          <div className="flex justify-around max-w-md mx-auto">
-            {tabs.map(t => (
-              <button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex flex-col items-center py-2 px-4 rounded-xl transition-all ${activeTab === t.id ? 'text-white' : 'text-zinc-500'}`}>
-                <div className="relative">
+          {/* Mobile Bottom Nav */}
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#09090B]/95 backdrop-blur-xl border-t border-[#27272A] px-4 py-2 z-30">
+            <div className="flex justify-around">
+              {tabs.map(t => (
+                <button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex flex-col items-center py-2 px-3 ${activeTab === t.id ? 'text-white' : 'text-zinc-500'}`}>
                   <t.icon className="w-6 h-6" style={activeTab === t.id ? { color: t.accent } : {}} />
-                  {t.badge > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">{t.badge}</span>}
-                </div>
-                <span className="text-xs mt-1">{t.label}</span>
-              </button>
-            ))}
+                  <span className="text-xs mt-1">{t.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Modals */}
         {showLeadDetail && <LeadDetailSheet sale={showLeadDetail} cliente={clienti.find(c => c.id === showLeadDetail?.cliente_id)} rate={rate} onClose={() => setShowLeadDetail(null)} onUpdateSale={updateSale} onConvert={() => setConvertingSale(showLeadDetail)} />}
         {convertingSale && <ConvertModal sale={convertingSale} onConvert={convertLeadToSale} onCancel={() => setConvertingSale(null)} />}
         {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} onClose={() => { setShowNotifications(false); markNotificationsAsRead(); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} />}
