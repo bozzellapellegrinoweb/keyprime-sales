@@ -11,7 +11,7 @@ const ADMIN_EMAIL = 'bozzellapellegrino@gmail.com';
 const MAPBOX_TOKEN = 'pk.eyJ1IjoibWFwc3Byb2plY3RrZXkiLCJhIjoiY21sdHl4aDM5MDRvbDNmczRtYXR6ZWp4cyJ9.HpQdRN36TYMnNCs1VtwtKA'; // Keep for future use
 
 // Leaflet Config (no token needed - free!)
-const LEAFLET_TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const LEAFLET_TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 const LEAFLET_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 // PropertyFinder API Config
@@ -842,7 +842,19 @@ export default function App() {
   const overdueTasks = myPendingTasks.filter(t => isOverdue(t.scadenza));
   const todayTasks = myPendingTasks.filter(t => isToday(t.scadenza));
   const notificationTasks = myPendingTasks.filter(t => isOverdue(t.scadenza) || isToday(t.scadenza));
-  const unreadNotificationIds = notificationTasks.filter(t => !readNotificationIds.includes(t.id)).map(t => t.id);
+  
+  // Recent sales notifications (last 24 hours for admin)
+  const recentSalesNotifications = user?.ruolo === 'admin' ? sales.filter(s => {
+    const created = new Date(s.created_at);
+    const now = new Date();
+    const hoursDiff = (now - created) / (1000 * 60 * 60);
+    return hoursDiff <= 24 && !readNotificationIds.includes('sale_' + s.id);
+  }) : [];
+  
+  const unreadNotificationIds = [
+    ...notificationTasks.filter(t => !readNotificationIds.includes(t.id)).map(t => t.id),
+    ...recentSalesNotifications.map(s => 'sale_' + s.id)
+  ];
   const notificationCount = unreadNotificationIds.length;
 
   const markNotificationsAsRead = () => {
@@ -1118,7 +1130,7 @@ export default function App() {
 
         {showLeadDetail && <LeadDetailSheet sale={showLeadDetail} cliente={clienti.find(c => c.id === showLeadDetail?.cliente_id)} rate={rate} onClose={() => setShowLeadDetail(null)} onUpdateSale={updateSale} onConvert={() => setConvertingSale(showLeadDetail)} />}
         {convertingSale && <ConvertModal sale={convertingSale} onConvert={convertLeadToSale} onCancel={() => setConvertingSale(null)} />}
-        {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} onClose={() => { setShowNotifications(false); markNotificationsAsRead(); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} />}
+        {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} recentSales={recentSalesNotifications} onClose={() => { setShowNotifications(false); markNotificationsAsRead(); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} />}
         {showPasswordModal && <PasswordModal currentPassword={user?.password} onSave={changePassword} onClose={() => setShowPasswordModal(false)} />}
         {showNoteModal && <NoteModal task={showNoteModal} onSave={addTaskNote} onClose={() => setShowNoteModal(null)} />}
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -1433,7 +1445,7 @@ export default function App() {
         {showClienteModal && <ClienteModal cliente={showClienteModal.id ? showClienteModal : null} onSave={showClienteModal.id ? (d) => updateCliente(showClienteModal.id, d) : createCliente} onClose={() => setShowClienteModal(null)} />}
         {showTaskModal && <TaskModal task={showTaskModal.id ? showTaskModal : null} clienti={clienti} users={users} onSave={showTaskModal.id ? (d) => updateTask(showTaskModal.id, d) : createTask} onClose={() => setShowTaskModal(null)} />}
         {showUserModal && <UserModal user={showUserModal.id ? showUserModal : null} onSave={showUserModal.id ? (d) => updateUser(showUserModal.id, d) : createUser} onClose={() => setShowUserModal(null)} />}
-        {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} onClose={() => { setShowNotifications(false); markNotificationsAsRead(); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} />}
+        {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} recentSales={recentSalesNotifications} onClose={() => { setShowNotifications(false); markNotificationsAsRead(); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} />}
         {showGlobalSearch && <GlobalSearch isOpen={showGlobalSearch} onClose={() => setShowGlobalSearch(false)} sales={sales} clienti={clienti} tasks={tasks} onSelectSale={setShowLeadDetail} onSelectCliente={setShowClienteDetail} onSelectTask={() => setActiveTab('tasks')} setActiveTab={setActiveTab} />}
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
@@ -2098,7 +2110,6 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
   const markersMap = useRef({});
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState(null);
-  const [hoveredProject, setHoveredProject] = useState(null);
   const [popupProject, setPopupProject] = useState(null);
 
   const projectsByLocation = React.useMemo(() => {
@@ -2178,7 +2189,7 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
     };
   }, []);
 
-  // Add markers - Airbnb style price bubbles
+  // Add markers - PropertyFinder style red price pills
   useEffect(() => {
     if (!map.current || !mapLoaded || !window.L || !markersLayer.current) return;
 
@@ -2188,21 +2199,20 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
     Object.values(projectsByLocation).forEach(project => {
       const { coords } = project;
       const price = project.price_from;
-      const priceText = price > 0 ? (price >= 1000000 ? (price/1000000).toFixed(1) + 'M' : Math.round(price/1000) + 'K') : '?';
+      const priceText = price > 0 ? 'From ' + (price >= 1000000 ? (price/1000000).toFixed(1) + 'M' : Math.round(price/1000) + 'K') : 'Price TBD';
       const isSelected = selectedProject?.project_id === project.project_id;
-      const isHovered = hoveredProject === project.project_id;
       
       const iconHtml = `
-        <div class="airbnb-marker ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''}" data-id="${project.project_id}">
+        <div class="pf-marker ${isSelected ? 'selected' : ''}">
           <span>${priceText}</span>
         </div>
       `;
 
       const customIcon = window.L.divIcon({
         html: iconHtml,
-        className: 'airbnb-marker-container',
-        iconSize: [70, 32],
-        iconAnchor: [35, 32]
+        className: 'pf-marker-container',
+        iconSize: [90, 28],
+        iconAnchor: [45, 28]
       });
 
       const marker = window.L.marker([coords.lat, coords.lng], { icon: customIcon })
@@ -2213,12 +2223,9 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
         if (onSelectProject) onSelectProject(project);
       });
 
-      marker.on('mouseover', () => setHoveredProject(project.project_id));
-      marker.on('mouseout', () => setHoveredProject(null));
-
       markersMap.current[project.project_id] = marker;
     });
-  }, [mapLoaded, projectsByLocation, selectedProject, hoveredProject, onSelectProject]);
+  }, [mapLoaded, projectsByLocation, selectedProject, onSelectProject]);
 
   // Fly to selected project
   useEffect(() => {
@@ -2299,44 +2306,43 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
       </div>
 
       <style>{`
-        .airbnb-marker-container { background: transparent !important; border: none !important; }
-        .airbnb-marker {
-          background: white;
-          color: #18181B;
-          padding: 6px 12px;
-          border-radius: 24px;
-          font-size: 13px;
-          font-weight: 700;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        .pf-marker-container { background: transparent !important; border: none !important; }
+        .pf-marker {
+          background: #DC2626;
+          color: white;
+          padding: 5px 10px;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 600;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.15s ease;
           white-space: nowrap;
           text-align: center;
         }
-        .airbnb-marker:hover, .airbnb-marker.hovered {
-          background: #18181B;
-          color: white;
-          transform: scale(1.1);
+        .pf-marker:hover {
+          background: #B91C1C;
+          transform: scale(1.05);
           z-index: 1000 !important;
         }
-        .airbnb-marker.selected {
-          background: #F97316;
-          color: white;
-          transform: scale(1.15);
+        .pf-marker.selected {
+          background: #1D4ED8;
+          transform: scale(1.1);
           z-index: 1001 !important;
         }
-        .leaflet-control-zoom { border: none !important; border-radius: 12px !important; overflow: hidden; }
+        .leaflet-control-zoom { border: none !important; border-radius: 8px !important; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
         .leaflet-control-zoom a { 
-          background: #27272A !important; 
-          color: white !important; 
+          background: white !important; 
+          color: #333 !important; 
           border: none !important;
-          width: 36px !important;
-          height: 36px !important;
-          line-height: 36px !important;
+          border-bottom: 1px solid #eee !important;
+          width: 32px !important;
+          height: 32px !important;
+          line-height: 32px !important;
         }
-        .leaflet-control-zoom a:hover { background: #3F3F46 !important; }
-        .leaflet-control-zoom-in { border-radius: 12px 12px 0 0 !important; }
-        .leaflet-control-zoom-out { border-radius: 0 0 12px 12px !important; }
+        .leaflet-control-zoom a:hover { background: #f5f5f5 !important; }
+        .leaflet-control-zoom-in { border-radius: 8px 8px 0 0 !important; }
+        .leaflet-control-zoom-out { border-radius: 0 0 8px 8px !important; border-bottom: none !important; }
       `}</style>
     </div>
   );
@@ -3112,13 +3118,33 @@ function ConvertModal({ sale, onConvert, onCancel }) {
 }
 
 // Notifications Panel
-function NotificationsPanel({ tasks, unreadIds, onClose, onGoToTask }) {
+function NotificationsPanel({ tasks, unreadIds, onClose, onGoToTask, recentSales = [] }) {
+  const allNotifications = [
+    ...recentSales.map(s => ({ type: 'sale', id: 'sale_' + s.id, data: s })),
+    ...tasks.map(t => ({ type: 'task', id: t.id, data: t }))
+  ];
+  
   return (
     <BottomSheet isOpen={true} onClose={onClose} title="Notifiche">
-      {tasks.length === 0 ? (
+      {allNotifications.length === 0 ? (
         <EmptyState icon={Bell} title="Nessuna notifica" description="Sei in pari con tutto!" />
       ) : (
         <div className="space-y-2">
+          {recentSales.map(s => (
+            <Card key={'sale_' + s.id} padding="p-3" className={unreadIds.includes('sale_' + s.id) ? 'border-l-2 border-l-emerald-500' : ''}>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <DollarSign className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-white text-sm font-medium">Nuova {s.stato === 'venduto' ? 'Vendita' : 'Lead'}</p>
+                  <p className="text-zinc-400 text-xs">{s.progetto} • {s.agente || s.segnalatore}</p>
+                  <p className="text-emerald-400 text-xs font-medium mt-1">{fmt(s.valore)} AED</p>
+                </div>
+                <span className="text-zinc-500 text-xs">{fmtShort(s.created_at)}</span>
+              </div>
+            </Card>
+          ))}
           {tasks.map(t => (
             <Card key={t.id} hover onClick={onGoToTask} padding="p-3" className={unreadIds.includes(t.id) ? 'border-l-2 border-l-pink-500' : ''}>
               <div className="flex items-start gap-3">
