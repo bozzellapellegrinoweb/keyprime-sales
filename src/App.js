@@ -100,8 +100,8 @@ const taskPriorita = ['bassa', 'normale', 'alta', 'urgente'];
 
 // Theme Colors - Section Based
 const theme = {
-  bg: { primary: '#252529', secondary: '#2d2d32', tertiary: '#28282c', elevated: '#1F1F23' },
-  border: { subtle: '#27272A', default: '#3F3F46', strong: '#52525B' },
+  bg: { primary: '#0f172a', secondary: '#1e293b', tertiary: '#1e293b', elevated: '#1F1F23' },
+  border: { subtle: '#334155', default: '#3F3F46', strong: '#52525B' },
   text: { primary: '#FAFAFA', secondary: '#A1A1AA', tertiary: '#71717A', muted: '#52525B' },
   sections: {
     dashboard: { accent: '#A78BFA', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.2)' },
@@ -176,7 +176,7 @@ const StatusBadge = ({ status, type = 'pipeline' }) => {
 
 // Card Component
 const Card = ({ children, className = '', hover = false, onClick, padding = 'p-5' }) => (
-  <div onClick={onClick} className={`bg-[#28282c] border border-[#27272A] rounded-2xl ${padding} ${hover ? 'hover:border-[#3F3F46] hover:bg-[#1F1F23] cursor-pointer transition-all duration-200' : ''} ${className}`}>
+  <div onClick={onClick} className={`bg-[#1e293b] border border-[#334155] rounded-2xl ${padding} ${hover ? 'hover:border-[#3F3F46] hover:bg-[#1F1F23] cursor-pointer transition-all duration-200' : ''} ${className}`}>
     {children}
   </div>
 );
@@ -250,7 +250,7 @@ const EmptyState = ({ icon: Icon, title, description, action, onAction }) => (
 const Input = ({ label, ...props }) => (
   <div>
     {label && <label className="block text-sm text-zinc-400 mb-2">{label}</label>}
-    <input {...props} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] focus:ring-1 focus:ring-[#3F3F46] transition-all" />
+    <input {...props} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] focus:ring-1 focus:ring-[#3F3F46] transition-all" />
   </div>
 );
 
@@ -258,7 +258,7 @@ const Input = ({ label, ...props }) => (
 const Select = ({ label, children, ...props }) => (
   <div>
     {label && <label className="block text-sm text-zinc-400 mb-2">{label}</label>}
-    <select {...props} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3F3F46] transition-all appearance-none cursor-pointer">
+    <select {...props} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3F3F46] transition-all appearance-none cursor-pointer">
       {children}
     </select>
   </div>
@@ -287,8 +287,8 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative bg-[#28282c] border border-[#27272A] rounded-2xl w-full ${sizes[size]} max-h-[85vh] overflow-hidden animate-scaleIn`}>
-        <div className="flex items-center justify-between p-5 border-b border-[#27272A]">
+      <div className={`relative bg-[#1e293b] border border-[#334155] rounded-2xl w-full ${sizes[size]} max-h-[85vh] overflow-hidden animate-scaleIn`}>
+        <div className="flex items-center justify-between p-5 border-b border-[#334155]">
           <h3 className="text-lg font-semibold text-white">{title}</h3>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
         </div>
@@ -304,8 +304,8 @@ const BottomSheet = ({ isOpen, onClose, title, children }) => {
   return (
     <div className="fixed inset-0 z-50 md:flex md:items-center md:justify-center md:p-4">
       <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="absolute bottom-0 left-0 right-0 md:relative md:max-w-lg md:w-full bg-[#28282c] border-t md:border border-[#27272A] rounded-t-3xl md:rounded-2xl max-h-[90vh] overflow-hidden animate-slideUp">
-        <div className="flex items-center justify-between p-5 border-b border-[#27272A]">
+      <div className="absolute bottom-0 left-0 right-0 md:relative md:max-w-lg md:w-full bg-[#1e293b] border-t md:border border-[#334155] rounded-t-3xl md:rounded-2xl max-h-[90vh] overflow-hidden animate-slideUp">
+        <div className="flex items-center justify-between p-5 border-b border-[#334155]">
           <h3 className="text-lg font-semibold text-white">{title}</h3>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
         </div>
@@ -363,9 +363,9 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
       <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#28282c] border border-[#27272A] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-scaleIn">
+      <div className="relative bg-[#1e293b] border border-[#334155] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-scaleIn">
         {/* Search Input */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-[#27272A]">
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-[#334155]">
           <Search className="w-5 h-5 text-zinc-500" />
           <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca lead, clienti, task..." className="flex-1 bg-transparent text-white text-lg placeholder:text-zinc-600 focus:outline-none" />
           <kbd className="hidden sm:flex items-center gap-1 px-2 py-1 bg-zinc-700/50 rounded text-xs text-zinc-500">ESC</kbd>
@@ -440,7 +440,7 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
         </div>
         
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-[#27272A] flex items-center justify-between text-xs text-zinc-600">
+        <div className="px-4 py-3 border-t border-[#334155] flex items-center justify-between text-xs text-zinc-600">
           <span>KeyPrime Search</span>
           <div className="flex items-center gap-2">
             <span>Naviga con</span>
@@ -470,14 +470,14 @@ const generateDashboardPDF = (totals, sales, vendite, byAgente, byZona) => {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; max-width: 900px; margin: 0 auto; color: #1a1a1a; }
     .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #f0f0f0; }
-    .logo { font-size: 28px; font-weight: 700; color: #28282c; }
+    .logo { font-size: 28px; font-weight: 700; color: #1e293b; }
     .logo span { color: #A78BFA; }
     .date { color: #666; font-size: 14px; }
     h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
     h2 { font-size: 16px; font-weight: 600; color: #666; margin: 32px 0 16px; text-transform: uppercase; letter-spacing: 0.5px; }
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
     .stat { background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%); padding: 20px; border-radius: 12px; text-align: center; }
-    .stat-value { font-size: 28px; font-weight: 700; color: #28282c; }
+    .stat-value { font-size: 28px; font-weight: 700; color: #1e293b; }
     .stat-value.purple { color: #A78BFA; }
     .stat-value.green { color: #34D399; }
     .stat-value.blue { color: #60A5FA; }
@@ -931,7 +931,7 @@ export default function App() {
   // ==================== LOGIN VIEW ====================
   if (view === 'login') {
     return (
-      <div className="min-h-screen bg-[#252529] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
           <div className="text-center mb-10">
             <img src="/logo.png" alt="KeyPrime" className="h-20 mx-auto mb-4" />
@@ -969,8 +969,8 @@ export default function App() {
     // Form View (same for mobile/desktop)
     if (showForm) {
       return (
-        <div className="min-h-screen bg-[#252529]">
-          <div className="sticky top-0 z-40 bg-[#252529]/95 backdrop-blur-xl border-b border-[#27272A] px-4 py-4">
+        <div className="min-h-screen bg-[#0f172a]">
+          <div className="sticky top-0 z-40 bg-[#0f172a]/95 backdrop-blur-xl border-b border-[#334155] px-4 py-4">
             <div className="flex items-center justify-between max-w-lg mx-auto">
               <button onClick={() => setShowForm(null)} className="text-zinc-400 hover:text-white flex items-center gap-2 transition-colors">
                 <ChevronLeft className="w-5 h-5" />Indietro
@@ -983,7 +983,7 @@ export default function App() {
             {showForm === 'lead' && <LeadForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addLead} />}
             {showForm === 'vendita' && <SaleForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addSale} />}
           </div>
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#252529]/95 backdrop-blur-xl border-t border-[#27272A]">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0f172a]/95 backdrop-blur-xl border-t border-[#334155]">
             <Button onClick={() => document.getElementById('submitBtn')?.click()} className="w-full py-4">
               {showForm === 'lead' ? 'Salva Lead' : 'Registra Vendita'}
             </Button>
@@ -993,9 +993,9 @@ export default function App() {
     }
 
     return (
-      <div className="min-h-screen bg-[#252529] lg:flex">
+      <div className="min-h-screen bg-[#0f172a] lg:flex">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#2d2d32] p-4 fixed h-full">
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#334155] bg-[#1e293b] p-4 fixed h-full">
           <div className="mb-8">
             <img src="/logo.png" alt="KeyPrime" className="h-16" />
           </div>
@@ -1004,7 +1004,7 @@ export default function App() {
               <NavItem key={t.id} icon={t.icon} label={t.label} active={activeTab === t.id} onClick={() => setActiveTab(t.id)} accent={t.accent} badge={t.badge} />
             ))}
           </nav>
-          <div className="pt-4 border-t border-[#27272A]">
+          <div className="pt-4 border-t border-[#334155]">
             <div className="flex items-center gap-3 px-2 py-2">
               <Avatar nome={user?.nome} size="sm" />
               <div className="flex-1 min-w-0">
@@ -1019,7 +1019,7 @@ export default function App() {
         {/* Main Content */}
         <div className="flex-1 lg:ml-64 pb-24 lg:pb-0">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-40 bg-[#252529]/95 backdrop-blur-xl border-b border-[#27272A]">
+          <div className="lg:hidden sticky top-0 z-40 bg-[#0f172a]/95 backdrop-blur-xl border-b border-[#334155]">
             <div className="flex items-center justify-between px-4 py-4">
               <img src="/logo.png" alt="KeyPrime" className="h-12" />
               <div className="flex items-center gap-3">
@@ -1033,7 +1033,7 @@ export default function App() {
           </div>
 
           {/* Desktop Header */}
-          <div className="hidden lg:block sticky top-0 z-40 bg-[#252529]/95 backdrop-blur-xl border-b border-[#27272A]">
+          <div className="hidden lg:block sticky top-0 z-40 bg-[#0f172a]/95 backdrop-blur-xl border-b border-[#334155]">
             <div className="flex items-center justify-between px-6 py-4">
               <div>
                 <h1 className="text-xl font-semibold text-white capitalize">{activeTab === 'home' ? `Ciao, ${user?.nome}` : tabs.find(t => t.id === activeTab)?.label}</h1>
@@ -1045,7 +1045,7 @@ export default function App() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white bg-[#27272A] rounded-xl">
+                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white bg-[#334155] rounded-xl">
                   <Bell className="w-5 h-5" />
                   {notificationCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
                 </button>
@@ -1165,7 +1165,7 @@ export default function App() {
           </div>
 
           {/* Mobile Bottom Nav */}
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#252529]/95 backdrop-blur-xl border-t border-[#27272A] px-4 py-2 z-30">
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0f172a]/95 backdrop-blur-xl border-t border-[#334155] px-4 py-2 z-30">
             <div className="flex justify-around">
               {tabs.map(t => (
                 <button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex flex-col items-center py-2 px-3 ${activeTab === t.id ? 'text-white' : 'text-zinc-500'}`}>
@@ -1227,9 +1227,9 @@ export default function App() {
     ];
 
     return (
-      <div className="min-h-screen bg-[#252529] flex">
+      <div className="min-h-screen bg-[#0f172a] flex">
         {/* Sidebar - Desktop */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#2d2d32] p-4">
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#334155] bg-[#1e293b] p-4">
           <div className="mb-8">
             <img src="/logo.png" alt="KeyPrime" className="h-20" />
           </div>
@@ -1240,7 +1240,7 @@ export default function App() {
             ))}
           </nav>
           
-          <div className="border-t border-[#27272A] pt-4 mt-4">
+          <div className="border-t border-[#334155] pt-4 mt-4">
             <div className="flex items-center gap-3 px-4 py-3">
               <Avatar nome={user?.nome} size="sm" />
               <div className="flex-1 min-w-0">
@@ -1255,7 +1255,7 @@ export default function App() {
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-40 bg-[#252529]/95 backdrop-blur-xl border-b border-[#27272A]">
+          <div className="lg:hidden sticky top-0 z-40 bg-[#0f172a]/95 backdrop-blur-xl border-b border-[#334155]">
             <div className="flex items-center justify-between px-4 py-4">
               <button onClick={() => setMobileMenuOpen(true)} className="text-zinc-400"><Menu className="w-6 h-6" /></button>
               <img src="/logo.png" alt="KeyPrime" className="h-16" />
@@ -1471,7 +1471,7 @@ export default function App() {
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <div className="absolute inset-0 bg-zinc-800/60" onClick={() => setMobileMenuOpen(false)} />
-            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#2d2d32] p-4 animate-slideRight">
+            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#1e293b] p-4 animate-slideRight">
               <div className="flex items-center justify-between mb-8">
                 <img src="/logo.png" alt="KeyPrime" className="h-16" />
                 <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-400"><X className="w-5 h-5" /></button>
@@ -1513,9 +1513,9 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input type="text" placeholder="Cerca progetto, cliente, agente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50" />
+          <input type="text" placeholder="Cerca progetto, cliente, agente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50" />
         </div>
-        <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50">
+        <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50">
           <option value="">Tutti gli stati</option>
           {pipelineStati.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
@@ -1525,7 +1525,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#27272A]">
+              <tr className="border-b border-[#334155]">
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Data</th>
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Progetto</th>
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Cliente</th>
@@ -1538,7 +1538,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
                 <th className="text-center text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#27272A]">
+            <tbody className="divide-y divide-[#334155]">
               {sales.map(s => (
                 <tr key={s.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-4 py-3 text-sm text-zinc-400">{fmtShort(s.data)}</td>
@@ -2013,9 +2013,9 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
         <div className="flex items-center gap-3 flex-wrap flex-1">
           <div className="relative min-w-[250px]">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input type="text" placeholder="Cerca cliente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50" />
+            <input type="text" placeholder="Cerca cliente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50" />
           </div>
-          <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none">
+          <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none">
             <option value="">Tutti gli stati</option>
             {clienteStati.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
@@ -2241,7 +2241,7 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-[#27272A]">
+      <div className="flex gap-2 border-b border-[#334155]">
         {['info', 'lead', 'task'].map(t => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${tab === t ? 'text-white border-amber-500' : 'text-zinc-500 border-transparent hover:text-white'}`}>
             {t === 'info' ? 'Informazioni' : t === 'lead' ? `Lead (${sales.length})` : `Task (${tasks.length})`}
@@ -2261,8 +2261,8 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
             <div><p className="text-zinc-500 text-xs mb-1">Agente Rif.</p><p className="text-white">{cliente.agente_riferimento || '-'}</p></div>
             <div><p className="text-zinc-500 text-xs mb-1">Fonte</p><p className="text-white">{cliente.fonte || '-'}</p></div>
           </div>
-          {cliente.note && <div className="mt-4 pt-4 border-t border-[#27272A]"><p className="text-zinc-500 text-xs mb-1">Note</p><p className="text-white text-sm">{cliente.note}</p></div>}
-          <div className="mt-4 pt-4 border-t border-[#27272A]">
+          {cliente.note && <div className="mt-4 pt-4 border-t border-[#334155]"><p className="text-zinc-500 text-xs mb-1">Note</p><p className="text-white text-sm">{cliente.note}</p></div>}
+          <div className="mt-4 pt-4 border-t border-[#334155]">
             <p className="text-zinc-500 text-xs mb-2">Stato</p>
             <div className="flex flex-wrap gap-2">
               {clienteStati.map(s => (
@@ -2524,7 +2524,7 @@ function AgentDetailView({ agent, sales, onBack }) {
   }, {});
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#252529] overflow-auto">
+    <div className="fixed inset-0 z-50 bg-[#0f172a] overflow-auto">
       <div className="max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
@@ -3308,15 +3308,15 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         )}
 
         <Card className="mb-4">
-          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto, zona o developer..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
+          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto, zona o developer..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}</select>
-            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
-            <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
-            <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
-            <select value={filters.deliveryYear} onChange={(e) => setFilters(f => ({ ...f, deliveryYear: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Consegna</option>{deliveryYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
-            <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
-            <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}</select>
+            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
+            <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
+            <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
+            <select value={filters.deliveryYear} onChange={(e) => setFilters(f => ({ ...f, deliveryYear: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Consegna</option>{deliveryYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
+            <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
             <Button onClick={() => { setSelectedAreaProjects(null); searchListings(1); }} icon={Search} disabled={loading}>{loading ? '...' : 'Cerca'}</Button>
           </div>
           {/* Sorting and active filters */}
@@ -3443,9 +3443,9 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         )}
 
         {viewMode === 'map' && (
-          <div className="fixed inset-0 z-50 bg-[#252529]">
+          <div className="fixed inset-0 z-50 bg-[#0f172a]">
             {/* Header with Logo and Filters */}
-            <div className="absolute top-0 left-0 right-0 z-10 bg-[#252529] border-b border-zinc-800">
+            <div className="absolute top-0 left-0 right-0 z-10 bg-[#0f172a] border-b border-zinc-800">
               <div className="px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <img src="/logo.png" alt="KeyPrime" className="h-10" />
@@ -3479,7 +3479,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
             {/* Main Content */}
             <div className="pt-28 h-full flex">
               {/* Left Sidebar - Projects List */}
-              <div className="w-96 h-full bg-[#2d2d32] border-r border-zinc-800 flex flex-col">
+              <div className="w-96 h-full bg-[#1e293b] border-r border-zinc-800 flex flex-col">
                 <div className="p-3 border-b border-zinc-800">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -3878,7 +3878,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4">
       <div className="absolute inset-0 bg-zinc-800/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#2d2d32] border border-[#27272A] rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-scaleIn">
+      <div className="relative bg-[#1e293b] border border-[#334155] rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-scaleIn">
         
         {/* Hero Image Section with Gallery */}
         <div className="relative h-72 md:h-80">
@@ -3891,7 +3891,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           )}
           
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#2d2d32] via-transparent to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1e293b] via-transparent to-black/30" />
           
           {/* Top controls */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
@@ -4257,7 +4257,7 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-zinc-800/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#28282c] border border-[#27272A] rounded-2xl w-full max-w-md animate-scaleIn">
+      <div className="relative bg-[#1e293b] border border-[#334155] rounded-2xl w-full max-w-md animate-scaleIn">
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
           <h3 className="text-lg font-semibold text-white">Crea Lead da Annuncio</h3>
           <button onClick={onClose} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
@@ -4331,7 +4331,7 @@ function LoginForm({ onLogin, loading }) {
       <div>
         <label className="block text-sm text-zinc-400 mb-2">Password</label>
         <div className="relative">
-          <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 pr-12 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] transition-all" />
+          <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 pr-12 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] transition-all" />
           <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors">
             {showPwd ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
@@ -4390,7 +4390,7 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
           <p className="text-zinc-500 text-xs mb-2">Cambia stato</p>
           <div className="flex gap-2 overflow-x-auto pb-2">
             {pipelineStati.slice(0, -1).map(st => (
-              <button key={st} onClick={() => { onUpdateSale(sale.id, { stato: st }); if (st !== sale.stato) onClose(); }} className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${sale?.stato === st ? 'text-white' : 'text-zinc-500 hover:text-white'}`} style={sale?.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#27272A' }}>
+              <button key={st} onClick={() => { onUpdateSale(sale.id, { stato: st }); if (st !== sale.stato) onClose(); }} className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${sale?.stato === st ? 'text-white' : 'text-zinc-500 hover:text-white'}`} style={sale?.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#334155' }}>
                 {st}
               </button>
             ))}
@@ -4524,7 +4524,7 @@ function NoteModal({ task, onSave, onClose }) {
         </Card>
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Nota</label>
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Scrivi una nota..." className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] h-24 resize-none" autoFocus />
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Scrivi una nota..." className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] h-24 resize-none" autoFocus />
         </div>
         <p className="text-zinc-600 text-xs">L'admin riceverà una notifica email</p>
         <div className="flex gap-3">
@@ -4570,7 +4570,7 @@ function ClienteModal({ cliente, onSave, onClose }) {
         </div>
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Note</label>
-          <textarea value={form.note || ''} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3F3F46]" />
+          <textarea value={form.note || ''} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3F3F46]" />
         </div>
         <div className="flex gap-3 pt-2">
           <Button variant="secondary" onClick={onClose} className="flex-1">Annulla</Button>
@@ -4596,14 +4596,14 @@ function TaskModal({ task, clienti, users, onSave, onClose }) {
         <Input label="Titolo *" value={form.titolo} onChange={(e) => setForm({ ...form, titolo: e.target.value })} autoFocus />
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Descrizione</label>
-          <textarea value={form.descrizione || ''} onChange={(e) => setForm({ ...form, descrizione: e.target.value })} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3F3F46]" />
+          <textarea value={form.descrizione || ''} onChange={(e) => setForm({ ...form, descrizione: e.target.value })} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3F3F46]" />
         </div>
         <Input label="Scadenza" type="datetime-local" value={form.scadenza ? form.scadenza.slice(0, 16) : ''} onChange={(e) => setForm({ ...form, scadenza: e.target.value ? new Date(e.target.value).toISOString() : '' })} />
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Priorità</label>
           <div className="flex gap-2">
             {taskPriorita.map(p => (
-              <button key={p} onClick={() => setForm({ ...form, priorita: p })} className={`flex-1 px-3 py-2 rounded-xl text-sm transition-all ${form.priorita === p ? 'text-white' : 'text-zinc-500'}`} style={form.priorita === p ? { background: theme.priority[p]?.bg, color: theme.priority[p]?.color } : { background: '#27272A' }}>
+              <button key={p} onClick={() => setForm({ ...form, priorita: p })} className={`flex-1 px-3 py-2 rounded-xl text-sm transition-all ${form.priorita === p ? 'text-white' : 'text-zinc-500'}`} style={form.priorita === p ? { background: theme.priority[p]?.bg, color: theme.priority[p]?.color } : { background: '#334155' }}>
                 {p}
               </button>
             ))}
@@ -4696,13 +4696,13 @@ function ClientSearch({ clienti, onSelect, onCreateNew, selectedClient }) {
     <div className="relative">
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-        <input type="text" placeholder="Cerca cliente..." value={search} onChange={(e) => { setSearch(e.target.value); setShow(true); }} onFocus={() => setShow(true)} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46]" />
+        <input type="text" placeholder="Cerca cliente..." value={search} onChange={(e) => { setSearch(e.target.value); setShow(true); }} onFocus={() => setShow(true)} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46]" />
       </div>
       
       {show && search.length >= 2 && (
-        <div className="absolute z-10 w-full mt-2 bg-[#28282c] border border-[#27272A] rounded-xl overflow-hidden shadow-xl">
+        <div className="absolute z-10 w-full mt-2 bg-[#1e293b] border border-[#334155] rounded-xl overflow-hidden shadow-xl">
           {filtered.map(c => (
-            <button key={c.id} onClick={() => { onSelect(c); setSearch(''); setShow(false); }} className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-[#27272A] last:border-0 flex items-center gap-3 transition-colors">
+            <button key={c.id} onClick={() => { onSelect(c); setSearch(''); setShow(false); }} className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-[#334155] last:border-0 flex items-center gap-3 transition-colors">
               <Avatar nome={c.nome} cognome={c.cognome} size="sm" />
               <div>
                 <p className="text-white text-sm">{c.nome} {c.cognome}</p>
@@ -4744,12 +4744,12 @@ function SelectWithOther({ value, onChange, options, placeholder, label }) {
       <select value={showCustom ? 'Altro' : value} onChange={(e) => {
         if (e.target.value === 'Altro') { setShowCustom(true); setCustomValue(''); onChange(''); }
         else { setShowCustom(false); onChange(e.target.value); }
-      }} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3F3F46] appearance-none">
+      }} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3F3F46] appearance-none">
         <option value="">{placeholder}</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
       {showCustom && (
-        <input type="text" value={customValue} onChange={(e) => { setCustomValue(e.target.value); onChange(e.target.value); }} placeholder="Specifica..." className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm mt-2 focus:outline-none focus:border-[#3F3F46]" autoFocus />
+        <input type="text" value={customValue} onChange={(e) => { setCustomValue(e.target.value); onChange(e.target.value); }} placeholder="Specifica..." className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm mt-2 focus:outline-none focus:border-[#3F3F46]" autoFocus />
       )}
     </div>
   );
@@ -4792,7 +4792,7 @@ function LeadForm({ type, userName, clienti, onSubmit }) {
         <ClientSearch clienti={clienti} selectedClient={selectedClient} onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }} onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }} />
         
         {showNewClient && !selectedClient && (
-          <div className="mt-4 pt-4 border-t border-[#27272A] space-y-3">
+          <div className="mt-4 pt-4 border-t border-[#334155] space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Input placeholder="Nome *" value={form.cliente_nome} onChange={(e) => setForm({ ...form, cliente_nome: e.target.value })} />
               <Input placeholder="Cognome" value={form.cliente_cognome} onChange={(e) => setForm({ ...form, cliente_cognome: e.target.value })} />
@@ -4829,7 +4829,7 @@ function LeadForm({ type, userName, clienti, onSubmit }) {
         <h4 className="text-white font-medium mb-4">Stato iniziale</h4>
         <div className="flex flex-wrap gap-2">
           {pipelineStati.slice(0, 4).map(st => (
-            <button key={st} type="button" onClick={() => setForm({ ...form, stato: st })} className={`px-4 py-2 rounded-xl text-sm transition-all ${form.stato === st ? 'text-white' : 'text-zinc-500'}`} style={form.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#27272A' }}>
+            <button key={st} type="button" onClick={() => setForm({ ...form, stato: st })} className={`px-4 py-2 rounded-xl text-sm transition-all ${form.stato === st ? 'text-white' : 'text-zinc-500'}`} style={form.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#334155' }}>
               {st}
             </button>
           ))}
@@ -4882,7 +4882,7 @@ function SaleForm({ type, userName, clienti, onSubmit }) {
         <ClientSearch clienti={clienti} selectedClient={selectedClient} onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }} onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }} />
         
         {showNewClient && !selectedClient && (
-          <div className="mt-4 pt-4 border-t border-[#27272A] space-y-3">
+          <div className="mt-4 pt-4 border-t border-[#334155] space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Input placeholder="Nome *" value={form.nuovo_cliente_nome} onChange={(e) => setForm({ ...form, nuovo_cliente_nome: e.target.value })} />
               <Input placeholder="Cognome" value={form.nuovo_cliente_cognome} onChange={(e) => setForm({ ...form, nuovo_cliente_cognome: e.target.value })} />
