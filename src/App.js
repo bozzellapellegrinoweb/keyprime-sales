@@ -2408,29 +2408,31 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
 
   const searchListings = async (resetPage = true) => {
     setLoading(true); setError(null);
-    const currentOffset = resetPage ? 0 : offset;
     if (resetPage) setOffset(0);
     try {
-      const params = new URLSearchParams();
-      params.append('limit', '100');
-      params.append('offset', currentOffset.toString());
-      if (filters.minPrice) params.append('price_from', filters.minPrice);
-      if (filters.maxPrice) params.append('price_to', filters.maxPrice);
-      // Try to pass search/location to API
-      if (filters.location) params.append('query', filters.location);
-      if (filters.search) params.append('query', filters.search);
+      // Load multiple pages to get more projects
+      let allProjects = [];
+      const pagesToLoad = 3; // Load 3 pages = ~150 projects
       
-      const url = 'https://' + PF_API_HOST + '/projects?' + params.toString();
-      const response = await fetch(url, { method: 'GET', headers: { 'x-rapidapi-host': PF_API_HOST, 'x-rapidapi-key': PF_API_KEY } });
-      if (!response.ok) throw new Error('API Error: ' + response.status);
-      const data = await response.json();
-      let filteredProjects = data.data || [];
-      
-      // Debug: log first project to see available fields
-      if (filteredProjects.length > 0) {
-        console.log('API Project Fields:', Object.keys(filteredProjects[0]));
-        console.log('First Project Sample:', filteredProjects[0]);
+      for (let page = 0; page < pagesToLoad; page++) {
+        const params = new URLSearchParams();
+        params.append('limit', '50');
+        params.append('offset', (page * 50).toString());
+        if (filters.minPrice) params.append('price_from', filters.minPrice);
+        if (filters.maxPrice) params.append('price_to', filters.maxPrice);
+        if (filters.location) params.append('query', filters.location);
+        if (filters.search) params.append('query', filters.search);
+        
+        const url = 'https://' + PF_API_HOST + '/projects?' + params.toString();
+        const response = await fetch(url, { method: 'GET', headers: { 'x-rapidapi-host': PF_API_HOST, 'x-rapidapi-key': PF_API_KEY } });
+        if (!response.ok) break;
+        const data = await response.json();
+        const projects = data.data || [];
+        allProjects = [...allProjects, ...projects];
+        if (!data.pagination?.has_next) break;
       }
+      
+      let filteredProjects = allProjects;
       
       // Additional client-side filtering for precision
       if (filters.location) { 
@@ -2463,9 +2465,12 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         filteredProjects = filteredProjects.filter(p => p.developer?.name?.toLowerCase().includes(d)); 
       }
       
-      if (resetPage) setListings(filteredProjects); else setListings(prev => [...prev, ...filteredProjects]);
-      setTotalResults(filteredProjects.length);
-      setHasMore(data.pagination?.has_next || false);
+      // Remove duplicates by project_id
+      const uniqueProjects = filteredProjects.filter((p, i, arr) => arr.findIndex(x => x.project_id === p.project_id) === i);
+      
+      setListings(uniqueProjects);
+      setTotalResults(uniqueProjects.length);
+      setHasMore(false);
     } catch (err) { console.error('PF API Error:', err); setError('Impossibile caricare i progetti.'); }
     finally { setLoading(false); }
   };
@@ -2522,7 +2527,10 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                     <Card key={project.project_id} hover className="overflow-hidden group cursor-pointer" onClick={() => setSelectedListing(project)}>
                       <div className="relative h-40 -mx-4 -mt-4 mb-3 overflow-hidden">
                         {project.images?.[0]?.medium_image_url ? <img src={project.images[0].medium_image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /> : <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Building2 className="w-12 h-12 text-zinc-600" /></div>}
-                        <div className={'absolute top-2 left-2 px-2 py-1 text-white text-xs font-medium rounded-lg ' + (project.construction_phase_key === 'completed' ? 'bg-green-500/90' : project.construction_phase_key === 'under_construction' ? 'bg-orange-500/90' : 'bg-blue-500/90')}>{project.construction_phase_key === 'completed' ? 'Completato' : project.construction_phase_key === 'under_construction' ? 'In Costruzione' : 'Lancio'}</div>
+                        <div className="absolute top-2 left-2 flex gap-1">
+                          <span className={'px-2 py-1 text-white text-xs font-medium rounded-lg ' + (project.construction_phase_key === 'completed' ? 'bg-green-500/90' : project.construction_phase_key === 'under_construction' ? 'bg-orange-500/90' : 'bg-blue-500/90')}>{project.construction_phase_key === 'completed' ? 'Completato' : project.construction_phase_key === 'under_construction' ? 'In Costruzione' : 'Lancio'}</span>
+                          {project.hotness_level >= 80 && <span className="px-2 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-medium rounded-lg">🔥</span>}
+                        </div>
                         {formatDelivery(project.delivery_date) && <div className="absolute top-2 right-12 px-2 py-1 bg-black/70 text-white text-xs rounded-lg">{formatDelivery(project.delivery_date)}</div>}
                         <button onClick={(e) => { e.stopPropagation(); isListingSaved(project.project_id) ? onRemoveListing(project.project_id) : onSaveListing(project); }} className={'absolute top-2 right-2 p-2 rounded-full transition-colors ' + (isListingSaved(project.project_id) ? 'bg-orange-500 text-white' : 'bg-black/50 text-white hover:bg-orange-500')}><svg className="w-4 h-4" fill={isListingSaved(project.project_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg></button>
                       </div>
@@ -2792,10 +2800,15 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           
           {/* Top controls */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <span className={`px-3 py-1.5 ${status.color} text-white text-sm font-medium rounded-full flex items-center gap-1.5 shadow-lg`}>
                 <span>{status.icon}</span> {status.text}
               </span>
+              {listing.hotness_level >= 80 && (
+                <span className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-orange-500 text-white text-sm font-medium rounded-full flex items-center gap-1.5 shadow-lg">
+                  🔥 Popolare
+                </span>
+              )}
               {formatDelivery(listing.delivery_date) && (
                 <span className="px-3 py-1.5 bg-black/60 backdrop-blur text-white text-sm rounded-full">
                   📅 {formatDelivery(listing.delivery_date)}
@@ -3086,71 +3099,6 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
             </div>
           )}
 
-          {/* Amenities if available */}
-          {listing.amenities?.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-white font-semibold mb-3">Servizi e Amenities</h3>
-              <div className="flex flex-wrap gap-2">
-                {listing.amenities.map((a, i) => (
-                  <span key={i} className="px-3 py-1.5 bg-zinc-800/50 text-zinc-300 text-sm rounded-full">{a}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Project Description */}
-          {listing.description && (
-            <div className="mb-6">
-              <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-orange-400" /> Descrizione Progetto
-              </h3>
-              <div className="bg-zinc-800/30 border border-zinc-700/50 rounded-xl p-4">
-                <p className="text-zinc-300 text-sm leading-relaxed whitespace-pre-line">
-                  {listing.description.length > 500 ? listing.description.substring(0, 500) + '...' : listing.description}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Additional Resources */}
-          {(listing.brochure_url || listing.video_url || listing.floor_plans?.length > 0) && (
-            <div className="mb-6">
-              <h3 className="text-white font-semibold mb-3">Risorse Aggiuntive</h3>
-              <div className="flex flex-wrap gap-3">
-                {listing.brochure_url && (
-                  <a href={listing.brochure_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 hover:bg-zinc-700/50 border border-zinc-700 rounded-xl text-zinc-300 text-sm transition-colors">
-                    <FileText className="w-4 h-4 text-orange-400" /> Brochure PDF
-                  </a>
-                )}
-                {listing.video_url && (
-                  <a href={listing.video_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 hover:bg-zinc-700/50 border border-zinc-700 rounded-xl text-zinc-300 text-sm transition-colors">
-                    <Play className="w-4 h-4 text-orange-400" /> Video Tour
-                  </a>
-                )}
-                {listing.floor_plans?.length > 0 && (
-                  <button className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 hover:bg-zinc-700/50 border border-zinc-700 rounded-xl text-zinc-300 text-sm transition-colors">
-                    <Layers className="w-4 h-4 text-orange-400" /> {listing.floor_plans.length} Planimetrie
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Price per sqft if available */}
-          {listing.price_per_sqft && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 rounded-xl">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-zinc-400 text-sm">Prezzo al mq</p>
-                  <p className="text-emerald-400 text-xl font-bold">AED {parseFloat(listing.price_per_sqft).toLocaleString()}/sqft</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-zinc-400 text-sm">Prezzo al m²</p>
-                  <p className="text-emerald-400 text-xl font-bold">AED {Math.round(parseFloat(listing.price_per_sqft) * 10.764).toLocaleString()}/m²</p>
-                </div>
-              </div>
-            </div>
-          )}
           
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t border-zinc-800">
