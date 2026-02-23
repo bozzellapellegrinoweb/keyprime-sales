@@ -813,6 +813,13 @@ export default function App() {
   const createCliente = async (d) => { await supabase.from('clienti').insert([{ ...d, created_by: user?.nome, referente: user?.referente }]); loadClienti(); setShowClienteModal(null); showToast('Cliente creato'); };
   const updateCliente = async (id, d) => { 
     await supabase.from('clienti').update(d).eq('id', id); 
+    
+    // Se cambio l'agente assegnato, aggiorno anche tutti i lead di questo cliente
+    if (d.assegnato_a) {
+      await supabase.from('sales').update({ assegnato_a: d.assegnato_a }).eq('cliente_id', id);
+      await loadSales(); // Refresh sales per aggiornare dashboard
+    }
+    
     await loadClienti(); 
     setShowClienteModal(null); 
     if (showClienteDetail?.id === id) setShowClienteDetail(prev => ({ ...prev, ...d })); 
