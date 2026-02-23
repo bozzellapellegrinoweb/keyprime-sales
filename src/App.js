@@ -811,8 +811,20 @@ export default function App() {
 
   // Cliente Handlers
   const createCliente = async (d) => { await supabase.from('clienti').insert([{ ...d, created_by: user?.nome, referente: user?.referente }]); loadClienti(); setShowClienteModal(null); showToast('Cliente creato'); };
-  const updateCliente = async (id, d) => { await supabase.from('clienti').update(d).eq('id', id); loadClienti(); setShowClienteModal(null); if (showClienteDetail?.id === id) setShowClienteDetail({ ...showClienteDetail, ...d }); showToast('Salvato'); };
-  const deleteCliente = async (id, skipConfirm = false) => { if (!skipConfirm && !window.confirm('Eliminare?')) return; await supabase.from('clienti').delete().eq('id', id); loadClienti(); setShowClienteDetail(null); };
+  const updateCliente = async (id, d) => { 
+    await supabase.from('clienti').update(d).eq('id', id); 
+    await loadClienti(); 
+    setShowClienteModal(null); 
+    if (showClienteDetail?.id === id) setShowClienteDetail(prev => ({ ...prev, ...d })); 
+    showToast('Salvato'); 
+  };
+  const deleteCliente = async (id, skipConfirm = false) => { 
+    if (!skipConfirm && !window.confirm('Eliminare?')) return; 
+    await supabase.from('clienti').delete().eq('id', id); 
+    await loadClienti(); 
+    setShowClienteDetail(null); 
+    showToast('Eliminato');
+  };
 
   // Task Handlers
   const createTask = async (d) => { await supabase.from('tasks').insert([{ ...d, created_by: user?.nome }]); loadTasks(); setShowTaskModal(null); showToast('Task creato'); };
@@ -2140,11 +2152,16 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
       <Card>
         <div className="flex items-center gap-4 mb-6">
           <Avatar nome={cliente.nome} cognome={cliente.cognome} size="xl" />
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-semibold text-white">{cliente.nome} {cliente.cognome}</h1>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <StatusBadge status={cliente.stato} type="cliente" />
               {cliente.nazionalita && <span className="text-zinc-500 text-sm">{cliente.nazionalita}</span>}
+              {cliente.assegnato_a && (
+                <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full flex items-center gap-1">
+                  <User className="w-3 h-3" /> {cliente.assegnato_a}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -2184,7 +2201,8 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
             <div><p className="text-zinc-500 text-xs mb-1">Email</p><p className="text-white truncate">{cliente.email || '-'}</p></div>
             <div><p className="text-zinc-500 text-xs mb-1">Budget Min</p><p className="text-amber-400">{cliente.budget_min ? fmt(cliente.budget_min) : '-'}</p></div>
             <div><p className="text-zinc-500 text-xs mb-1">Budget Max</p><p className="text-amber-400">{cliente.budget_max ? fmt(cliente.budget_max) : '-'}</p></div>
-            <div><p className="text-zinc-500 text-xs mb-1">Agente</p><p className="text-white">{cliente.agente_riferimento || '-'}</p></div>
+            <div><p className="text-zinc-500 text-xs mb-1">Assegnato a</p><p className="text-blue-400">{cliente.assegnato_a || '-'}</p></div>
+            <div><p className="text-zinc-500 text-xs mb-1">Agente Rif.</p><p className="text-white">{cliente.agente_riferimento || '-'}</p></div>
             <div><p className="text-zinc-500 text-xs mb-1">Fonte</p><p className="text-white">{cliente.fonte || '-'}</p></div>
           </div>
           {cliente.note && <div className="mt-4 pt-4 border-t border-[#27272A]"><p className="text-zinc-500 text-xs mb-1">Note</p><p className="text-white text-sm">{cliente.note}</p></div>}
