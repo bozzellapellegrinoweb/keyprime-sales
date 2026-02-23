@@ -729,9 +729,8 @@ export default function App() {
       agente: user?.nome,
       referente: user?.referente,
       cliente_id: cliente_id,
-      cliente_nome: leadData.cliente_nome,
-      note: leadData.note,
-      created_by: user?.nome
+      inserted_by: user?.nome,
+      inserted_as: user?.ruolo
     }]);
     
     loadSales();
@@ -777,7 +776,7 @@ export default function App() {
       if (sd.cliente_id) await supabase.from('clienti').update({ stato: 'acquistato' }).eq('id', sd.cliente_id);
       const { error } = await supabase.from('sales').insert([{
         data: sd.data, developer: sd.developer, progetto: sd.progetto, zona: sd.zona, valore: sd.valore,
-        agente: sd.agente, segnalatore: sd.segnalatore, cliente_id, cliente_nome: sd.cliente_nome,
+        agente: sd.agente, segnalatore: sd.segnalatore, cliente_id,
         referente: user?.referente, commission_pct: 5, inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: 'venduto'
       }]);
       if (error) { console.error('Insert error:', error); showToast('Errore: ' + error.message); return; }
