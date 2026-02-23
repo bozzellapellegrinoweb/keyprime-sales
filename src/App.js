@@ -1076,7 +1076,7 @@ export default function App() {
           {activeTab === 'tasks' && <AgentTasksTab tasks={myTasks} allTasks={tasks.filter(t => t.assegnato_a === user?.nome)} clienti={clienti} onComplete={completeTask} onAddNote={(t) => setShowNoteModal(t)} />}
 
           {/* OFF-PLAN TAB */}
-          {activeTab === 'offplan' && <OffPlanTab clienti={myClienti} onCreateLead={handleOffPlanLead} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeSavedListing} user={user} />}
+          {activeTab === 'offplan' && <OffPlanTab clienti={myClienti} onCreateLead={createLeadFromListing} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeListing} user={user} />}
 
           {/* SETTINGS TAB */}
           {activeTab === 'settings' && (
