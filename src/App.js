@@ -2722,6 +2722,10 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
             <div className="flex items-center gap-2 bg-zinc-800/50 p-1 rounded-xl">
               <button onClick={() => { setViewMode('list'); setSelectedAreaProjects(null); }} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'list' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Lista"><List className="w-5 h-5" /></button>
               <button onClick={() => setViewMode('map')} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'map' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Mappa"><Map className="w-5 h-5" /></button>
+              <button onClick={() => setViewMode('saved')} className={'p-2 rounded-lg transition-colors relative ' + (viewMode === 'saved' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Salvati">
+                <svg className="w-5 h-5" fill={viewMode === 'saved' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                {savedListings?.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold">{savedListings.length}</span>}
+              </button>
             </div>
           </div>
         </div>
@@ -3009,6 +3013,68 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
             </div>
           </div>
         )}
+
+        {/* Saved Projects View */}
+        {viewMode === 'saved' && (
+          <div className="h-full overflow-y-auto">
+            {savedListings?.length > 0 ? (
+              <>
+                <div className="mb-4">
+                  <p className="text-zinc-400 text-sm">{savedListings.length} progetti salvati</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {savedListings.map(saved => {
+                    const project = saved.property_data || saved;
+                    return (
+                      <Card key={saved.id || project.project_id} hover className="overflow-hidden group cursor-pointer" onClick={() => setSelectedListing(project)}>
+                        <div className="relative h-40 -mx-4 -mt-4 mb-3 overflow-hidden">
+                          {project.images?.[0]?.medium_image_url ? (
+                            <img src={project.images[0].medium_image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          ) : (
+                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Building2 className="w-12 h-12 text-zinc-600" /></div>
+                          )}
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); onRemoveListing(project.project_id); }} 
+                            className="absolute top-2 right-2 p-2 rounded-full bg-orange-500 text-white hover:bg-red-500 transition-colors"
+                            title="Rimuovi dai salvati"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-white font-medium line-clamp-1">{project.title}</p>
+                          <p className="text-zinc-500 text-sm line-clamp-1">{project.location?.full_name}</p>
+                          <div className="flex items-center justify-between pt-2">
+                            <p className="text-orange-400 font-semibold">
+                              {project.price_from > 0 ? 'da AED ' + parseFloat(project.price_from).toLocaleString() : 'Prezzo TBD'}
+                            </p>
+                            {project.developer?.name && <span className="text-zinc-500 text-xs truncate max-w-[100px]">{project.developer.name}</span>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
+                          <Button variant="ghost" size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); setSelectedListing(project); }}>
+                            <Eye className="w-4 h-4 mr-1" />Dettagli
+                          </Button>
+                          <Button variant="secondary" size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); setShowAssignModal(project); }}>
+                            <Plus className="w-4 h-4 mr-1" />Lead
+                          </Button>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <EmptyState 
+                icon={Building2} 
+                title="Nessun progetto salvato" 
+                description="Salva i progetti che ti interessano cliccando sull'icona segnalibro"
+                actionLabel="Cerca Progetti"
+                onAction={() => setViewMode('list')}
+              />
+            )}
+          </div>
+        )}
       </div>
 
       {selectedListing && <ListingDetailModal listing={selectedListing} onClose={() => setSelectedListing(null)} onCreateLead={() => { setShowAssignModal(selectedListing); setSelectedListing(null); }} isSaved={isListingSaved(selectedListing.project_id)} onToggleSave={() => isListingSaved(selectedListing.project_id) ? onRemoveListing(selectedListing.project_id) : onSaveListing(selectedListing)} />}
@@ -3020,6 +3086,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
 function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleSave }) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showFullGallery, setShowFullGallery] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   const formatPrice = (price) => {
     if (!price || price === 0) return 'Su richiesta';
@@ -3049,6 +3116,130 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
       case 'not_started': return { text: 'Nuovo Lancio', color: 'bg-blue-500', icon: '🚀' };
       default: return { text: 'Off-Plan', color: 'bg-orange-500', icon: '📋' };
     }
+  };
+
+  // Generate PDF for WhatsApp sharing
+  const downloadProjectPDF = async () => {
+    setGeneratingPdf(true);
+    try {
+      const status = getStatusLabel(listing.construction_phase_key);
+      const paymentPlan = listing.payment_plans?.plans?.[0]?.summary;
+      const imageUrl = listing.images?.[0]?.medium_image_url || '';
+      
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #111; color: #fff; padding: 40px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #f97316; padding-bottom: 20px; }
+    .logo { font-size: 28px; font-weight: bold; color: #f97316; }
+    .date { color: #888; font-size: 12px; }
+    .hero { position: relative; margin-bottom: 30px; border-radius: 16px; overflow: hidden; }
+    .hero img { width: 100%; height: 300px; object-fit: cover; }
+    .badge { position: absolute; top: 16px; left: 16px; background: #f97316; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 14px; }
+    .title { font-size: 32px; font-weight: bold; margin-bottom: 8px; }
+    .location { color: #888; font-size: 16px; margin-bottom: 24px; }
+    .price { font-size: 36px; font-weight: bold; color: #f97316; margin-bottom: 30px; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 30px; }
+    .card { background: #1a1a1a; border-radius: 12px; padding: 20px; }
+    .card-title { color: #888; font-size: 12px; text-transform: uppercase; margin-bottom: 8px; }
+    .card-value { font-size: 20px; font-weight: bold; }
+    .section { margin-bottom: 30px; }
+    .section-title { font-size: 18px; font-weight: bold; margin-bottom: 16px; color: #f97316; }
+    .payment-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .payment-item { background: #1a1a1a; border-radius: 12px; padding: 16px; text-align: center; }
+    .payment-percent { font-size: 28px; font-weight: bold; color: #f97316; }
+    .payment-label { font-size: 12px; color: #888; margin-top: 4px; }
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; text-align: center; color: #666; font-size: 12px; }
+    .cta { background: #f97316; color: white; padding: 16px 32px; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; margin-top: 20px; text-decoration: none; }
+    .developer { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .developer-name { font-size: 16px; color: #ccc; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">🔑 KeyPrime</div>
+    <div class="date">${new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+  </div>
+  
+  ${imageUrl ? `<div class="hero"><img src="${imageUrl}" /><div class="badge">${status.icon} ${status.text}</div></div>` : ''}
+  
+  <div class="developer">
+    <span class="developer-name">by ${listing.developer?.name || 'Developer'}</span>
+  </div>
+  
+  <h1 class="title">${listing.title}</h1>
+  <p class="location">📍 ${listing.location?.full_name || ''}</p>
+  <p class="price">A partire da AED ${formatPrice(listing.price_from)}</p>
+  
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">Tipologie</div>
+      <div class="card-value">${formatBedrooms(listing.bedrooms) || 'Varie'}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Consegna</div>
+      <div class="card-value">${formatDelivery(listing.delivery_date) || 'TBA'}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Stato</div>
+      <div class="card-value">${status.text}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Popolarità</div>
+      <div class="card-value">${listing.hotness_level || 0}/100 🔥</div>
+    </div>
+  </div>
+  
+  ${paymentPlan ? `
+  <div class="section">
+    <div class="section-title">Piano di Pagamento</div>
+    <div class="payment-grid">
+      <div class="payment-item">
+        <div class="payment-percent">${paymentPlan.down_payment || 0}%</div>
+        <div class="payment-label">Anticipo</div>
+      </div>
+      <div class="payment-item">
+        <div class="payment-percent">${paymentPlan.during_construction || 0}%</div>
+        <div class="payment-label">In Costruzione</div>
+      </div>
+      <div class="payment-item">
+        <div class="payment-percent">${paymentPlan.handover || 0}%</div>
+        <div class="payment-label">Alla Consegna</div>
+      </div>
+    </div>
+  </div>
+  ` : ''}
+  
+  <div style="text-align: center;">
+    <a href="${listing.url || '#'}" class="cta">Scopri di più →</a>
+  </div>
+  
+  <div class="footer">
+    <p>Documento generato da KeyPrime CRM</p>
+    <p>Per info: pellegrino@indubai.it | +971 XXX XXX XXXX</p>
+  </div>
+</body>
+</html>`;
+
+      // Create blob and download
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${listing.title.replace(/[^a-zA-Z0-9]/g, '_')}_KeyPrime.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      showToast('Scheda scaricata! Apri il file e stampa come PDF', 'success');
+    } catch (err) {
+      console.error('PDF error:', err);
+      showToast('Errore nel download', 'error');
+    }
+    setGeneratingPdf(false);
   };
 
   // Location insights based on area name
@@ -3463,6 +3654,9 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
             }}>
               <MessageCircle className="w-5 h-5 mr-2" /> WhatsApp
+            </Button>
+            <Button variant="ghost" className="py-3" onClick={downloadProjectPDF} disabled={generatingPdf} title="Scarica scheda PDF">
+              {generatingPdf ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
             </Button>
           </div>
         </div>
