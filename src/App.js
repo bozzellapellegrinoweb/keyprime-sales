@@ -4,22 +4,6 @@ import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, C
 
 const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NjkyNjAsImV4cCI6MjA4NzI0NTI2MH0.oXUs9ITNi6lEFat_5FH0x-Exw5MDgRhwx6T0yL3xiWQ');
 
-// OneSignal Config
-const ONESIGNAL_APP_ID = '071cd2c3-4a3d-4d2f-8deb-fa575aec578d';
-
-// Initialize OneSignal
-const initOneSignal = async () => {
-  if (typeof window !== 'undefined' && window.OneSignalDeferred) {
-    window.OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.init({
-        appId: ONESIGNAL_APP_ID,
-        notifyButton: { enable: false },
-        allowLocalhostAsSecureOrigin: true,
-      });
-    });
-  }
-};
-
 // Config
 const RESEND_API_KEY = 're_jCpLJKfw_MfWu2jbSzPPgz6pLHQXMAXJb';
 const EMAIL_FROM = 'onboarding@resend.dev';
@@ -657,34 +641,7 @@ export default function App() {
   const loadTasks = async () => { const { data } = await supabase.from('tasks').select('*').order('scadenza', { ascending: true }); setTasks(data || []); };
   const loadSavedListings = async () => { const { data } = await supabase.from('saved_listings').select('*').order('created_at', { ascending: false }); setSavedListings(data || []); };
   
-  useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); loadSavedListings(); if (user.ruolo === 'admin') loadUsers(); initOneSignal(); registerOneSignalUser(user); }}, [user]);
-
-  // Register user with OneSignal for targeted notifications
-  const registerOneSignalUser = async (userData) => {
-    if (typeof window !== 'undefined' && window.OneSignalDeferred) {
-      window.OneSignalDeferred.push(async function(OneSignal) {
-        try {
-          // Set external user ID for targeting
-          await OneSignal.login(userData.id?.toString() || userData.username);
-          // Add tags for segmentation
-          await OneSignal.User.addTags({
-            role: userData.ruolo,
-            username: userData.username,
-            nome: userData.nome
-          });
-        } catch (e) {
-          console.log('OneSignal registration:', e);
-        }
-      });
-    }
-  };
-
-  // Send push notification via OneSignal
-  const sendPushNotification = async (title, message, targetUserId = null) => {
-    // This would typically call your backend API which then calls OneSignal REST API
-    // For now, we'll use the in-app notification system
-    console.log('Push notification:', { title, message, targetUserId });
-  };
+  useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); loadSavedListings(); if (user.ruolo === 'admin') loadUsers(); }}, [user]);
 
   // Auth Handlers
   const handleLogin = async (username, password) => {
