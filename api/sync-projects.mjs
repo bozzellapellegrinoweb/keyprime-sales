@@ -32,18 +32,8 @@ export default async function handler(req, res) {
   try {
     const startTime = Date.now();
     
-    // Allow manual offset override via query param
-    const manualOffset = req.query.offset ? parseInt(req.query.offset) : null;
-    
-    let offset;
-    if (manualOffset !== null) {
-      offset = manualOffset;
-    } else {
-      const { count } = await supabase
-        .from('pf_projects')
-        .select('*', { count: 'exact', head: true });
-      offset = count || 0;
-    }
+    // FORCE START FROM 0 TO TEST API
+    const offset = 0;
     
     let totalSynced = 0;
     let currentOffset = offset;
@@ -114,7 +104,3 @@ export default async function handler(req, res) {
   }
 }
 ```
-
-Dopo il commit, prova:
-```
-https://keyprime-sales-1npw.vercel.app/api/sync-projects?offset=2500
