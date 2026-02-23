@@ -1,4 +1,4 @@
-mport { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://wqtylxrrerhbxagdzftn.supabase.co';
 const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTY2OTI2MCwiZXhwIjoyMDg3MjQ1MjYwfQ.l97tHyVwh3TYIaueNDCCHwtgi12RBcvHas351DJ-pO8';
@@ -31,25 +31,15 @@ function transformProject(p) {
 export default async function handler(req, res) {
   try {
     const startTime = Date.now();
-    const manualOffset = req.query.offset ? parseInt(req.query.offset) : null;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
     
-    let currentOffset;
-    if (manualOffset !== null) {
-      currentOffset = manualOffset;
-    } else {
-      const { count } = await supabase
-        .from('pf_projects')
-        .select('*', { count: 'exact', head: true });
-      currentOffset = count || 0;
-    }
-    
-    const startOffset = currentOffset;
+    let currentOffset = offset;
     let totalSynced = 0;
     let skipped = 0;
     
     for (let i = 0; i < 40; i++) {
-      const url = `https://${PF_API_HOST}/projects?limit=50&offset=${currentOffset}`;
-      const response = await fetch(url, {
+      const apiUrl = 'https://' + PF_API_HOST + '/projects?limit=50&offset=' + currentOffset;
+      const response = await fetch(apiUrl, {
         headers: {
           'x-rapidapi-host': PF_API_HOST,
           'x-rapidapi-key': PF_API_KEY
@@ -63,7 +53,9 @@ export default async function handler(req, res) {
       
       if (projects.length === 0) break;
       
-      const activeProjects = projects.filter(p => p.construction_phase_key !== 'completed');
+      const activeProjects = projects.filter(function(p) {
+        return p.construction_phase_key !== 'completed';
+      });
       skipped += projects.length - activeProjects.length;
       
       if (activeProjects.length > 0) {
@@ -72,23 +64,21 @@ export default async function handler(req, res) {
         totalSynced += activeProjects.length;
       }
       
-      if (!data.pagination?.has_next) break;
+      if (!data.pagination || !data.pagination.has_next) break;
       currentOffset += 50;
-      await new Promise(r => setTimeout(r, 100));
+      await new Promise(function(r) { setTimeout(r, 100); });
     }
     
-    const { count: newCount } = await supabase
-      .from('pf_projects')
-      .select('*', { count: 'exact', head: true });
+    const countResult = await supabase.from('pf_projects').select('*', { count: 'exact', head: true });
     
     return res.status(200).json({
       success: true,
-      startedFrom: startOffset,
+      startedFrom: offset,
       endedAt: currentOffset,
       synced: totalSynced,
       skipped: skipped,
-      totalInDb: newCount,
-      nextCall: currentOffset,
+      totalInDb: countResult.count,
+      nextOffset: currentOffset + 50,
       duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's'
     });
   } catch (err) {
