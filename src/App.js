@@ -858,7 +858,9 @@ export default function App() {
   const notificationCount = unreadNotificationIds.length;
 
   const markNotificationsAsRead = () => {
-    const allIds = [...new Set([...readNotificationIds, ...notificationTasks.map(t => t.id)])];
+    const taskIds = notificationTasks.map(t => t.id);
+    const saleIds = recentSalesNotifications.map(s => 'sale_' + s.id);
+    const allIds = [...new Set([...readNotificationIds, ...taskIds, ...saleIds])];
     setReadNotificationIds(allIds);
     localStorage.setItem('keyprime_read_notifications', JSON.stringify(allIds));
   };
@@ -2512,7 +2514,86 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
           </div>
         )}
 
-        {viewMode === 'map' && <div className="h-full rounded-2xl overflow-hidden border border-zinc-800"><MapboxMap projects={listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} /></div>}
+        {viewMode === 'map' && (
+          <div className="fixed inset-0 z-50 bg-white">
+            {/* Header */}
+            <div className="absolute top-0 left-0 right-0 z-10 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <button onClick={() => setViewMode('list')} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                  <ChevronLeft className="w-5 h-5" />
+                  <span className="font-medium">Chiudi Mappa</span>
+                </button>
+                <span className="text-gray-400">|</span>
+                <span className="text-gray-600">{displayProjects.length} progetti</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => searchListings(true)} icon={RefreshCw}>Aggiorna</Button>
+              </div>
+            </div>
+            
+            {/* Main Content */}
+            <div className="pt-14 h-full flex">
+              {/* Left Sidebar - Projects List */}
+              <div className="w-96 h-full bg-white border-r border-gray-200 flex flex-col">
+                <div className="p-4 border-b border-gray-200">
+                  <input 
+                    type="text" 
+                    placeholder="Cerca progetto..." 
+                    value={filters.search} 
+                    onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
+                    onKeyDown={(e) => e.key === 'Enter' && searchListings(true)}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-red-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  {displayProjects.map(project => (
+                    <div 
+                      key={project.project_id} 
+                      onClick={() => setSelectedListing(project)}
+                      className={'p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ' + (selectedListing?.project_id === project.project_id ? 'bg-red-50 border-l-4 border-l-red-500' : '')}
+                    >
+                      <div className="flex gap-3">
+                        <div className="w-24 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                          {project.images?.[0]?.medium_image_url ? (
+                            <img src={project.images[0].medium_image_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center"><Building2 className="w-8 h-8 text-gray-400" /></div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-gray-900 truncate">{project.title}</h3>
+                          <p className="text-sm text-gray-500 truncate">{project.location?.full_name}</p>
+                          <p className="text-red-600 font-semibold mt-1">
+                            {project.price_from > 0 ? 'From AED ' + formatPrice(project.price_from) : 'Price TBD'}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                            {formatBedrooms(project.bedrooms) && <span>{formatBedrooms(project.bedrooms)}</span>}
+                            {formatDelivery(project.delivery_date) && <span>• {formatDelivery(project.delivery_date)}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {hasMore && !loading && (
+                    <div className="p-4">
+                      <Button variant="secondary" className="w-full" onClick={loadMore}>Carica altri progetti</Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Map */}
+              <div className="flex-1 relative">
+                <MapboxMap 
+                  projects={listings} 
+                  onSelectProject={setSelectedListing} 
+                  selectedProject={selectedListing} 
+                  onAreaClick={handleAreaClick} 
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {viewMode === 'split' && (
           <div className="h-full flex gap-4">
@@ -2730,6 +2811,30 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               </div>
             )}
           </div>
+
+          {/* Price Breakdown by Bedroom Type */}
+          {listing.bedrooms?.available?.length > 0 && listing.price_from > 0 && (
+            <div className="mb-6 p-4 bg-zinc-800/30 border border-zinc-700/50 rounded-xl">
+              <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-orange-400" />
+                Prezzi per Tipologia
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {listing.bedrooms.available.sort((a, b) => a - b).map((bed, idx) => {
+                  const basePrice = listing.price_from;
+                  const multiplier = bed === 0 ? 1 : 1 + (bed * 0.35);
+                  const estimatedPrice = Math.round(basePrice * multiplier);
+                  return (
+                    <div key={idx} className="bg-zinc-900/50 border border-zinc-700/30 rounded-lg p-3 text-center">
+                      <p className="text-zinc-400 text-xs mb-1">{bed === 0 ? 'Studio' : bed + ' BR'}</p>
+                      <p className="text-orange-400 font-semibold">da {formatPrice(estimatedPrice)}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-zinc-500 text-xs mt-2 text-center">* Prezzi indicativi, contattare per quotazione esatta</p>
+            </div>
+          )}
           
           {/* Info Grid - 2 columns on mobile, 4 on desktop */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
