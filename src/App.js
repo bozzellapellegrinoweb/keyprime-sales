@@ -2387,7 +2387,7 @@ function ProjectCardCompact({ project, isSelected, onClick, onHover }) {
   );
 }
 
-// Off-Plan Tab with Map Integration
+// Off-Plan Tab with Map Integration - NOW USES SUPABASE
 function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRemoveListing, user }) {
   const [viewMode, setViewMode] = useState('list');
   const [listings, setListings] = useState([]);
@@ -2396,87 +2396,116 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
   const [filters, setFilters] = useState({ search: '', location: '', minPrice: '', maxPrice: '', bedrooms: '', developer: '' });
   const [selectedListing, setSelectedListing] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(null);
-  const [offset, setOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [selectedAreaProjects, setSelectedAreaProjects] = useState(null);
   const [selectedAreaName, setSelectedAreaName] = useState('');
+  
+  const ITEMS_PER_PAGE = 24;
 
   const dubaiAreas = ['Dubai Marina', 'Downtown Dubai', 'Business Bay', 'Palm Jumeirah', 'JBR', 'Dubai Hills Estate', 'Mohammed Bin Rashid City', 'Dubai Creek Harbour', 'Jumeirah Village Circle', 'Dubai South', 'DAMAC Hills', 'Arabian Ranches', 'Meydan', 'DIFC', 'Al Marjan Island', 'Dubai Islands', 'Expo City', 'Yas Island', 'Saadiyat Island'];
   const topDevelopers = ['Emaar Properties', 'Damac Properties', 'Sobha Realty', 'Nakheel', 'Meraas', 'Aldar Properties', 'Azizi Developments', 'Binghatti', 'Ellington', 'Omniyat Group'];
   const bedroomOptions = ['Studio', '1', '2', '3', '4', '5+'];
 
-  const searchListings = async (resetPage = true) => {
-    setLoading(true); setError(null);
-    if (resetPage) setOffset(0);
+  // Search from Supabase with real SQL filters
+  const searchListings = async (newPage = 1) => {
+    setLoading(true); 
+    setError(null);
+    setPage(newPage);
+    
     try {
-      // Load multiple pages to get more projects
-      let allProjects = [];
-      const pagesToLoad = 3; // Load 3 pages = ~150 projects
+      // Build query with filters
+      let query = supabase
+        .from('pf_projects')
+        .select('*', { count: 'exact' });
       
-      for (let page = 0; page < pagesToLoad; page++) {
-        const params = new URLSearchParams();
-        params.append('limit', '50');
-        params.append('offset', (page * 50).toString());
-        if (filters.minPrice) params.append('price_from', filters.minPrice);
-        if (filters.maxPrice) params.append('price_to', filters.maxPrice);
-        if (filters.location) params.append('query', filters.location);
-        if (filters.search) params.append('query', filters.search);
-        
-        const url = 'https://' + PF_API_HOST + '/projects?' + params.toString();
-        const response = await fetch(url, { method: 'GET', headers: { 'x-rapidapi-host': PF_API_HOST, 'x-rapidapi-key': PF_API_KEY } });
-        if (!response.ok) break;
-        const data = await response.json();
-        const projects = data.data || [];
-        allProjects = [...allProjects, ...projects];
-        if (!data.pagination?.has_next) break;
+      // Apply filters
+      if (filters.search) {
+        query = query.or(`title.ilike.%${filters.search}%,location_full.ilike.%${filters.search}%,developer_name.ilike.%${filters.search}%`);
+      }
+      if (filters.location) {
+        query = query.or(`location_name.ilike.%${filters.location}%,location_full.ilike.%${filters.location}%`);
+      }
+      if (filters.developer) {
+        query = query.ilike('developer_name', `%${filters.developer}%`);
+      }
+      if (filters.minPrice) {
+        query = query.gte('price_from', parseInt(filters.minPrice));
+      }
+      if (filters.maxPrice) {
+        query = query.lte('price_from', parseInt(filters.maxPrice));
+      }
+      if (filters.bedrooms) {
+        // Filter by bedrooms in JSONB
+        if (filters.bedrooms === 'Studio') {
+          query = query.contains('bedrooms', { available: [0] });
+        } else if (filters.bedrooms === '5+') {
+          // 5+ is harder with contains, we'll filter client-side for this
+        } else {
+          query = query.contains('bedrooms', { available: [parseInt(filters.bedrooms)] });
+        }
       }
       
-      let filteredProjects = allProjects;
+      // Order and paginate
+      query = query
+        .order('hotness_level', { ascending: false, nullsFirst: false })
+        .range((newPage - 1) * ITEMS_PER_PAGE, newPage * ITEMS_PER_PAGE - 1);
       
-      // Additional client-side filtering for precision
-      if (filters.location) { 
-        const l = filters.location.toLowerCase().replace(/\s+/g, '');
-        filteredProjects = filteredProjects.filter(p => {
-          const fullName = (p.location?.full_name || '').toLowerCase().replace(/\s+/g, '');
-          const name = (p.location?.name || '').toLowerCase().replace(/\s+/g, '');
-          const pathName = (p.location?.path_name || '').toLowerCase().replace(/\s+/g, '');
-          return fullName.includes(l) || name.includes(l) || pathName.includes(l) || l.includes(name);
-        }); 
-      }
-      if (filters.search) { 
-        const s = filters.search.toLowerCase(); 
-        filteredProjects = filteredProjects.filter(p => 
-          p.title?.toLowerCase().includes(s) || 
-          p.developer?.name?.toLowerCase().includes(s) || 
-          p.location?.full_name?.toLowerCase().includes(s)
-        ); 
-      }
-      if (filters.bedrooms) { 
-        const tb = filters.bedrooms === 'Studio' ? 0 : filters.bedrooms === '5+' ? 5 : parseInt(filters.bedrooms); 
-        filteredProjects = filteredProjects.filter(p => { 
-          if (!p.bedrooms?.available) return true; 
-          if (filters.bedrooms === '5+') return p.bedrooms.available.some(b => b >= 5); 
-          return p.bedrooms.available.includes(tb); 
-        }); 
-      }
-      if (filters.developer) { 
-        const d = filters.developer.toLowerCase(); 
-        filteredProjects = filteredProjects.filter(p => p.developer?.name?.toLowerCase().includes(d)); 
+      const { data, error: queryError, count } = await query;
+      
+      if (queryError) throw queryError;
+      
+      // Transform data to match expected format
+      const transformedData = (data || []).map(p => ({
+        project_id: p.project_id,
+        title: p.title,
+        location: { 
+          name: p.location_name, 
+          full_name: p.location_full 
+        },
+        developer: { 
+          name: p.developer_name 
+        },
+        price_from: p.price_from,
+        bedrooms: p.bedrooms,
+        delivery_date: p.delivery_date,
+        construction_phase_key: p.construction_phase,
+        hotness_level: p.hotness_level,
+        images: p.images || [],
+        payment_plans: p.payment_plans,
+        url: p.url
+      }));
+      
+      // Additional client-side filter for 5+ bedrooms
+      let finalData = transformedData;
+      if (filters.bedrooms === '5+') {
+        finalData = transformedData.filter(p => 
+          p.bedrooms?.available?.some(b => b >= 5)
+        );
       }
       
-      // Remove duplicates by project_id
-      const uniqueProjects = filteredProjects.filter((p, i, arr) => arr.findIndex(x => x.project_id === p.project_id) === i);
+      setListings(finalData);
+      setTotalResults(count || 0);
+      setTotalPages(Math.ceil((count || 0) / ITEMS_PER_PAGE));
       
-      setListings(uniqueProjects);
-      setTotalResults(uniqueProjects.length);
-      setHasMore(false);
-    } catch (err) { console.error('PF API Error:', err); setError('Impossibile caricare i progetti.'); }
-    finally { setLoading(false); }
+    } catch (err) { 
+      console.error('Supabase Error:', err); 
+      setError('Errore nel caricamento progetti.'); 
+    }
+    finally { 
+      setLoading(false); 
+    }
   };
 
-  const loadMore = () => { setOffset(o => o + 50); searchListings(false); };
-  useEffect(() => { searchListings(); }, []);
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      searchListings(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => { searchListings(1); }, []);
 
   const isListingSaved = (projectId) => savedListings?.some(s => s.property_id === projectId);
   const formatPrice = (price) => { if (!price || price === 0) return 'TBD'; const num = parseFloat(price); if (num >= 1000000) return (num/1000000).toFixed(1) + 'M'; if (num >= 1000) return (num/1000).toFixed(0) + 'K'; return num.toLocaleString(); };
@@ -2500,20 +2529,20 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
           </div>
         </div>
         <Card className="mb-4">
-          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(true)} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
+          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
             <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}</select>
             <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutti i developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
             <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
             <input type="number" placeholder="Prezzo min" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
             <input type="number" placeholder="Prezzo max" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
-            <Button onClick={() => { setSelectedAreaProjects(null); searchListings(true); }} icon={Search} disabled={loading}>{loading ? 'Cercando...' : 'Cerca'}</Button>
+            <Button onClick={() => { setSelectedAreaProjects(null); searchListings(1); }} icon={Search} disabled={loading}>{loading ? 'Cercando...' : 'Cerca'}</Button>
           </div>
         </Card>
         {selectedAreaProjects && <div className="flex items-center gap-2 mb-4"><span className="text-zinc-400 text-sm">Filtrato: <span className="text-orange-400">{selectedAreaName}</span></span><Button variant="ghost" size="sm" onClick={() => { setSelectedAreaProjects(null); setSelectedAreaName(''); }}><X className="w-4 h-4 mr-1" />Rimuovi</Button></div>}
       </div>
 
-      {error && <Card className="border-red-500/20 bg-red-500/5 mb-4"><div className="flex items-center gap-3 text-red-400"><AlertCircle className="w-5 h-5" /><span>{error}</span><Button variant="ghost" size="sm" onClick={() => searchListings(true)}>Riprova</Button></div></Card>}
+      {error && <Card className="border-red-500/20 bg-red-500/5 mb-4"><div className="flex items-center gap-3 text-red-400"><AlertCircle className="w-5 h-5" /><span>{error}</span><Button variant="ghost" size="sm" onClick={() => searchListings(1)}>Riprova</Button></div></Card>}
 
       <div className="flex-1 min-h-0">
         {viewMode === 'list' && (
@@ -2553,7 +2582,59 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                     </Card>
                   ))}
                 </div>
-                {hasMore && !selectedAreaProjects && <div className="flex justify-center pt-6"><Button variant="secondary" onClick={loadMore} disabled={loading}>{loading ? 'Caricamento...' : 'Carica altri'}</Button></div>}
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 pt-6 pb-4">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handlePageChange(page - 1)} 
+                      disabled={page === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (page <= 3) {
+                        pageNum = i + 1;
+                      } else if (page >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = page - 2 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
+                            page === pageNum 
+                              ? 'bg-orange-500 text-white' 
+                              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handlePageChange(page + 1)} 
+                      disabled={page === totalPages}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                    
+                    <span className="text-zinc-500 text-sm ml-4">
+                      {totalResults.toLocaleString()} progetti
+                    </span>
+                  </div>
+                )}
               </>
             ) : <EmptyState icon={Building2} title="Nessun risultato" description="Modifica i filtri" />}
           </div>
@@ -2589,7 +2670,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                 </select>
                 <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
                 <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
-                <Button onClick={() => searchListings(true)} icon={Search} disabled={loading}>{loading ? '...' : 'Cerca'}</Button>
+                <Button onClick={() => searchListings(1)} icon={Search} disabled={loading}>{loading ? '...' : 'Cerca'}</Button>
               </div>
             </div>
             
@@ -2605,7 +2686,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                       placeholder="Cerca progetto..." 
                       value={filters.search} 
                       onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                      onKeyDown={(e) => e.key === 'Enter' && searchListings(true)}
+                      onKeyDown={(e) => e.key === 'Enter' && searchListings(1)}
                       className="w-full bg-zinc-800 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-white text-sm placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -2639,9 +2720,15 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                       </div>
                     </div>
                   ))}
-                  {hasMore && !loading && (
-                    <div className="p-3">
-                      <Button variant="secondary" className="w-full" size="sm" onClick={loadMore}>Carica altri</Button>
+                  {totalPages > 1 && (
+                    <div className="p-3 flex items-center justify-center gap-2 border-t border-zinc-800">
+                      <Button variant="ghost" size="sm" onClick={() => handlePageChange(page - 1)} disabled={page === 1}>
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      <span className="text-zinc-400 text-sm">Pag. {page}/{totalPages}</span>
+                      <Button variant="ghost" size="sm" onClick={() => handlePageChange(page + 1)} disabled={page === totalPages}>
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
                     </div>
                   )}
                   {loading && <div className="p-4 text-center text-zinc-500">Caricamento...</div>}
