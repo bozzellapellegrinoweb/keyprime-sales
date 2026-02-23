@@ -675,12 +675,13 @@ export default function App() {
       bathrooms: null,
       furnished: null,
       image_url: listing.images?.[0]?.medium_image_url,
-      pf_url: null, // No external URL
+      pf_url: listing.url,
       completion_status: listing.construction_phase_key,
       agent_name: listing.developer?.name,
       agent_email: null,
       description: listing.title,
-      created_by: user?.nome
+      created_by: user?.nome,
+      property_data: listing // Store full listing data for later display
     }]);
     if (error) {
       console.error('Save error:', error);
@@ -1069,32 +1070,16 @@ export default function App() {
 
             {/* LEADS TAB */}
             {activeTab === 'leads' && (
-              <>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {pipelineStati.map(st => (
-                    <button key={st} className="px-4 py-2 rounded-xl text-sm whitespace-nowrap" style={{ background: theme.status[st]?.bg, color: theme.status[st]?.color }}>
-                      {st} ({byStato[st]?.length || 0})
-                    </button>
-                  ))}
-                </div>
-                <div className="grid gap-3 lg:grid-cols-2">
-                  {mySales.map(s => (
-                    <Card key={s.id} hover onClick={() => setShowLeadDetail(s)} padding="p-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-1 h-14 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-medium truncate">{s.progetto}</p>
-                          <p className="text-zinc-500 text-sm">{s.developer} • {s.zona}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-emerald-400 font-semibold">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
-                          <StatusBadge status={s.stato || 'lead'} />
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </>
+              <LeadsTableView 
+                leads={mySales} 
+                clienti={clienti} 
+                onSelectLead={setShowLeadDetail}
+                onUpdateStatus={(id, stato) => updateSale(id, { stato })}
+                onDelete={deleteSale}
+                theme={theme}
+                users={[]}
+                isAdmin={false}
+              />
             )}
 
             {activeTab === 'tasks' && <AgentTasksTab tasks={myTasks} allTasks={tasks.filter(t => t.assegnato_a === user?.nome)} clienti={clienti} onComplete={completeTask} onAddNote={(t) => setShowNoteModal(t)} />}
@@ -1404,7 +1389,19 @@ export default function App() {
             {activeTab === 'vendite' && <VenditeTab sales={filteredSales} filters={filters} setFilters={setFilters} updateSale={updateSale} deleteSale={deleteSale} loading={loading} />}
 
             {/* PIPELINE */}
-            {activeTab === 'pipeline' && <PipelineTab byStato={byStato} onSelectLead={setShowLeadDetail} onUpdateSaleStatus={(id, stato) => updateSale(id, { stato })} />}
+            {activeTab === 'pipeline' && (
+              <LeadsTableView 
+                leads={sales} 
+                clienti={clienti} 
+                onSelectLead={setShowLeadDetail}
+                onUpdateStatus={(id, stato) => updateSale(id, { stato })}
+                onDelete={deleteSale}
+                onAssign={(ids, userId) => ids.forEach(id => updateSale(id, { assegnato_a: userId }))}
+                theme={theme}
+                users={users}
+                isAdmin={true}
+              />
+            )}
 
             {/* CRM */}
             {activeTab === 'crm' && (showClienteDetail ? <ClienteDetailView cliente={showClienteDetail} sales={sales.filter(s => s.cliente_id === showClienteDetail.id)} tasks={tasks.filter(t => t.cliente_id === showClienteDetail.id)} onBack={() => setShowClienteDetail(null)} onEdit={() => setShowClienteModal(showClienteDetail)} onDelete={() => deleteCliente(showClienteDetail.id)} updateCliente={updateCliente} onAddTask={() => setShowTaskModal({ cliente_id: showClienteDetail.id })} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(showClienteDetail, sales.filter(s => s.cliente_id === showClienteDetail.id), tasks.filter(t => t.cliente_id === showClienteDetail.id))} /> : <CRMTab clienti={filteredClienti} filters={clienteFilters} setFilters={setClienteFilters} sales={sales} onSelect={setShowClienteDetail} onCreate={() => setShowClienteModal({})} />)}
@@ -1530,6 +1527,272 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
           </table>
         </div>
         {sales.length === 0 && <div className="text-center py-12 text-zinc-500">Nessuna vendita trovata</div>}
+      </Card>
+    </div>
+  );
+}
+
+// Leads Table View with Multi-Select
+function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete, onAssign, theme, users, isAdmin }) {
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [sortField, setSortField] = useState('created_at');
+  const [sortDir, setSortDir] = useState('desc');
+  const [filterStato, setFilterStato] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkAction, setBulkAction] = useState(null);
+
+  const pipelineStati = ['lead', 'contattato', 'in trattativa', 'proposta', 'vinto', 'perso'];
+  const fmt = (n) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'AED', maximumFractionDigits: 0 }).format(n);
+  
+  const getCliente = (id) => clienti.find(c => c.id === id);
+  
+  // Filter and sort leads
+  const filteredLeads = leads
+    .filter(l => {
+      if (filterStato && l.stato !== filterStato) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const cliente = getCliente(l.cliente_id);
+        return l.progetto?.toLowerCase().includes(q) || 
+               l.zona?.toLowerCase().includes(q) ||
+               l.developer?.toLowerCase().includes(q) ||
+               cliente?.nome?.toLowerCase().includes(q) ||
+               cliente?.cognome?.toLowerCase().includes(q);
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+      if (sortField === 'cliente') {
+        aVal = getCliente(a.cliente_id)?.nome || '';
+        bVal = getCliente(b.cliente_id)?.nome || '';
+      }
+      if (sortDir === 'asc') return aVal > bVal ? 1 : -1;
+      return aVal < bVal ? 1 : -1;
+    });
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredLeads.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredLeads.map(l => l.id));
+    }
+  };
+
+  const handleBulkAction = (action, value) => {
+    if (action === 'delete') {
+      if (window.confirm(`Eliminare ${selectedIds.length} lead?`)) {
+        selectedIds.forEach(id => onDelete(id));
+        setSelectedIds([]);
+      }
+    } else if (action === 'status') {
+      selectedIds.forEach(id => onUpdateStatus(id, value));
+      setSelectedIds([]);
+    } else if (action === 'assign' && onAssign) {
+      onAssign(selectedIds, value);
+      setSelectedIds([]);
+    }
+    setBulkAction(null);
+  };
+
+  const SortHeader = ({ field, children }) => (
+    <th 
+      className="text-left py-3 px-4 text-zinc-400 font-medium text-sm cursor-pointer hover:text-white transition-colors"
+      onClick={() => {
+        if (sortField === field) {
+          setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+        } else {
+          setSortField(field);
+          setSortDir('asc');
+        }
+      }}
+    >
+      <span className="flex items-center gap-1">
+        {children}
+        {sortField === field && (
+          <span className="text-orange-400">{sortDir === 'asc' ? '↑' : '↓'}</span>
+        )}
+      </span>
+    </th>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Header with Search and Filters */}
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Cerca lead..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-zinc-800 border border-zinc-700 rounded-lg pl-9 pr-4 py-2 text-white text-sm w-64 focus:border-orange-500 focus:outline-none"
+            />
+          </div>
+          <select
+            value={filterStato}
+            onChange={(e) => setFilterStato(e.target.value)}
+            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"
+          >
+            <option value="">Tutti gli stati</option>
+            {pipelineStati.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+        <p className="text-zinc-500 text-sm">{filteredLeads.length} lead</p>
+      </div>
+
+      {/* Bulk Actions Bar */}
+      {selectedIds.length > 0 && (
+        <Card className="bg-orange-500/10 border-orange-500/30">
+          <div className="flex items-center justify-between">
+            <p className="text-orange-400 font-medium">
+              {selectedIds.length} lead selezionati
+            </p>
+            <div className="flex items-center gap-2">
+              <select
+                value=""
+                onChange={(e) => handleBulkAction('status', e.target.value)}
+                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
+              >
+                <option value="">Cambia stato...</option>
+                {pipelineStati.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              {isAdmin && users?.length > 0 && (
+                <select
+                  value=""
+                  onChange={(e) => handleBulkAction('assign', e.target.value)}
+                  className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
+                >
+                  <option value="">Assegna a...</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.nome}>{u.nome}</option>
+                  ))}
+                </select>
+              )}
+              <Button variant="danger" size="sm" onClick={() => handleBulkAction('delete')}>
+                <Trash2 className="w-4 h-4 mr-1" /> Elimina
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Table */}
+      <Card padding="p-0" className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-zinc-800/50 border-b border-zinc-700">
+              <tr>
+                <th className="w-12 py-3 px-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.length === filteredLeads.length && filteredLeads.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-orange-500 focus:ring-orange-500"
+                  />
+                </th>
+                <SortHeader field="cliente">Cliente</SortHeader>
+                <SortHeader field="progetto">Progetto</SortHeader>
+                <SortHeader field="zona">Zona</SortHeader>
+                <SortHeader field="valore">Valore</SortHeader>
+                <SortHeader field="stato">Stato</SortHeader>
+                <SortHeader field="created_at">Data</SortHeader>
+                {isAdmin && <SortHeader field="assegnato_a">Agente</SortHeader>}
+                <th className="w-20 py-3 px-4"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800">
+              {filteredLeads.map(lead => {
+                const cliente = getCliente(lead.cliente_id);
+                const isSelected = selectedIds.includes(lead.id);
+                return (
+                  <tr 
+                    key={lead.id} 
+                    className={`hover:bg-zinc-800/50 cursor-pointer transition-colors ${isSelected ? 'bg-orange-500/10' : ''}`}
+                  >
+                    <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelect(lead.id)}
+                        className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-orange-500 focus:ring-orange-500"
+                      />
+                    </td>
+                    <td className="py-3 px-4" onClick={() => onSelectLead(lead)}>
+                      <div className="flex items-center gap-3">
+                        {cliente && <Avatar nome={cliente.nome} size="sm" />}
+                        <div>
+                          <p className="text-white font-medium">{cliente ? `${cliente.nome} ${cliente.cognome || ''}` : 'N/A'}</p>
+                          {cliente?.telefono && <p className="text-zinc-500 text-xs">{cliente.telefono}</p>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4" onClick={() => onSelectLead(lead)}>
+                      <p className="text-white">{lead.progetto || '-'}</p>
+                      <p className="text-zinc-500 text-xs">{lead.developer || ''}</p>
+                    </td>
+                    <td className="py-3 px-4 text-zinc-300" onClick={() => onSelectLead(lead)}>{lead.zona || '-'}</td>
+                    <td className="py-3 px-4" onClick={() => onSelectLead(lead)}>
+                      <span className="text-emerald-400 font-semibold">{lead.valore > 0 ? fmt(lead.valore) : 'TBD'}</span>
+                    </td>
+                    <td className="py-3 px-4" onClick={() => onSelectLead(lead)}>
+                      <StatusBadge status={lead.stato || 'lead'} />
+                    </td>
+                    <td className="py-3 px-4 text-zinc-500 text-sm" onClick={() => onSelectLead(lead)}>
+                      {lead.created_at ? new Date(lead.created_at).toLocaleDateString('it-IT') : '-'}
+                    </td>
+                    {isAdmin && (
+                      <td className="py-3 px-4" onClick={() => onSelectLead(lead)}>
+                        {lead.assegnato_a ? (
+                          <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">{lead.assegnato_a}</span>
+                        ) : (
+                          <span className="text-zinc-600 text-sm">-</span>
+                        )}
+                      </td>
+                    )}
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onSelectLead(lead); }}
+                          className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); if(window.confirm('Eliminare?')) onDelete(lead.id); }}
+                          className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {filteredLeads.length === 0 && (
+            <div className="py-12 text-center">
+              <Target className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+              <p className="text-zinc-500">Nessun lead trovato</p>
+            </div>
+          )}
+        </div>
       </Card>
     </div>
   );
@@ -3024,31 +3287,53 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {savedListings.map(saved => {
-                    const project = saved.property_data || saved;
+                    // Try to get full project data, fallback to saved fields
+                    const project = saved.property_data || {
+                      project_id: saved.property_id,
+                      title: saved.title,
+                      price_from: saved.price,
+                      location: { full_name: saved.location_full, name: saved.location_path },
+                      developer: { name: saved.agent_name },
+                      images: saved.image_url ? [{ medium_image_url: saved.image_url }] : [],
+                      construction_phase_key: saved.completion_status,
+                      url: saved.pf_url
+                    };
+                    const imageUrl = project.images?.[0]?.medium_image_url || saved.image_url;
+                    
                     return (
-                      <Card key={saved.id || project.project_id} hover className="overflow-hidden group cursor-pointer" onClick={() => setSelectedListing(project)}>
+                      <Card key={saved.id} hover className="overflow-hidden group cursor-pointer" onClick={() => setSelectedListing(project)}>
                         <div className="relative h-40 -mx-4 -mt-4 mb-3 overflow-hidden">
-                          {project.images?.[0]?.medium_image_url ? (
-                            <img src={project.images[0].medium_image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          {imageUrl ? (
+                            <img src={imageUrl} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                           ) : (
                             <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Building2 className="w-12 h-12 text-zinc-600" /></div>
                           )}
                           <button 
-                            onClick={(e) => { e.stopPropagation(); onRemoveListing(project.project_id); }} 
+                            onClick={(e) => { e.stopPropagation(); onRemoveListing(saved.property_id); }} 
                             className="absolute top-2 right-2 p-2 rounded-full bg-orange-500 text-white hover:bg-red-500 transition-colors"
                             title="Rimuovi dai salvati"
                           >
                             <X className="w-4 h-4" />
                           </button>
+                          {saved.completion_status && (
+                            <span className={'absolute top-2 left-2 px-2 py-1 text-white text-xs font-medium rounded-lg ' + 
+                              (saved.completion_status === 'completed' ? 'bg-green-500/90' : 
+                               saved.completion_status === 'under_construction' ? 'bg-orange-500/90' : 'bg-blue-500/90')}>
+                              {saved.completion_status === 'completed' ? 'Completato' : 
+                               saved.completion_status === 'under_construction' ? 'In Costruzione' : 'Lancio'}
+                            </span>
+                          )}
                         </div>
                         <div className="space-y-2">
-                          <p className="text-white font-medium line-clamp-1">{project.title}</p>
-                          <p className="text-zinc-500 text-sm line-clamp-1">{project.location?.full_name}</p>
+                          <p className="text-white font-medium line-clamp-1">{project.title || saved.title}</p>
+                          <p className="text-zinc-500 text-sm line-clamp-1">{project.location?.full_name || saved.location_full}</p>
                           <div className="flex items-center justify-between pt-2">
                             <p className="text-orange-400 font-semibold">
-                              {project.price_from > 0 ? 'da AED ' + parseFloat(project.price_from).toLocaleString() : 'Prezzo TBD'}
+                              {(project.price_from || saved.price) > 0 ? 'da AED ' + parseFloat(project.price_from || saved.price).toLocaleString() : 'Prezzo TBD'}
                             </p>
-                            {project.developer?.name && <span className="text-zinc-500 text-xs truncate max-w-[100px]">{project.developer.name}</span>}
+                            {(project.developer?.name || saved.agent_name) && (
+                              <span className="text-zinc-500 text-xs truncate max-w-[100px]">{project.developer?.name || saved.agent_name}</span>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
