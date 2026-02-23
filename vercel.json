@@ -1,8 +1,13 @@
 {
   "crons": [
     {
-      "path": "/api/sync-projects?mode=update",
+      "path": "/api/sync-projects",
       "schedule": "0 3 * * *"
     }
   ]
 }
+```
+
+8. Aspetta 1-2 minuti e prova:
+```
+https://keyprime-sales-1npw.vercel.app/api/sync-projects
