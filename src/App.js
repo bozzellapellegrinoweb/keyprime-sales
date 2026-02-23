@@ -84,7 +84,7 @@ const taskPriorita = ['bassa', 'normale', 'alta', 'urgente'];
 
 // Theme Colors - Section Based
 const theme = {
-  bg: { primary: '#1c1c1e', secondary: '#242428', tertiary: '#18181B', elevated: '#1F1F23' },
+  bg: { primary: '#252529', secondary: '#2d2d32', tertiary: '#28282c', elevated: '#1F1F23' },
   border: { subtle: '#27272A', default: '#3F3F46', strong: '#52525B' },
   text: { primary: '#FAFAFA', secondary: '#A1A1AA', tertiary: '#71717A', muted: '#52525B' },
   sections: {
@@ -160,7 +160,7 @@ const StatusBadge = ({ status, type = 'pipeline' }) => {
 
 // Card Component
 const Card = ({ children, className = '', hover = false, onClick, padding = 'p-5' }) => (
-  <div onClick={onClick} className={`bg-[#18181B] border border-[#27272A] rounded-2xl ${padding} ${hover ? 'hover:border-[#3F3F46] hover:bg-[#1F1F23] cursor-pointer transition-all duration-200' : ''} ${className}`}>
+  <div onClick={onClick} className={`bg-[#28282c] border border-[#27272A] rounded-2xl ${padding} ${hover ? 'hover:border-[#3F3F46] hover:bg-[#1F1F23] cursor-pointer transition-all duration-200' : ''} ${className}`}>
     {children}
   </div>
 );
@@ -210,7 +210,7 @@ const ProgressBar = ({ value, max, color = '#A78BFA', height = 'h-2', showLabel 
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
     <div className="relative">
-      <div className={`${height} bg-zinc-800 rounded-full overflow-hidden`}>
+      <div className={`${height} bg-zinc-700/50 rounded-full overflow-hidden`}>
         <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${pct}%`, background: color }} />
       </div>
       {showLabel && <span className="absolute right-0 -top-6 text-xs text-zinc-500">{pct.toFixed(0)}%</span>}
@@ -221,7 +221,7 @@ const ProgressBar = ({ value, max, color = '#A78BFA', height = 'h-2', showLabel 
 // Empty State
 const EmptyState = ({ icon: Icon, title, description, action, onAction }) => (
   <Card className="text-center py-12">
-    <div className="w-16 h-16 rounded-2xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+    <div className="w-16 h-16 rounded-2xl bg-zinc-700/50 flex items-center justify-center mx-auto mb-4">
       <Icon className="w-8 h-8 text-zinc-600" />
     </div>
     <h3 className="text-lg font-medium text-white mb-2">{title}</h3>
@@ -234,7 +234,7 @@ const EmptyState = ({ icon: Icon, title, description, action, onAction }) => (
 const Input = ({ label, ...props }) => (
   <div>
     {label && <label className="block text-sm text-zinc-400 mb-2">{label}</label>}
-    <input {...props} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] focus:ring-1 focus:ring-[#3F3F46] transition-all" />
+    <input {...props} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] focus:ring-1 focus:ring-[#3F3F46] transition-all" />
   </div>
 );
 
@@ -242,7 +242,7 @@ const Input = ({ label, ...props }) => (
 const Select = ({ label, children, ...props }) => (
   <div>
     {label && <label className="block text-sm text-zinc-400 mb-2">{label}</label>}
-    <select {...props} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3F3F46] transition-all appearance-none cursor-pointer">
+    <select {...props} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3F3F46] transition-all appearance-none cursor-pointer">
       {children}
     </select>
   </div>
@@ -252,7 +252,7 @@ const Select = ({ label, children, ...props }) => (
 const Button = ({ children, variant = 'primary', size = 'md', icon: Icon, className = '', ...props }) => {
   const variants = {
     primary: 'bg-white text-zinc-900 hover:bg-zinc-100',
-    secondary: 'bg-zinc-800 text-white hover:bg-zinc-700',
+    secondary: 'bg-zinc-700/50 text-white hover:bg-zinc-700',
     ghost: 'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5',
     danger: 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
   };
@@ -270,8 +270,8 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   const sizes = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl' };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative bg-[#18181B] border border-[#27272A] rounded-2xl w-full ${sizes[size]} max-h-[85vh] overflow-hidden animate-scaleIn`}>
+      <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative bg-[#28282c] border border-[#27272A] rounded-2xl w-full ${sizes[size]} max-h-[85vh] overflow-hidden animate-scaleIn`}>
         <div className="flex items-center justify-between p-5 border-b border-[#27272A]">
           <h3 className="text-lg font-semibold text-white">{title}</h3>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
@@ -287,8 +287,8 @@ const BottomSheet = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 md:flex md:items-center md:justify-center md:p-4">
-      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="absolute bottom-0 left-0 right-0 md:relative md:max-w-lg md:w-full bg-[#18181B] border-t md:border border-[#27272A] rounded-t-3xl md:rounded-2xl max-h-[90vh] overflow-hidden animate-slideUp">
+      <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute bottom-0 left-0 right-0 md:relative md:max-w-lg md:w-full bg-[#28282c] border-t md:border border-[#27272A] rounded-t-3xl md:rounded-2xl max-h-[90vh] overflow-hidden animate-slideUp">
         <div className="flex items-center justify-between p-5 border-b border-[#27272A]">
           <h3 className="text-lg font-semibold text-white">{title}</h3>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
@@ -311,7 +311,7 @@ const NavItem = ({ icon: Icon, label, active, onClick, accent, badge }) => (
 // Quick Actions Row
 const QuickActions = ({ phone, whatsapp, email, clienteName }) => (
   <div className="flex gap-2">
-    {phone && <a href={`tel:${phone}`} className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl py-3 flex items-center justify-center gap-2 text-sm transition-colors"><Phone className="w-4 h-4" />Chiama</a>}
+    {phone && <a href={`tel:${phone}`} className="flex-1 bg-zinc-700/50 hover:bg-zinc-700 text-white rounded-xl py-3 flex items-center justify-center gap-2 text-sm transition-colors"><Phone className="w-4 h-4" />Chiama</a>}
     {(whatsapp || phone) && <a href={getWhatsAppLink(whatsapp || phone, clienteName ? `Ciao ${clienteName}, ` : '')} target="_blank" rel="noopener noreferrer" className="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl py-3 flex items-center justify-center gap-2 text-sm transition-colors"><MessageCircle className="w-4 h-4" />WhatsApp</a>}
     {email && <a href={`mailto:${email}`} className="flex-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl py-3 flex items-center justify-center gap-2 text-sm transition-colors"><Mail className="w-4 h-4" />Email</a>}
   </div>
@@ -346,13 +346,13 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
   
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
-      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-scaleIn">
+      <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#28282c] border border-[#27272A] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-scaleIn">
         {/* Search Input */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-[#27272A]">
           <Search className="w-5 h-5 text-zinc-500" />
           <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca lead, clienti, task..." className="flex-1 bg-transparent text-white text-lg placeholder:text-zinc-600 focus:outline-none" />
-          <kbd className="hidden sm:flex items-center gap-1 px-2 py-1 bg-zinc-800 rounded text-xs text-zinc-500">ESC</kbd>
+          <kbd className="hidden sm:flex items-center gap-1 px-2 py-1 bg-zinc-700/50 rounded text-xs text-zinc-500">ESC</kbd>
         </div>
         
         {/* Results */}
@@ -361,7 +361,7 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
             <div className="p-8 text-center">
               <Command className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
               <p className="text-zinc-500">Digita almeno 2 caratteri per cercare</p>
-              <p className="text-zinc-600 text-sm mt-2">Premi <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded text-xs">⌘K</kbd> ovunque per aprire</p>
+              <p className="text-zinc-600 text-sm mt-2">Premi <kbd className="px-1.5 py-0.5 bg-zinc-700/50 rounded text-xs">⌘K</kbd> ovunque per aprire</p>
             </div>
           ) : !hasResults ? (
             <div className="p-8 text-center text-zinc-500">Nessun risultato per "{query}"</div>
@@ -428,9 +428,9 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
           <span>KeyPrime Search</span>
           <div className="flex items-center gap-2">
             <span>Naviga con</span>
-            <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded">↑↓</kbd>
+            <kbd className="px-1.5 py-0.5 bg-zinc-700/50 rounded">↑↓</kbd>
             <span>Seleziona con</span>
-            <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded">↵</kbd>
+            <kbd className="px-1.5 py-0.5 bg-zinc-700/50 rounded">↵</kbd>
           </div>
         </div>
       </div>
@@ -454,14 +454,14 @@ const generateDashboardPDF = (totals, sales, vendite, byAgente, byZona) => {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; max-width: 900px; margin: 0 auto; color: #1a1a1a; }
     .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #f0f0f0; }
-    .logo { font-size: 28px; font-weight: 700; color: #18181B; }
+    .logo { font-size: 28px; font-weight: 700; color: #28282c; }
     .logo span { color: #A78BFA; }
     .date { color: #666; font-size: 14px; }
     h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
     h2 { font-size: 16px; font-weight: 600; color: #666; margin: 32px 0 16px; text-transform: uppercase; letter-spacing: 0.5px; }
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
     .stat { background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%); padding: 20px; border-radius: 12px; text-align: center; }
-    .stat-value { font-size: 28px; font-weight: 700; color: #18181B; }
+    .stat-value { font-size: 28px; font-weight: 700; color: #28282c; }
     .stat-value.purple { color: #A78BFA; }
     .stat-value.green { color: #34D399; }
     .stat-value.blue { color: #60A5FA; }
@@ -888,7 +888,7 @@ export default function App() {
   // ==================== LOGIN VIEW ====================
   if (view === 'login') {
     return (
-      <div className="min-h-screen bg-[#1c1c1e] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#252529] flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
           <div className="text-center mb-10">
             <img src="/logo.png" alt="KeyPrime" className="h-20 mx-auto mb-4" />
@@ -926,8 +926,8 @@ export default function App() {
     // Form View (same for mobile/desktop)
     if (showForm) {
       return (
-        <div className="min-h-screen bg-[#1c1c1e]">
-          <div className="sticky top-0 z-40 bg-[#1c1c1e]/95 backdrop-blur-xl border-b border-[#27272A] px-4 py-4">
+        <div className="min-h-screen bg-[#252529]">
+          <div className="sticky top-0 z-40 bg-[#252529]/95 backdrop-blur-xl border-b border-[#27272A] px-4 py-4">
             <div className="flex items-center justify-between max-w-lg mx-auto">
               <button onClick={() => setShowForm(null)} className="text-zinc-400 hover:text-white flex items-center gap-2 transition-colors">
                 <ChevronLeft className="w-5 h-5" />Indietro
@@ -940,7 +940,7 @@ export default function App() {
             {showForm === 'lead' && <LeadForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addLead} />}
             {showForm === 'vendita' && <SaleForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addSale} />}
           </div>
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#1c1c1e]/95 backdrop-blur-xl border-t border-[#27272A]">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#252529]/95 backdrop-blur-xl border-t border-[#27272A]">
             <Button onClick={() => document.getElementById('submitBtn')?.click()} className="w-full py-4">
               {showForm === 'lead' ? 'Salva Lead' : 'Registra Vendita'}
             </Button>
@@ -950,9 +950,9 @@ export default function App() {
     }
 
     return (
-      <div className="min-h-screen bg-[#1c1c1e] lg:flex">
+      <div className="min-h-screen bg-[#252529] lg:flex">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#242428] p-4 fixed h-full">
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#2d2d32] p-4 fixed h-full">
           <div className="mb-8">
             <img src="/logo.png" alt="KeyPrime" className="h-16" />
           </div>
@@ -976,7 +976,7 @@ export default function App() {
         {/* Main Content */}
         <div className="flex-1 lg:ml-64 pb-24 lg:pb-0">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-40 bg-[#1c1c1e]/95 backdrop-blur-xl border-b border-[#27272A]">
+          <div className="lg:hidden sticky top-0 z-40 bg-[#252529]/95 backdrop-blur-xl border-b border-[#27272A]">
             <div className="flex items-center justify-between px-4 py-4">
               <img src="/logo.png" alt="KeyPrime" className="h-12" />
               <div className="flex items-center gap-3">
@@ -990,7 +990,7 @@ export default function App() {
           </div>
 
           {/* Desktop Header */}
-          <div className="hidden lg:block sticky top-0 z-40 bg-[#1c1c1e]/95 backdrop-blur-xl border-b border-[#27272A]">
+          <div className="hidden lg:block sticky top-0 z-40 bg-[#252529]/95 backdrop-blur-xl border-b border-[#27272A]">
             <div className="flex items-center justify-between px-6 py-4">
               <div>
                 <h1 className="text-xl font-semibold text-white capitalize">{activeTab === 'home' ? `Ciao, ${user?.nome}` : tabs.find(t => t.id === activeTab)?.label}</h1>
@@ -1122,7 +1122,7 @@ export default function App() {
           </div>
 
           {/* Mobile Bottom Nav */}
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#1c1c1e]/95 backdrop-blur-xl border-t border-[#27272A] px-4 py-2 z-30">
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#252529]/95 backdrop-blur-xl border-t border-[#27272A] px-4 py-2 z-30">
             <div className="flex justify-around">
               {tabs.map(t => (
                 <button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex flex-col items-center py-2 px-3 ${activeTab === t.id ? 'text-white' : 'text-zinc-500'}`}>
@@ -1184,9 +1184,9 @@ export default function App() {
     ];
 
     return (
-      <div className="min-h-screen bg-[#1c1c1e] flex">
+      <div className="min-h-screen bg-[#252529] flex">
         {/* Sidebar - Desktop */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#242428] p-4">
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#2d2d32] p-4">
           <div className="mb-8">
             <img src="/logo.png" alt="KeyPrime" className="h-20" />
           </div>
@@ -1212,7 +1212,7 @@ export default function App() {
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-40 bg-[#1c1c1e]/95 backdrop-blur-xl border-b border-[#27272A]">
+          <div className="lg:hidden sticky top-0 z-40 bg-[#252529]/95 backdrop-blur-xl border-b border-[#27272A]">
             <div className="flex items-center justify-between px-4 py-4">
               <button onClick={() => setMobileMenuOpen(true)} className="text-zinc-400"><Menu className="w-6 h-6" /></button>
               <img src="/logo.png" alt="KeyPrime" className="h-16" />
@@ -1250,7 +1250,7 @@ export default function App() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <button onClick={() => setShowGlobalSearch(true)} className="hidden lg:flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-zinc-400 text-sm transition-colors">
+                <button onClick={() => setShowGlobalSearch(true)} className="hidden lg:flex items-center gap-2 px-4 py-2 bg-zinc-700/50 hover:bg-zinc-700 rounded-xl text-zinc-400 text-sm transition-colors">
                   <Search className="w-4 h-4" />
                   <span>Cerca...</span>
                   <kbd className="ml-2 px-1.5 py-0.5 bg-zinc-700 rounded text-xs">⌘K</kbd>
@@ -1275,7 +1275,7 @@ export default function App() {
                       { id: '60', label: '60 giorni' },
                       { id: '90', label: '90 giorni' }
                     ].map(p => (
-                      <button key={p.id} onClick={() => setPeriodFilter(p.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${periodFilter === p.id ? 'bg-violet-500/20 text-violet-400' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}>
+                      <button key={p.id} onClick={() => setPeriodFilter(p.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${periodFilter === p.id ? 'bg-violet-500/20 text-violet-400' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
                         {p.label}
                       </button>
                     ))}
@@ -1345,7 +1345,7 @@ export default function App() {
                     <div className="space-y-3">
                       {Object.entries(byAgente).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, value], i) => (
                         <div key={name} onClick={() => setShowAgentDetail({ name, type: 'agente' })} className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-500 text-black' : 'bg-zinc-800 text-zinc-400'}`}>{i + 1}</div>
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-500 text-black' : 'bg-zinc-700/50 text-zinc-400'}`}>{i + 1}</div>
                           <Avatar nome={name} size="sm" />
                           <div className="flex-1">
                             <p className="text-white text-sm">{name}</p>
@@ -1365,7 +1365,7 @@ export default function App() {
                     <div className="space-y-3">
                       {Object.entries(byZona).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([zona, value], i) => (
                         <div key={zona} className="flex items-center gap-3">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-400'}`}>{i + 1}</div>
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-emerald-500 text-black' : 'bg-zinc-700/50 text-zinc-400'}`}>{i + 1}</div>
                           <div className="flex-1">
                             <p className="text-white text-sm">{zona}</p>
                             <ProgressBar value={value} max={Object.values(byZona).sort((a,b) => b-a)[0] || 1} color={i === 0 ? '#34D399' : '#52525B'} height="h-1" />
@@ -1427,8 +1427,8 @@ export default function App() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
-            <div className="absolute inset-0 bg-zinc-900/60" onClick={() => setMobileMenuOpen(false)} />
-            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#242428] p-4 animate-slideRight">
+            <div className="absolute inset-0 bg-zinc-800/60" onClick={() => setMobileMenuOpen(false)} />
+            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#2d2d32] p-4 animate-slideRight">
               <div className="flex items-center justify-between mb-8">
                 <img src="/logo.png" alt="KeyPrime" className="h-16" />
                 <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-400"><X className="w-5 h-5" /></button>
@@ -1470,9 +1470,9 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input type="text" placeholder="Cerca progetto, cliente, agente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50" />
+          <input type="text" placeholder="Cerca progetto, cliente, agente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50" />
         </div>
-        <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50">
+        <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50">
           <option value="">Tutti gli stati</option>
           {pipelineStati.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
@@ -1504,24 +1504,24 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
                   <td className="px-4 py-3 text-sm text-zinc-400">{s.agente || s.segnalatore || '-'}</td>
                   <td className="px-4 py-3 text-right text-sm font-medium text-white">{s.valore > 0 ? fmt(s.valore) : '-'}</td>
                   <td className="px-4 py-3 text-center">
-                    <select value={s.commission_pct || 5} onChange={(e) => updateSale(s.id, { commission_pct: parseInt(e.target.value) })} className="bg-zinc-800 rounded px-2 py-1 text-xs text-white w-14 focus:outline-none">
+                    <select value={s.commission_pct || 5} onChange={(e) => updateSale(s.id, { commission_pct: parseInt(e.target.value) })} className="bg-zinc-700/50 rounded px-2 py-1 text-xs text-white w-14 focus:outline-none">
                       {commissions.map(c => <option key={c} value={c}>{c}%</option>)}
                     </select>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <select value={s.stato || 'lead'} onChange={(e) => updateSale(s.id, { stato: e.target.value })} className="rounded px-2 py-1 text-xs text-white w-20 focus:outline-none" style={{ background: theme.status[s.stato || 'lead']?.bg, color: theme.status[s.stato || 'lead']?.color }}>
-                      {pipelineStati.map(st => <option key={st} value={st} className="bg-zinc-900">{st}</option>)}
+                      {pipelineStati.map(st => <option key={st} value={st} className="bg-zinc-800">{st}</option>)}
                     </select>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <select value={s.referente || ''} onChange={(e) => updateSale(s.id, { referente: e.target.value || null })} className="bg-zinc-800 rounded px-2 py-1 text-xs text-white w-12 focus:outline-none">
+                    <select value={s.referente || ''} onChange={(e) => updateSale(s.id, { referente: e.target.value || null })} className="bg-zinc-700/50 rounded px-2 py-1 text-xs text-white w-12 focus:outline-none">
                       <option value="">-</option>
                       <option value="Pellegrino">P</option>
                       <option value="Giovanni">G</option>
                     </select>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <button onClick={() => updateSale(s.id, { pagato: !s.pagato })} className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${s.pagato ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'}`}>
+                    <button onClick={() => updateSale(s.id, { pagato: !s.pagato })} className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${s.pagato ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700/50 text-zinc-500 hover:text-zinc-300'}`}>
                       {s.pagato ? '✓' : '○'}
                     </button>
                   </td>
@@ -1641,13 +1641,13 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
               placeholder="Cerca lead..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-zinc-800 border border-zinc-700 rounded-lg pl-9 pr-4 py-2 text-white text-sm w-64 focus:border-orange-500 focus:outline-none"
+              className="bg-zinc-700/50 border border-zinc-700 rounded-lg pl-9 pr-4 py-2 text-white text-sm w-64 focus:border-orange-500 focus:outline-none"
             />
           </div>
           <select
             value={filterStato}
             onChange={(e) => setFilterStato(e.target.value)}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"
+            className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"
           >
             <option value="">Tutti gli stati</option>
             {pipelineStati.map(s => (
@@ -1669,7 +1669,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
               <select
                 value=""
                 onChange={(e) => handleBulkAction('status', e.target.value)}
-                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
+                className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
               >
                 <option value="">Cambia stato...</option>
                 {pipelineStati.map(s => (
@@ -1680,7 +1680,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
                 <select
                   value=""
                   onChange={(e) => handleBulkAction('assign', e.target.value)}
-                  className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
+                  className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
                 >
                   <option value="">Assegna a...</option>
                   {users.map(u => (
@@ -1703,7 +1703,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
       <Card padding="p-0" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-zinc-800/50 border-b border-zinc-700">
+            <thead className="bg-zinc-700/50/50 border-b border-zinc-700">
               <tr>
                 <th className="w-12 py-3 px-4">
                   <input
@@ -1730,7 +1730,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
                 return (
                   <tr 
                     key={lead.id} 
-                    className={`hover:bg-zinc-800/50 cursor-pointer transition-colors ${isSelected ? 'bg-orange-500/10' : ''}`}
+                    className={`hover:bg-zinc-700/50/50 cursor-pointer transition-colors ${isSelected ? 'bg-orange-500/10' : ''}`}
                   >
                     <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                       <input
@@ -1854,7 +1854,7 @@ function PipelineTab({ byStato, onSelectLead, onUpdateSaleStatus }) {
                 <div className="w-3 h-3 rounded-full" style={{ background: theme.status[st]?.color }} />
                 <span className="text-sm font-medium text-white capitalize">{st}</span>
               </div>
-              <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{byStato[st]?.length || 0}</span>
+              <span className="text-xs text-zinc-500 bg-zinc-700/50 px-2 py-0.5 rounded-full">{byStato[st]?.length || 0}</span>
             </div>
             <div className={`space-y-2 min-h-[200px] rounded-xl p-2 transition-all ${dragOverColumn === st ? 'bg-white/5 ring-2 ring-violet-500/50' : ''}`}>
               {byStato[st]?.map(s => (
@@ -1970,9 +1970,9 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
         <div className="flex items-center gap-3 flex-wrap flex-1">
           <div className="relative min-w-[250px]">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input type="text" placeholder="Cerca cliente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50" />
+            <input type="text" placeholder="Cerca cliente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50" />
           </div>
-          <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none">
+          <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none">
             <option value="">Tutti gli stati</option>
             {clienteStati.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
@@ -1991,7 +1991,7 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
               <select
                 value=""
                 onChange={(e) => handleBulkAction('stato', e.target.value)}
-                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
+                className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
               >
                 <option value="">Cambia stato...</option>
                 {clienteStati.map(s => (
@@ -2002,7 +2002,7 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
                 <select
                   value=""
                   onChange={(e) => handleBulkAction('assegnato', e.target.value)}
-                  className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
+                  className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
                 >
                   <option value="">Assegna a...</option>
                   {users.map(u => (
@@ -2025,7 +2025,7 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
       <Card padding="p-0" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-zinc-800/50 border-b border-zinc-700">
+            <thead className="bg-zinc-700/50/50 border-b border-zinc-700">
               <tr>
                 <th className="w-12 py-3 px-4">
                   <input
@@ -2054,7 +2054,7 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
                 return (
                   <tr 
                     key={cliente.id} 
-                    className={`hover:bg-zinc-800/50 cursor-pointer transition-colors ${isSelected ? 'bg-amber-500/10' : ''}`}
+                    className={`hover:bg-zinc-700/50/50 cursor-pointer transition-colors ${isSelected ? 'bg-amber-500/10' : ''}`}
                   >
                     <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                       <input
@@ -2223,7 +2223,7 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
             <p className="text-zinc-500 text-xs mb-2">Stato</p>
             <div className="flex flex-wrap gap-2">
               {clienteStati.map(s => (
-                <button key={s} onClick={() => updateCliente(cliente.id, { stato: s })} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${cliente.stato === s ? 'bg-amber-500 text-black' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}>{s}</button>
+                <button key={s} onClick={() => updateCliente(cliente.id, { stato: s })} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${cliente.stato === s ? 'bg-amber-500 text-black' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>{s}</button>
               ))}
             </div>
           </div>
@@ -2481,7 +2481,7 @@ function AgentDetailView({ agent, sales, onBack }) {
   }, {});
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1c1c1e] overflow-auto">
+    <div className="fixed inset-0 z-50 bg-[#252529] overflow-auto">
       <div className="max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
@@ -2574,7 +2574,7 @@ function AgentDetailView({ agent, sales, onBack }) {
           <h3 className="text-white font-semibold mb-4">Ultimi Lead</h3>
           <div className="space-y-2">
             {agentSales.slice(0, 10).map(s => (
-              <div key={s.id} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl">
+              <div key={s.id} className="flex items-center gap-3 p-3 bg-zinc-700/50/50 rounded-xl">
                 <div className="w-1 h-10 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-sm font-medium truncate">{s.progetto || 'TBD'}</p>
@@ -2741,7 +2741,7 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
 
   if (mapError) {
     return (
-      <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
+      <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
           <p className="text-red-400">{mapError}</p>
@@ -2755,7 +2755,7 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
       <div ref={mapContainer} className="absolute inset-0" style={{ background: '#1a1a1a' }} />
       
       {!mapLoaded && (
-        <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center z-[1000]">
+        <div className="absolute inset-0 bg-zinc-800 flex items-center justify-center z-[1000]">
           <RefreshCw className="w-8 h-8 text-orange-400 animate-spin" />
         </div>
       )}
@@ -2763,16 +2763,16 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
       {/* Project Popup Card - Airbnb style */}
       {popupProject && (
         <div className="absolute top-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-[1000] animate-fadeIn">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="bg-zinc-800 border border-zinc-700 rounded-2xl overflow-hidden shadow-2xl">
             <div className="relative h-40">
               {popupProject.images?.[0]?.medium_image_url ? (
                 <img src={popupProject.images[0].medium_image_url} alt="" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                <div className="w-full h-full bg-zinc-700/50 flex items-center justify-center">
                   <Building2 className="w-12 h-12 text-zinc-600" />
                 </div>
               )}
-              <button onClick={(e) => { e.stopPropagation(); setPopupProject(null); }} className="absolute top-2 right-2 p-1.5 bg-zinc-900/50 rounded-full text-white hover:bg-zinc-900/70">
+              <button onClick={(e) => { e.stopPropagation(); setPopupProject(null); }} className="absolute top-2 right-2 p-1.5 bg-zinc-800/50 rounded-full text-white hover:bg-zinc-800/70">
                 <X className="w-4 h-4" />
               </button>
               <div className="absolute bottom-2 left-2 px-2 py-1 bg-orange-500 text-white text-xs font-medium rounded-lg">
@@ -2795,7 +2795,7 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
 
       {/* Map Stats */}
       <div className="absolute bottom-4 left-4 z-[1000]">
-        <div className="bg-zinc-900/90 backdrop-blur border border-zinc-700 rounded-xl px-3 py-2">
+        <div className="bg-zinc-800/90 backdrop-blur border border-zinc-700 rounded-xl px-3 py-2">
           <p className="text-white text-sm font-medium">{Object.keys(projectsByLocation).length} progetti sulla mappa</p>
         </div>
       </div>
@@ -2853,7 +2853,7 @@ function ProjectCardCompact({ project, isSelected, onClick, onHover }) {
       onClick={onClick} 
       onMouseEnter={() => onHover && onHover(project.project_id)}
       onMouseLeave={() => onHover && onHover(null)}
-      className={'p-3 rounded-xl cursor-pointer transition-all ' + (isSelected ? 'bg-orange-500/20 border-2 border-orange-500' : 'bg-zinc-800/50 border border-transparent hover:bg-zinc-800 hover:border-zinc-600')}
+      className={'p-3 rounded-xl cursor-pointer transition-all ' + (isSelected ? 'bg-orange-500/20 border-2 border-orange-500' : 'bg-zinc-700/50/50 border border-transparent hover:bg-zinc-700/50 hover:border-zinc-600')}
     >
       <div className="flex gap-3">
         <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700">
@@ -3212,7 +3212,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
             <Button variant="ghost" size="sm" onClick={() => setShowStats(!showStats)} icon={PieChart}>
               {showStats ? 'Nascondi' : 'Stats'}
             </Button>
-            <div className="flex items-center gap-2 bg-zinc-800/50 p-1 rounded-xl">
+            <div className="flex items-center gap-2 bg-zinc-700/50/50 p-1 rounded-xl">
               <button onClick={() => { setViewMode('list'); setSelectedAreaProjects(null); }} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'list' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Lista"><List className="w-5 h-5" /></button>
               <button onClick={() => setViewMode('map')} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'map' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Mappa"><Map className="w-5 h-5" /></button>
               <button onClick={() => setViewMode('saved')} className={'p-2 rounded-lg transition-colors relative ' + (viewMode === 'saved' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Salvati">
@@ -3265,15 +3265,15 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         )}
 
         <Card className="mb-4">
-          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto, zona o developer..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
+          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto, zona o developer..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}</select>
-            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
-            <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
-            <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
-            <select value={filters.deliveryYear} onChange={(e) => setFilters(f => ({ ...f, deliveryYear: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Consegna</option>{deliveryYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
-            <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
-            <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}</select>
+            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
+            <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
+            <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
+            <select value={filters.deliveryYear} onChange={(e) => setFilters(f => ({ ...f, deliveryYear: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Consegna</option>{deliveryYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
+            <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#28282c] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
             <Button onClick={() => { setSelectedAreaProjects(null); searchListings(1); }} icon={Search} disabled={loading}>{loading ? '...' : 'Cerca'}</Button>
           </div>
           {/* Sorting and active filters */}
@@ -3307,20 +3307,20 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         {viewMode === 'list' && (
           <div className="h-full overflow-y-auto">
             {loading && listings.length === 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{[1,2,3,4,5,6].map(i => <Card key={i} className="animate-pulse"><div className="h-40 bg-zinc-800 rounded-xl mb-3" /><div className="h-4 bg-zinc-800 rounded w-3/4 mb-2" /><div className="h-3 bg-zinc-800 rounded w-1/2" /></Card>)}</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{[1,2,3,4,5,6].map(i => <Card key={i} className="animate-pulse"><div className="h-40 bg-zinc-700/50 rounded-xl mb-3" /><div className="h-4 bg-zinc-700/50 rounded w-3/4 mb-2" /><div className="h-3 bg-zinc-700/50 rounded w-1/2" /></Card>)}</div>
             ) : displayProjects.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {displayProjects.map(project => (
                     <Card key={project.project_id} hover className="overflow-hidden group cursor-pointer" onClick={() => setSelectedListing(project)}>
                       <div className="relative h-40 -mx-4 -mt-4 mb-3 overflow-hidden">
-                        {project.images?.[0]?.medium_image_url ? <img src={project.images[0].medium_image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /> : <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Building2 className="w-12 h-12 text-zinc-600" /></div>}
+                        {project.images?.[0]?.medium_image_url ? <img src={project.images[0].medium_image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /> : <div className="w-full h-full bg-zinc-700/50 flex items-center justify-center"><Building2 className="w-12 h-12 text-zinc-600" /></div>}
                         <div className="absolute top-2 left-2 flex gap-1">
                           <span className={'px-2 py-1 text-white text-xs font-medium rounded-lg ' + (project.construction_phase_key === 'completed' ? 'bg-green-500/90' : project.construction_phase_key === 'under_construction' ? 'bg-orange-500/90' : 'bg-blue-500/90')}>{project.construction_phase_key === 'completed' ? 'Completato' : project.construction_phase_key === 'under_construction' ? 'In Costruzione' : 'Lancio'}</span>
                           {project.hotness_level >= 80 && <span className="px-2 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-medium rounded-lg">🔥</span>}
                         </div>
-                        {formatDelivery(project.delivery_date) && <div className="absolute top-2 right-12 px-2 py-1 bg-zinc-900/70 text-white text-xs rounded-lg">{formatDelivery(project.delivery_date)}</div>}
-                        <button onClick={(e) => { e.stopPropagation(); isListingSaved(project.project_id) ? onRemoveListing(project.project_id) : onSaveListing(project); }} className={'absolute top-2 right-2 p-2 rounded-full transition-colors ' + (isListingSaved(project.project_id) ? 'bg-orange-500 text-white' : 'bg-zinc-900/50 text-white hover:bg-orange-500')}><svg className="w-4 h-4" fill={isListingSaved(project.project_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg></button>
+                        {formatDelivery(project.delivery_date) && <div className="absolute top-2 right-12 px-2 py-1 bg-zinc-800/70 text-white text-xs rounded-lg">{formatDelivery(project.delivery_date)}</div>}
+                        <button onClick={(e) => { e.stopPropagation(); isListingSaved(project.project_id) ? onRemoveListing(project.project_id) : onSaveListing(project); }} className={'absolute top-2 right-2 p-2 rounded-full transition-colors ' + (isListingSaved(project.project_id) ? 'bg-orange-500 text-white' : 'bg-zinc-800/50 text-white hover:bg-orange-500')}><svg className="w-4 h-4" fill={isListingSaved(project.project_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg></button>
                       </div>
                       <div className="space-y-2">
                         <p className="text-white font-medium line-clamp-1">{project.title}</p>
@@ -3372,7 +3372,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                           className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
                             page === pageNum 
                               ? 'bg-orange-500 text-white' 
-                              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                              : 'bg-zinc-700/50 text-zinc-400 hover:bg-zinc-700'
                           }`}
                         >
                           {pageNum}
@@ -3400,9 +3400,9 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         )}
 
         {viewMode === 'map' && (
-          <div className="fixed inset-0 z-50 bg-[#1c1c1e]">
+          <div className="fixed inset-0 z-50 bg-[#252529]">
             {/* Header with Logo and Filters */}
-            <div className="absolute top-0 left-0 right-0 z-10 bg-[#1c1c1e] border-b border-zinc-800">
+            <div className="absolute top-0 left-0 right-0 z-10 bg-[#252529] border-b border-zinc-800">
               <div className="px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <img src="/logo.png" alt="KeyPrime" className="h-10" />
@@ -3415,20 +3415,20 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
               </div>
               {/* Filters Row */}
               <div className="px-4 pb-3 flex items-center gap-3 overflow-x-auto">
-                <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[140px]">
+                <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[140px]">
                   <option value="">Tutte le zone</option>
                   {dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
-                <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[140px]">
+                <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[140px]">
                   <option value="">Tutti i developer</option>
                   {topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
-                <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[100px]">
+                <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[100px]">
                   <option value="">Camere</option>
                   {bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}
                 </select>
-                <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
-                <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
+                <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
+                <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
                 <Button onClick={() => searchListings(1)} icon={Search} disabled={loading}>{loading ? '...' : 'Cerca'}</Button>
               </div>
             </div>
@@ -3436,7 +3436,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
             {/* Main Content */}
             <div className="pt-28 h-full flex">
               {/* Left Sidebar - Projects List */}
-              <div className="w-96 h-full bg-[#242428] border-r border-zinc-800 flex flex-col">
+              <div className="w-96 h-full bg-[#2d2d32] border-r border-zinc-800 flex flex-col">
                 <div className="p-3 border-b border-zinc-800">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -3446,7 +3446,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                       value={filters.search} 
                       onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
                       onKeyDown={(e) => e.key === 'Enter' && searchListings(1)}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-white text-sm placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
+                      className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-white text-sm placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -3455,10 +3455,10 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                     <div 
                       key={project.project_id} 
                       onClick={() => setSelectedListing(project)}
-                      className={'p-3 border-b border-zinc-800/50 cursor-pointer hover:bg-zinc-800/50 transition-colors ' + (selectedListing?.project_id === project.project_id ? 'bg-orange-500/10 border-l-2 border-l-orange-500' : '')}
+                      className={'p-3 border-b border-zinc-800/50 cursor-pointer hover:bg-zinc-700/50/50 transition-colors ' + (selectedListing?.project_id === project.project_id ? 'bg-orange-500/10 border-l-2 border-l-orange-500' : '')}
                     >
                       <div className="flex gap-3">
-                        <div className="w-20 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-800">
+                        <div className="w-20 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700/50">
                           {project.images?.[0]?.medium_image_url ? (
                             <img src={project.images[0].medium_image_url} alt="" className="w-full h-full object-cover" />
                           ) : (
@@ -3536,7 +3536,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                           {imageUrl ? (
                             <img src={imageUrl} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                           ) : (
-                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Building2 className="w-12 h-12 text-zinc-600" /></div>
+                            <div className="w-full h-full bg-zinc-700/50 flex items-center justify-center"><Building2 className="w-12 h-12 text-zinc-600" /></div>
                           )}
                           <button 
                             onClick={(e) => { e.stopPropagation(); onRemoveListing(saved.property_id); }} 
@@ -3793,7 +3793,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
   // Fullscreen Gallery
   if (showFullGallery) {
     return (
-      <div className="fixed inset-0 z-[60] bg-zinc-900">
+      <div className="fixed inset-0 z-[60] bg-zinc-800">
         <button onClick={() => setShowFullGallery(false)} className="absolute top-4 right-4 z-10 p-3 bg-white/10 backdrop-blur rounded-full text-white hover:bg-white/20">
           <X className="w-6 h-6" />
         </button>
@@ -3834,21 +3834,21 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4">
-      <div className="absolute inset-0 bg-zinc-900/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#242428] border border-[#27272A] rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-scaleIn">
+      <div className="absolute inset-0 bg-zinc-800/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#2d2d32] border border-[#27272A] rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-scaleIn">
         
         {/* Hero Image Section with Gallery */}
         <div className="relative h-72 md:h-80">
           {images[activeImageIndex]?.medium_image_url ? (
             <img src={images[activeImageIndex].medium_image_url} alt={listing.title} className="w-full h-full object-cover cursor-pointer" onClick={() => setShowFullGallery(true)} />
           ) : (
-            <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+            <div className="w-full h-full bg-zinc-700/50 flex items-center justify-center">
               <Building2 className="w-20 h-20 text-zinc-600" />
             </div>
           )}
           
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#242428] via-transparent to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#2d2d32] via-transparent to-black/30" />
           
           {/* Top controls */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
@@ -3862,16 +3862,16 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                 </span>
               )}
               {formatDelivery(listing.delivery_date) && (
-                <span className="px-3 py-1.5 bg-zinc-900/60 backdrop-blur text-white text-sm rounded-full">
+                <span className="px-3 py-1.5 bg-zinc-800/60 backdrop-blur text-white text-sm rounded-full">
                   📅 {formatDelivery(listing.delivery_date)}
                 </span>
               )}
             </div>
             <div className="flex gap-2">
-              <button onClick={onToggleSave} className={`p-2.5 rounded-full shadow-lg transition-all ${isSaved ? 'bg-orange-500 text-white' : 'bg-zinc-900/60 backdrop-blur text-white hover:bg-orange-500'}`}>
+              <button onClick={onToggleSave} className={`p-2.5 rounded-full shadow-lg transition-all ${isSaved ? 'bg-orange-500 text-white' : 'bg-zinc-800/60 backdrop-blur text-white hover:bg-orange-500'}`}>
                 <svg className="w-5 h-5" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
               </button>
-              <button onClick={onClose} className="p-2.5 bg-zinc-900/60 backdrop-blur rounded-full text-white hover:bg-zinc-900/80 shadow-lg">
+              <button onClick={onClose} className="p-2.5 bg-zinc-800/60 backdrop-blur rounded-full text-white hover:bg-zinc-800/80 shadow-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -3898,7 +3898,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           
           {/* Expand gallery button */}
           {images.length > 1 && (
-            <button onClick={() => setShowFullGallery(true)} className="absolute bottom-4 right-4 px-3 py-1.5 bg-zinc-900/60 backdrop-blur text-white text-sm rounded-full hover:bg-zinc-900/80 flex items-center gap-1.5">
+            <button onClick={() => setShowFullGallery(true)} className="absolute bottom-4 right-4 px-3 py-1.5 bg-zinc-800/60 backdrop-blur text-white text-sm rounded-full hover:bg-zinc-800/80 flex items-center gap-1.5">
               <Eye className="w-4 h-4" /> {images.length} foto
             </button>
           )}
@@ -3917,7 +3917,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
             </div>
             {formatBedrooms(listing.bedrooms) && (
               <div className="flex items-center gap-4 text-zinc-300">
-                <div className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 rounded-xl">
+                <div className="flex items-center gap-2 px-4 py-2 bg-zinc-700/50/50 rounded-xl">
                   <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                   <span className="font-medium">{formatBedrooms(listing.bedrooms)}</span>
                 </div>
@@ -3927,7 +3927,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
 
           {/* Price Breakdown by Bedroom Type */}
           {listing.bedrooms?.available?.length > 0 && listing.price_from > 0 && (
-            <div className="mb-6 p-4 bg-zinc-800/30 border border-zinc-700/50 rounded-xl">
+            <div className="mb-6 p-4 bg-zinc-700/50/30 border border-zinc-700/50 rounded-xl">
               <h4 className="text-white font-medium mb-3 flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-orange-400" />
                 Prezzi per Tipologia
@@ -3938,7 +3938,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                   const multiplier = bed === 0 ? 1 : 1 + (bed * 0.35);
                   const estimatedPrice = Math.round(basePrice * multiplier);
                   return (
-                    <div key={idx} className="bg-zinc-900/50 border border-zinc-700/30 rounded-lg p-3 text-center">
+                    <div key={idx} className="bg-zinc-800/50 border border-zinc-700/30 rounded-lg p-3 text-center">
                       <p className="text-zinc-400 text-xs mb-1">{bed === 0 ? 'Studio' : bed + ' BR'}</p>
                       <p className="text-orange-400 font-semibold">da {formatPrice(estimatedPrice)}</p>
                     </div>
@@ -3957,20 +3957,20 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               <p className="text-zinc-500 text-xs mt-1">Stato progetto</p>
             </div>
             {formatDelivery(listing.delivery_date) && (
-              <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
+              <div className="bg-zinc-700/50/50 rounded-xl p-4 text-center">
                 <p className="text-blue-400 text-2xl font-bold">📅</p>
                 <p className="text-white font-medium mt-1">{formatDelivery(listing.delivery_date)}</p>
                 <p className="text-zinc-500 text-xs mt-1">Consegna prevista</p>
               </div>
             )}
             {listing.payment_plans?.plans?.[0]?.summary?.down_payment && (
-              <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
+              <div className="bg-zinc-700/50/50 rounded-xl p-4 text-center">
                 <p className="text-green-400 text-2xl font-bold">{listing.payment_plans.plans[0].summary.down_payment}%</p>
                 <p className="text-white font-medium mt-1">Anticipo</p>
                 <p className="text-zinc-500 text-xs mt-1">Down payment</p>
               </div>
             )}
-            <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
+            <div className="bg-zinc-700/50/50 rounded-xl p-4 text-center">
               <p className="text-purple-400 text-2xl font-bold">{locationInsights.roi}</p>
               <p className="text-white font-medium mt-1">ROI Stimato</p>
               <p className="text-zinc-500 text-xs mt-1">Rendimento annuo</p>
@@ -4026,7 +4026,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                 }
                 return (
                   <>
-                    <div className="relative h-4 bg-zinc-800 rounded-full overflow-hidden mb-2">
+                    <div className="relative h-4 bg-zinc-700/50 rounded-full overflow-hidden mb-2">
                       <div 
                         className="absolute left-0 top-0 h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full transition-all duration-500"
                         style={{ width: `${progress}%` }}
@@ -4040,19 +4040,19 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                       <span>Consegna: {formatDelivery(listing.delivery_date) || 'TBD'}</span>
                     </div>
                     <div className="mt-3 grid grid-cols-4 gap-2">
-                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 25 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-800 text-zinc-500')}>
+                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 25 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-700/50 text-zinc-500')}>
                         <p className="font-medium">Fondazioni</p>
                         <p>{progress >= 25 ? '✓' : '...'}</p>
                       </div>
-                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 50 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-800 text-zinc-500')}>
+                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 50 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-700/50 text-zinc-500')}>
                         <p className="font-medium">Struttura</p>
                         <p>{progress >= 50 ? '✓' : '...'}</p>
                       </div>
-                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 75 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-800 text-zinc-500')}>
+                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 75 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-700/50 text-zinc-500')}>
                         <p className="font-medium">Finiture</p>
                         <p>{progress >= 75 ? '✓' : '...'}</p>
                       </div>
-                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 95 ? 'bg-green-500/20 text-green-400' : 'bg-zinc-800 text-zinc-500')}>
+                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 95 ? 'bg-green-500/20 text-green-400' : 'bg-zinc-700/50 text-zinc-500')}>
                         <p className="font-medium">Consegna</p>
                         <p>{progress >= 95 ? '✓' : '...'}</p>
                       </div>
@@ -4083,7 +4083,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               ))}
             </div>
             {/* Mini Map Link */}
-            <a href={getMapUrl()} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center justify-center gap-2 p-3 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl text-zinc-300 transition-colors">
+            <a href={getMapUrl()} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center justify-center gap-2 p-3 bg-zinc-700/50/50 hover:bg-zinc-700/50 rounded-xl text-zinc-300 transition-colors">
               <MapPin className="w-4 h-4" />
               <span className="text-sm">Apri in Google Maps</span>
               <ArrowUpRight className="w-4 h-4" />
@@ -4098,7 +4098,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               </h3>
               <div className="space-y-3">
                 {listing.payment_plans.plans.map((plan, idx) => (
-                  <div key={idx} className="p-4 bg-zinc-800/50 rounded-xl">
+                  <div key={idx} className="p-4 bg-zinc-700/50/50 rounded-xl">
                     {plan.title && <p className="text-zinc-300 font-medium mb-3">{plan.title}</p>}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="text-center p-3 bg-green-500/10 rounded-lg">
@@ -4137,13 +4137,13 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                 {images.slice(0, 12).map((img, idx) => (
                   <button key={idx} onClick={() => { setActiveImageIndex(idx); setShowFullGallery(true); }} className="relative h-20 rounded-lg overflow-hidden group">
                     <img src={img.small_image_url || img.medium_image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                    <div className="absolute inset-0 bg-zinc-900/0 group-hover:bg-zinc-900/30 transition-colors flex items-center justify-center">
+                    <div className="absolute inset-0 bg-zinc-800/0 group-hover:bg-zinc-800/30 transition-colors flex items-center justify-center">
                       <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </button>
                 ))}
                 {images.length > 12 && (
-                  <button onClick={() => setShowFullGallery(true)} className="h-20 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 hover:bg-zinc-700 transition-colors">
+                  <button onClick={() => setShowFullGallery(true)} className="h-20 rounded-lg bg-zinc-700/50 flex items-center justify-center text-zinc-400 hover:bg-zinc-700 transition-colors">
                     <span className="text-sm font-medium">+{images.length - 12}</span>
                   </button>
                 )}
@@ -4213,8 +4213,8 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-zinc-900/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-md animate-scaleIn">
+      <div className="absolute inset-0 bg-zinc-800/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#28282c] border border-[#27272A] rounded-2xl w-full max-w-md animate-scaleIn">
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
           <h3 className="text-lg font-semibold text-white">Crea Lead da Annuncio</h3>
           <button onClick={onClose} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
@@ -4222,7 +4222,7 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
         
         <div className="p-4 space-y-4">
           {/* Listing Summary */}
-          <div className="flex gap-3 p-3 bg-zinc-800/50 rounded-xl">
+          <div className="flex gap-3 p-3 bg-zinc-700/50/50 rounded-xl">
             {listing.images?.[0]?.small_image_url && <img src={listing.images[0].small_image_url} alt="" className="w-16 h-16 rounded-lg object-cover" />}
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm font-medium line-clamp-1">{listing.title}</p>
@@ -4234,18 +4234,18 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
           {/* Client Selection */}
           <div>
             <label className="text-sm text-zinc-400 mb-2 block">Associa a Cliente (opzionale)</label>
-            <input type="text" placeholder="Cerca cliente..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCreateNew(false); }} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <input type="text" placeholder="Cerca cliente..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCreateNew(false); }} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
             
             {searchQuery && !createNew && (
               <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
                 {filteredClienti.slice(0, 5).map(c => (
-                  <button key={c.id} onClick={() => { setSelectedCliente(c); setSearchQuery(`${c.nome} ${c.cognome}`); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${selectedCliente?.id === c.id ? 'bg-orange-500/20 text-orange-400' : 'hover:bg-zinc-800 text-zinc-300'}`}>
+                  <button key={c.id} onClick={() => { setSelectedCliente(c); setSearchQuery(`${c.nome} ${c.cognome}`); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${selectedCliente?.id === c.id ? 'bg-orange-500/20 text-orange-400' : 'hover:bg-zinc-700/50 text-zinc-300'}`}>
                     <Avatar nome={c.nome} cognome={c.cognome} size="xs" />
                     <span className="text-sm">{c.nome} {c.cognome}</span>
                   </button>
                 ))}
                 {filteredClienti.length === 0 && (
-                  <button onClick={() => { setCreateNew(true); setNewCliente(n => ({ ...n, nome: searchQuery.split(' ')[0], cognome: searchQuery.split(' ')[1] || '' })); }} className="w-full text-left p-2 rounded-lg text-orange-400 hover:bg-zinc-800 text-sm">
+                  <button onClick={() => { setCreateNew(true); setNewCliente(n => ({ ...n, nome: searchQuery.split(' ')[0], cognome: searchQuery.split(' ')[1] || '' })); }} className="w-full text-left p-2 rounded-lg text-orange-400 hover:bg-zinc-700/50 text-sm">
                     + Crea nuovo cliente "{searchQuery}"
                   </button>
                 )}
@@ -4255,14 +4255,14 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
           
           {/* New Client Form */}
           {createNew && (
-            <div className="space-y-3 p-3 bg-zinc-800/30 rounded-xl">
+            <div className="space-y-3 p-3 bg-zinc-700/50/30 rounded-xl">
               <p className="text-sm text-zinc-400">Nuovo Cliente</p>
               <div className="grid grid-cols-2 gap-2">
-                <input type="text" placeholder="Nome" value={newCliente.nome} onChange={(e) => setNewCliente(n => ({ ...n, nome: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
-                <input type="text" placeholder="Cognome" value={newCliente.cognome} onChange={(e) => setNewCliente(n => ({ ...n, cognome: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+                <input type="text" placeholder="Nome" value={newCliente.nome} onChange={(e) => setNewCliente(n => ({ ...n, nome: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+                <input type="text" placeholder="Cognome" value={newCliente.cognome} onChange={(e) => setNewCliente(n => ({ ...n, cognome: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
               </div>
-              <input type="tel" placeholder="Telefono" value={newCliente.telefono} onChange={(e) => setNewCliente(n => ({ ...n, telefono: e.target.value }))} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
-              <input type="email" placeholder="Email" value={newCliente.email} onChange={(e) => setNewCliente(n => ({ ...n, email: e.target.value }))} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+              <input type="tel" placeholder="Telefono" value={newCliente.telefono} onChange={(e) => setNewCliente(n => ({ ...n, telefono: e.target.value }))} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+              <input type="email" placeholder="Email" value={newCliente.email} onChange={(e) => setNewCliente(n => ({ ...n, email: e.target.value }))} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
             </div>
           )}
         </div>
@@ -4288,7 +4288,7 @@ function LoginForm({ onLogin, loading }) {
       <div>
         <label className="block text-sm text-zinc-400 mb-2">Password</label>
         <div className="relative">
-          <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 pr-12 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] transition-all" />
+          <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 pr-12 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] transition-all" />
           <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors">
             {showPwd ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
@@ -4376,7 +4376,7 @@ function ConvertModal({ sale, onConvert, onCancel }) {
   return (
     <Modal isOpen={!!sale} onClose={onCancel} title="🎉 Registra Vendita" size="sm">
       <div className="space-y-4">
-        <Card padding="p-3" className="bg-zinc-800/50">
+        <Card padding="p-3" className="bg-zinc-700/50/50">
           <p className="text-white font-medium">{sale?.progetto}</p>
           <p className="text-zinc-500 text-sm">{sale?.developer} • {sale?.zona}</p>
         </Card>
@@ -4476,12 +4476,12 @@ function NoteModal({ task, onSave, onClose }) {
   return (
     <Modal isOpen onClose={onClose} title="Aggiungi Nota" size="sm">
       <div className="space-y-4">
-        <Card padding="p-3" className="bg-zinc-800/50">
+        <Card padding="p-3" className="bg-zinc-700/50/50">
           <p className="text-white font-medium">{task?.titolo}</p>
         </Card>
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Nota</label>
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Scrivi una nota..." className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] h-24 resize-none" autoFocus />
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Scrivi una nota..." className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] h-24 resize-none" autoFocus />
         </div>
         <p className="text-zinc-600 text-xs">L'admin riceverà una notifica email</p>
         <div className="flex gap-3">
@@ -4527,7 +4527,7 @@ function ClienteModal({ cliente, onSave, onClose }) {
         </div>
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Note</label>
-          <textarea value={form.note || ''} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3F3F46]" />
+          <textarea value={form.note || ''} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3F3F46]" />
         </div>
         <div className="flex gap-3 pt-2">
           <Button variant="secondary" onClick={onClose} className="flex-1">Annulla</Button>
@@ -4553,7 +4553,7 @@ function TaskModal({ task, clienti, users, onSave, onClose }) {
         <Input label="Titolo *" value={form.titolo} onChange={(e) => setForm({ ...form, titolo: e.target.value })} autoFocus />
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Descrizione</label>
-          <textarea value={form.descrizione || ''} onChange={(e) => setForm({ ...form, descrizione: e.target.value })} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3F3F46]" />
+          <textarea value={form.descrizione || ''} onChange={(e) => setForm({ ...form, descrizione: e.target.value })} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3F3F46]" />
         </div>
         <Input label="Scadenza" type="datetime-local" value={form.scadenza ? form.scadenza.slice(0, 16) : ''} onChange={(e) => setForm({ ...form, scadenza: e.target.value ? new Date(e.target.value).toISOString() : '' })} />
         <div>
@@ -4653,11 +4653,11 @@ function ClientSearch({ clienti, onSelect, onCreateNew, selectedClient }) {
     <div className="relative">
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-        <input type="text" placeholder="Cerca cliente..." value={search} onChange={(e) => { setSearch(e.target.value); setShow(true); }} onFocus={() => setShow(true)} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46]" />
+        <input type="text" placeholder="Cerca cliente..." value={search} onChange={(e) => { setSearch(e.target.value); setShow(true); }} onFocus={() => setShow(true)} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46]" />
       </div>
       
       {show && search.length >= 2 && (
-        <div className="absolute z-10 w-full mt-2 bg-[#18181B] border border-[#27272A] rounded-xl overflow-hidden shadow-xl">
+        <div className="absolute z-10 w-full mt-2 bg-[#28282c] border border-[#27272A] rounded-xl overflow-hidden shadow-xl">
           {filtered.map(c => (
             <button key={c.id} onClick={() => { onSelect(c); setSearch(''); setShow(false); }} className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-[#27272A] last:border-0 flex items-center gap-3 transition-colors">
               <Avatar nome={c.nome} cognome={c.cognome} size="sm" />
@@ -4701,12 +4701,12 @@ function SelectWithOther({ value, onChange, options, placeholder, label }) {
       <select value={showCustom ? 'Altro' : value} onChange={(e) => {
         if (e.target.value === 'Altro') { setShowCustom(true); setCustomValue(''); onChange(''); }
         else { setShowCustom(false); onChange(e.target.value); }
-      }} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3F3F46] appearance-none">
+      }} className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3F3F46] appearance-none">
         <option value="">{placeholder}</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
       {showCustom && (
-        <input type="text" value={customValue} onChange={(e) => { setCustomValue(e.target.value); onChange(e.target.value); }} placeholder="Specifica..." className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm mt-2 focus:outline-none focus:border-[#3F3F46]" autoFocus />
+        <input type="text" value={customValue} onChange={(e) => { setCustomValue(e.target.value); onChange(e.target.value); }} placeholder="Specifica..." className="w-full bg-[#28282c] border border-[#27272A] rounded-xl px-4 py-3 text-white text-sm mt-2 focus:outline-none focus:border-[#3F3F46]" autoFocus />
       )}
     </div>
   );
