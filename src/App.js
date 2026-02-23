@@ -1392,7 +1392,7 @@ export default function App() {
             {activeTab === 'pipeline' && <PipelineTab byStato={byStato} onSelectLead={setShowLeadDetail} onUpdateSaleStatus={(id, stato) => updateSale(id, { stato })} />}
 
             {/* CRM */}
-            {activeTab === 'crm' && (showClienteDetail ? <ClienteDetailView cliente={showClienteDetail} sales={sales.filter(s => s.cliente_id === showClienteDetail.id)} tasks={tasks.filter(t => t.cliente_id === showClienteDetail.id)} onBack={() => setShowClienteDetail(null)} onEdit={() => setShowClienteModal(showClienteDetail)} onDelete={() => deleteCliente(showClienteDetail.id)} updateCliente={updateCliente} onAddTask={() => setShowTaskModal({ cliente_id: showClienteDetail.id })} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(showClienteDetail, sales.filter(s => s.cliente_id === showClienteDetail.id), tasks.filter(t => t.cliente_id === showClienteDetail.id))} /> : <CRMTab clienti={filteredClienti} filters={clienteFilters} setFilters={setClienteFilters} sales={sales} onSelect={setShowClienteDetail} onCreate={() => setShowClienteModal({})} />)}
+            {activeTab === 'crm' && (showClienteDetail ? <ClienteDetailView cliente={showClienteDetail} sales={sales.filter(s => s.cliente_id === showClienteDetail.id)} tasks={tasks.filter(t => t.cliente_id === showClienteDetail.id)} onBack={() => setShowClienteDetail(null)} onEdit={() => setShowClienteModal(showClienteDetail)} onDelete={() => deleteCliente(showClienteDetail.id)} updateCliente={updateCliente} onAddTask={() => setShowTaskModal({ cliente_id: showClienteDetail.id })} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(showClienteDetail, sales.filter(s => s.cliente_id === showClienteDetail.id), tasks.filter(t => t.cliente_id === showClienteDetail.id))} /> : <CRMTab clienti={filteredClienti} filters={clienteFilters} setFilters={setClienteFilters} sales={sales} onSelect={setShowClienteDetail} onCreate={() => setShowClienteModal({})} onDelete={deleteCliente} onUpdateCliente={updateCliente} users={users} />)}
 
             {/* OFF-PLAN */}
             {activeTab === 'offplan' && <OffPlanTab clienti={clienti} onCreateLead={createLeadFromListing} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeListing} user={user} />}
@@ -1858,53 +1858,250 @@ function PipelineTab({ byStato, onSelectLead, onUpdateSaleStatus }) {
 }
 
 // CRM Tab
-function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate }) {
+function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDelete, onUpdateCliente, users }) {
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [sortField, setSortField] = useState('created_at');
+  const [sortDir, setSortDir] = useState('desc');
+
   const getClientStats = (id) => {
     const cs = sales.filter(s => s.cliente_id === id);
     const vendite = cs.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
     return { leads: cs.length, value: vendite.reduce((sum, s) => sum + Number(s.valore || 0), 0) };
   };
 
+  // Sort clients
+  const sortedClienti = [...clienti].sort((a, b) => {
+    let aVal = a[sortField];
+    let bVal = b[sortField];
+    if (sortField === 'leads') {
+      aVal = getClientStats(a.id).leads;
+      bVal = getClientStats(b.id).leads;
+    } else if (sortField === 'value') {
+      aVal = getClientStats(a.id).value;
+      bVal = getClientStats(b.id).value;
+    }
+    if (sortDir === 'asc') return aVal > bVal ? 1 : -1;
+    return aVal < bVal ? 1 : -1;
+  });
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === sortedClienti.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(sortedClienti.map(c => c.id));
+    }
+  };
+
+  const handleBulkAction = (action, value) => {
+    if (action === 'delete') {
+      if (window.confirm(`Eliminare ${selectedIds.length} clienti?`)) {
+        selectedIds.forEach(id => onDelete(id));
+        setSelectedIds([]);
+      }
+    } else if (action === 'stato' && onUpdateCliente) {
+      selectedIds.forEach(id => onUpdateCliente(id, { stato: value }));
+      setSelectedIds([]);
+    } else if (action === 'assegnato' && onUpdateCliente) {
+      selectedIds.forEach(id => onUpdateCliente(id, { assegnato_a: value }));
+      setSelectedIds([]);
+    }
+  };
+
+  const SortHeader = ({ field, children, className = '' }) => (
+    <th 
+      className={`text-left py-3 px-4 text-zinc-400 font-medium text-sm cursor-pointer hover:text-white transition-colors ${className}`}
+      onClick={() => {
+        if (sortField === field) {
+          setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+        } else {
+          setSortField(field);
+          setSortDir('asc');
+        }
+      }}
+    >
+      <span className="flex items-center gap-1">
+        {children}
+        {sortField === field && (
+          <span className="text-amber-400">{sortDir === 'asc' ? '↑' : '↓'}</span>
+        )}
+      </span>
+    </th>
+  );
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input type="text" placeholder="Cerca cliente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50" />
+      {/* Header with Search and Filters */}
+      <div className="flex flex-wrap gap-3 items-center justify-between">
+        <div className="flex items-center gap-3 flex-wrap flex-1">
+          <div className="relative min-w-[250px]">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input type="text" placeholder="Cerca cliente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50" />
+          </div>
+          <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none">
+            <option value="">Tutti gli stati</option>
+            {clienteStati.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
         </div>
-        <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#18181B] border border-[#27272A] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none">
-          <option value="">Tutti gli stati</option>
-          {clienteStati.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
         <Button icon={UserPlus} onClick={onCreate}>Nuovo Cliente</Button>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {clienti.map(c => {
-          const stats = getClientStats(c.id);
-          return (
-            <Card key={c.id} hover onClick={() => onSelect(c)} padding="p-4">
-              <div className="flex items-start gap-3">
-                <Avatar nome={c.nome} cognome={c.cognome} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="text-white font-medium truncate">{c.nome} {c.cognome}</p>
-                    <StatusBadge status={c.stato} type="cliente" />
-                  </div>
-                  {c.telefono && <p className="text-zinc-500 text-sm">{c.telefono}</p>}
-                  <div className="flex items-center gap-3 mt-2 text-xs">
-                    {stats.leads > 0 && <span className="text-blue-400">{stats.leads} lead</span>}
-                    {stats.value > 0 && <span className="text-emerald-400">{fmt(stats.value)} AED</span>}
-                    {c.budget_max && <span className="text-amber-400">Budget: {fmt(c.budget_max)}</span>}
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-zinc-600" />
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-      {clienti.length === 0 && <EmptyState icon={Users} title="Nessun cliente" description="Aggiungi il tuo primo cliente" action="Nuovo Cliente" onAction={onCreate} />}
+      {/* Bulk Actions Bar */}
+      {selectedIds.length > 0 && (
+        <Card className="bg-amber-500/10 border-amber-500/30">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <p className="text-amber-400 font-medium">
+              {selectedIds.length} clienti selezionati
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value=""
+                onChange={(e) => handleBulkAction('stato', e.target.value)}
+                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
+              >
+                <option value="">Cambia stato...</option>
+                {clienteStati.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              {users?.length > 0 && (
+                <select
+                  value=""
+                  onChange={(e) => handleBulkAction('assegnato', e.target.value)}
+                  className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
+                >
+                  <option value="">Assegna a...</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.nome}>{u.nome}</option>
+                  ))}
+                </select>
+              )}
+              <Button variant="danger" size="sm" onClick={() => handleBulkAction('delete')}>
+                <Trash2 className="w-4 h-4 mr-1" /> Elimina
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Table */}
+      <Card padding="p-0" className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-zinc-800/50 border-b border-zinc-700">
+              <tr>
+                <th className="w-12 py-3 px-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.length === sortedClienti.length && sortedClienti.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-amber-500 focus:ring-amber-500"
+                  />
+                </th>
+                <SortHeader field="nome">Cliente</SortHeader>
+                <SortHeader field="telefono">Telefono</SortHeader>
+                <SortHeader field="email">Email</SortHeader>
+                <SortHeader field="stato">Stato</SortHeader>
+                <SortHeader field="leads">Lead</SortHeader>
+                <SortHeader field="value">Valore</SortHeader>
+                <SortHeader field="budget_max">Budget</SortHeader>
+                <SortHeader field="created_at">Data</SortHeader>
+                <th className="w-20 py-3 px-4"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800">
+              {sortedClienti.map(cliente => {
+                const stats = getClientStats(cliente.id);
+                const isSelected = selectedIds.includes(cliente.id);
+                return (
+                  <tr 
+                    key={cliente.id} 
+                    className={`hover:bg-zinc-800/50 cursor-pointer transition-colors ${isSelected ? 'bg-amber-500/10' : ''}`}
+                  >
+                    <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelect(cliente.id)}
+                        className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-amber-500 focus:ring-amber-500"
+                      />
+                    </td>
+                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
+                      <div className="flex items-center gap-3">
+                        <Avatar nome={cliente.nome} cognome={cliente.cognome} size="sm" />
+                        <div>
+                          <p className="text-white font-medium">{cliente.nome} {cliente.cognome || ''}</p>
+                          {cliente.azienda && <p className="text-zinc-500 text-xs">{cliente.azienda}</p>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-zinc-300" onClick={() => onSelect(cliente)}>
+                      {cliente.telefono || '-'}
+                    </td>
+                    <td className="py-3 px-4 text-zinc-300 text-sm" onClick={() => onSelect(cliente)}>
+                      {cliente.email || '-'}
+                    </td>
+                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
+                      <StatusBadge status={cliente.stato} type="cliente" />
+                    </td>
+                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
+                      {stats.leads > 0 ? (
+                        <span className="text-blue-400 font-medium">{stats.leads}</span>
+                      ) : (
+                        <span className="text-zinc-600">0</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
+                      {stats.value > 0 ? (
+                        <span className="text-emerald-400 font-semibold">{fmt(stats.value)}</span>
+                      ) : (
+                        <span className="text-zinc-600">-</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-zinc-300" onClick={() => onSelect(cliente)}>
+                      {cliente.budget_max ? fmt(cliente.budget_max) : '-'}
+                    </td>
+                    <td className="py-3 px-4 text-zinc-500 text-sm" onClick={() => onSelect(cliente)}>
+                      {cliente.created_at ? new Date(cliente.created_at).toLocaleDateString('it-IT') : '-'}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onSelect(cliente); }}
+                          className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors"
+                          title="Dettagli"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); if(window.confirm('Eliminare questo cliente?')) onDelete(cliente.id); }}
+                          className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          title="Elimina"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {sortedClienti.length === 0 && (
+            <div className="py-12 text-center">
+              <Users className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+              <p className="text-zinc-500">Nessun cliente trovato</p>
+              <Button className="mt-4" icon={UserPlus} onClick={onCreate}>Aggiungi Cliente</Button>
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }
