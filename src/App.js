@@ -812,7 +812,7 @@ export default function App() {
   // Cliente Handlers
   const createCliente = async (d) => { await supabase.from('clienti').insert([{ ...d, created_by: user?.nome, referente: user?.referente }]); loadClienti(); setShowClienteModal(null); showToast('Cliente creato'); };
   const updateCliente = async (id, d) => { await supabase.from('clienti').update(d).eq('id', id); loadClienti(); setShowClienteModal(null); if (showClienteDetail?.id === id) setShowClienteDetail({ ...showClienteDetail, ...d }); showToast('Salvato'); };
-  const deleteCliente = async (id) => { if (!window.confirm('Eliminare?')) return; await supabase.from('clienti').delete().eq('id', id); loadClienti(); setShowClienteDetail(null); };
+  const deleteCliente = async (id, skipConfirm = false) => { if (!skipConfirm && !window.confirm('Eliminare?')) return; await supabase.from('clienti').delete().eq('id', id); loadClienti(); setShowClienteDetail(null); };
 
   // Task Handlers
   const createTask = async (d) => { await supabase.from('tasks').insert([{ ...d, created_by: user?.nome }]); loadTasks(); setShowTaskModal(null); showToast('Task creato'); };
@@ -1896,17 +1896,23 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
     }
   };
 
-  const handleBulkAction = (action, value) => {
+  const handleBulkAction = async (action, value) => {
     if (action === 'delete') {
       if (window.confirm(`Eliminare ${selectedIds.length} clienti?`)) {
-        selectedIds.forEach(id => onDelete(id));
+        for (const id of selectedIds) {
+          await onDelete(id, true); // skipConfirm = true
+        }
         setSelectedIds([]);
       }
     } else if (action === 'stato' && onUpdateCliente) {
-      selectedIds.forEach(id => onUpdateCliente(id, { stato: value }));
+      for (const id of selectedIds) {
+        await onUpdateCliente(id, { stato: value });
+      }
       setSelectedIds([]);
     } else if (action === 'assegnato' && onUpdateCliente) {
-      selectedIds.forEach(id => onUpdateCliente(id, { assegnato_a: value }));
+      for (const id of selectedIds) {
+        await onUpdateCliente(id, { assegnato_a: value });
+      }
       setSelectedIds([]);
     }
   };
@@ -2008,6 +2014,7 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
                 <SortHeader field="telefono">Telefono</SortHeader>
                 <SortHeader field="email">Email</SortHeader>
                 <SortHeader field="stato">Stato</SortHeader>
+                <SortHeader field="assegnato_a">Agente</SortHeader>
                 <SortHeader field="leads">Lead</SortHeader>
                 <SortHeader field="value">Valore</SortHeader>
                 <SortHeader field="budget_max">Budget</SortHeader>
@@ -2049,6 +2056,13 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
                     </td>
                     <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
                       <StatusBadge status={cliente.stato} type="cliente" />
+                    </td>
+                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
+                      {cliente.assegnato_a ? (
+                        <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">{cliente.assegnato_a}</span>
+                      ) : (
+                        <span className="text-zinc-600">-</span>
+                      )}
                     </td>
                     <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
                       {stats.leads > 0 ? (
