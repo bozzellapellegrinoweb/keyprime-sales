@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, CheckSquare, Square, Bell, MapPin, Award, User, MessageCircle, Filter, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, Briefcase, ArrowUpRight, ArrowDownRight, MoreHorizontal, Sparkles, Command, Printer, Map, List, Grid } from 'lucide-react';
+import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, CheckSquare, Square, Bell, MapPin, Award, User, MessageCircle, Filter, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, Briefcase, ArrowUpRight, ArrowDownRight, MoreHorizontal, Sparkles, Command, Printer, Map, List, Grid, Play, Layers } from 'lucide-react';
 
 const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NjkyNjAsImV4cCI6MjA4NzI0NTI2MH0.oXUs9ITNi6lEFat_5FH0x-Exw5MDgRhwx6T0yL3xiWQ');
 
@@ -2453,7 +2453,6 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
           </div>
           <div className="flex items-center gap-2 bg-zinc-800/50 p-1 rounded-xl">
             <button onClick={() => { setViewMode('list'); setSelectedAreaProjects(null); }} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'list' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Lista"><List className="w-5 h-5" /></button>
-            <button onClick={() => setViewMode('split')} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'split' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Split"><Grid className="w-5 h-5" /></button>
             <button onClick={() => setViewMode('map')} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'map' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Mappa"><Map className="w-5 h-5" /></button>
           </div>
         </div>
@@ -2515,58 +2514,78 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         )}
 
         {viewMode === 'map' && (
-          <div className="fixed inset-0 z-50 bg-white">
-            {/* Header */}
-            <div className="absolute top-0 left-0 right-0 z-10 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <button onClick={() => setViewMode('list')} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-                  <ChevronLeft className="w-5 h-5" />
-                  <span className="font-medium">Chiudi Mappa</span>
-                </button>
-                <span className="text-gray-400">|</span>
-                <span className="text-gray-600">{displayProjects.length} progetti</span>
+          <div className="fixed inset-0 z-50 bg-[#09090B]">
+            {/* Header with Logo and Filters */}
+            <div className="absolute top-0 left-0 right-0 z-10 bg-[#09090B] border-b border-zinc-800">
+              <div className="px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <img src="/logo.png" alt="KeyPrime" className="h-10" />
+                  <span className="text-zinc-500">|</span>
+                  <span className="text-zinc-400">{displayProjects.length} progetti</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button variant="secondary" size="sm" onClick={() => searchListings(true)} icon={RefreshCw}>Aggiorna</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setViewMode('list')} icon={X}>Chiudi</Button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" onClick={() => searchListings(true)} icon={RefreshCw}>Aggiorna</Button>
+              {/* Filters Row */}
+              <div className="px-4 pb-3 flex items-center gap-3 overflow-x-auto">
+                <select value={filters.location} onChange={(e) => { setFilters(f => ({ ...f, location: e.target.value })); searchListings(true); }} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[140px]">
+                  <option value="">Tutte le zone</option>
+                  {dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+                <select value={filters.developer} onChange={(e) => { setFilters(f => ({ ...f, developer: e.target.value })); searchListings(true); }} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[140px]">
+                  <option value="">Tutti i developer</option>
+                  {topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <select value={filters.bedrooms} onChange={(e) => { setFilters(f => ({ ...f, bedrooms: e.target.value })); searchListings(true); }} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[100px]">
+                  <option value="">Camere</option>
+                  {bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}
+                </select>
+                <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} onBlur={() => searchListings(true)} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
+                <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} onBlur={() => searchListings(true)} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
               </div>
             </div>
             
             {/* Main Content */}
-            <div className="pt-14 h-full flex">
+            <div className="pt-28 h-full flex">
               {/* Left Sidebar - Projects List */}
-              <div className="w-96 h-full bg-white border-r border-gray-200 flex flex-col">
-                <div className="p-4 border-b border-gray-200">
-                  <input 
-                    type="text" 
-                    placeholder="Cerca progetto..." 
-                    value={filters.search} 
-                    onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                    onKeyDown={(e) => e.key === 'Enter' && searchListings(true)}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-red-500 focus:outline-none"
-                  />
+              <div className="w-96 h-full bg-[#0F0F11] border-r border-zinc-800 flex flex-col">
+                <div className="p-3 border-b border-zinc-800">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                    <input 
+                      type="text" 
+                      placeholder="Cerca progetto..." 
+                      value={filters.search} 
+                      onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
+                      onKeyDown={(e) => e.key === 'Enter' && searchListings(true)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-white text-sm placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
+                    />
+                  </div>
                 </div>
                 <div className="flex-1 overflow-y-auto">
                   {displayProjects.map(project => (
                     <div 
                       key={project.project_id} 
                       onClick={() => setSelectedListing(project)}
-                      className={'p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ' + (selectedListing?.project_id === project.project_id ? 'bg-red-50 border-l-4 border-l-red-500' : '')}
+                      className={'p-3 border-b border-zinc-800/50 cursor-pointer hover:bg-zinc-800/50 transition-colors ' + (selectedListing?.project_id === project.project_id ? 'bg-orange-500/10 border-l-2 border-l-orange-500' : '')}
                     >
                       <div className="flex gap-3">
-                        <div className="w-24 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                        <div className="w-20 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-800">
                           {project.images?.[0]?.medium_image_url ? (
                             <img src={project.images[0].medium_image_url} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center"><Building2 className="w-8 h-8 text-gray-400" /></div>
+                            <div className="w-full h-full flex items-center justify-center"><Building2 className="w-6 h-6 text-zinc-600" /></div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-gray-900 truncate">{project.title}</h3>
-                          <p className="text-sm text-gray-500 truncate">{project.location?.full_name}</p>
-                          <p className="text-red-600 font-semibold mt-1">
-                            {project.price_from > 0 ? 'From AED ' + formatPrice(project.price_from) : 'Price TBD'}
+                          <h3 className="font-medium text-white text-sm truncate">{project.title}</h3>
+                          <p className="text-xs text-zinc-500 truncate">{project.location?.full_name}</p>
+                          <p className="text-orange-400 font-semibold text-sm mt-1">
+                            {project.price_from > 0 ? 'From ' + formatPrice(project.price_from) : 'TBD'}
                           </p>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                          <div className="flex items-center gap-2 text-xs text-zinc-500">
                             {formatBedrooms(project.bedrooms) && <span>{formatBedrooms(project.bedrooms)}</span>}
                             {formatDelivery(project.delivery_date) && <span>• {formatDelivery(project.delivery_date)}</span>}
                           </div>
@@ -2575,10 +2594,11 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                     </div>
                   ))}
                   {hasMore && !loading && (
-                    <div className="p-4">
-                      <Button variant="secondary" className="w-full" onClick={loadMore}>Carica altri progetti</Button>
+                    <div className="p-3">
+                      <Button variant="secondary" className="w-full" size="sm" onClick={loadMore}>Carica altri</Button>
                     </div>
                   )}
+                  {loading && <div className="p-4 text-center text-zinc-500">Caricamento...</div>}
                 </div>
               </div>
               
@@ -2591,16 +2611,6 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                   onAreaClick={handleAreaClick} 
                 />
               </div>
-            </div>
-          </div>
-        )}
-
-        {viewMode === 'split' && (
-          <div className="h-full flex gap-4">
-            <div className="flex-1 rounded-2xl overflow-hidden border border-zinc-800"><MapboxMap projects={listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} /></div>
-            <div className="w-80 flex-shrink-0 flex flex-col bg-zinc-900/50 rounded-2xl border border-zinc-800 overflow-hidden">
-              <div className="p-3 border-b border-zinc-800"><p className="text-white font-medium">{selectedAreaName || 'Tutti i progetti'}</p><p className="text-zinc-500 text-sm">{displayProjects.length} progetti</p></div>
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">{displayProjects.map(project => <ProjectCardCompact key={project.project_id} project={project} isSelected={selectedListing?.project_id === project.project_id} onClick={() => setSelectedListing(project)} />)}</div>
             </div>
           </div>
         )}
@@ -2887,6 +2897,69 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
             </div>
           )}
           
+          {/* Construction Progress - Only for under construction projects */}
+          {listing.construction_phase_key === 'under_construction' && (
+            <div className="bg-gradient-to-r from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-orange-400" /> Stato Avanzamento Lavori
+                </h3>
+                <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs font-medium rounded-full">In Costruzione</span>
+              </div>
+              {(() => {
+                // Use real completion percentage if available, otherwise estimate
+                let progress = listing.completion_percentage || listing.construction_progress;
+                if (!progress) {
+                  const deliveryDate = listing.delivery_date ? new Date(listing.delivery_date) : null;
+                  const now = new Date();
+                  const startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+                  if (deliveryDate) {
+                    const totalDuration = deliveryDate - startDate;
+                    const elapsed = now - startDate;
+                    progress = Math.min(Math.max(Math.round((elapsed / totalDuration) * 100), 5), 95);
+                  } else {
+                    progress = 50;
+                  }
+                }
+                return (
+                  <>
+                    <div className="relative h-4 bg-zinc-800 rounded-full overflow-hidden mb-2">
+                      <div 
+                        className="absolute left-0 top-0 h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full transition-all duration-500"
+                        style={{ width: `${progress}%` }}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-xs font-bold text-white drop-shadow">{progress}%</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs text-zinc-500">
+                      <span>Inizio lavori</span>
+                      <span>Consegna: {formatDelivery(listing.delivery_date) || 'TBD'}</span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-4 gap-2">
+                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 25 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-800 text-zinc-500')}>
+                        <p className="font-medium">Fondazioni</p>
+                        <p>{progress >= 25 ? '✓' : '...'}</p>
+                      </div>
+                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 50 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-800 text-zinc-500')}>
+                        <p className="font-medium">Struttura</p>
+                        <p>{progress >= 50 ? '✓' : '...'}</p>
+                      </div>
+                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 75 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-800 text-zinc-500')}>
+                        <p className="font-medium">Finiture</p>
+                        <p>{progress >= 75 ? '✓' : '...'}</p>
+                      </div>
+                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 95 ? 'bg-green-500/20 text-green-400' : 'bg-zinc-800 text-zinc-500')}>
+                        <p className="font-medium">Consegna</p>
+                        <p>{progress >= 95 ? '✓' : '...'}</p>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+          
           {/* Location Insights Card */}
           <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/5 border border-blue-500/20 rounded-xl p-4 mb-6">
             <div className="flex items-start justify-between mb-3">
@@ -2983,6 +3056,60 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                 {listing.amenities.map((a, i) => (
                   <span key={i} className="px-3 py-1.5 bg-zinc-800/50 text-zinc-300 text-sm rounded-full">{a}</span>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Project Description */}
+          {listing.description && (
+            <div className="mb-6">
+              <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-orange-400" /> Descrizione Progetto
+              </h3>
+              <div className="bg-zinc-800/30 border border-zinc-700/50 rounded-xl p-4">
+                <p className="text-zinc-300 text-sm leading-relaxed whitespace-pre-line">
+                  {listing.description.length > 500 ? listing.description.substring(0, 500) + '...' : listing.description}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Additional Resources */}
+          {(listing.brochure_url || listing.video_url || listing.floor_plans?.length > 0) && (
+            <div className="mb-6">
+              <h3 className="text-white font-semibold mb-3">Risorse Aggiuntive</h3>
+              <div className="flex flex-wrap gap-3">
+                {listing.brochure_url && (
+                  <a href={listing.brochure_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 hover:bg-zinc-700/50 border border-zinc-700 rounded-xl text-zinc-300 text-sm transition-colors">
+                    <FileText className="w-4 h-4 text-orange-400" /> Brochure PDF
+                  </a>
+                )}
+                {listing.video_url && (
+                  <a href={listing.video_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 hover:bg-zinc-700/50 border border-zinc-700 rounded-xl text-zinc-300 text-sm transition-colors">
+                    <Play className="w-4 h-4 text-orange-400" /> Video Tour
+                  </a>
+                )}
+                {listing.floor_plans?.length > 0 && (
+                  <button className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 hover:bg-zinc-700/50 border border-zinc-700 rounded-xl text-zinc-300 text-sm transition-colors">
+                    <Layers className="w-4 h-4 text-orange-400" /> {listing.floor_plans.length} Planimetrie
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Price per sqft if available */}
+          {listing.price_per_sqft && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-zinc-400 text-sm">Prezzo al mq</p>
+                  <p className="text-emerald-400 text-xl font-bold">AED {parseFloat(listing.price_per_sqft).toLocaleString()}/sqft</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-zinc-400 text-sm">Prezzo al m²</p>
+                  <p className="text-emerald-400 text-xl font-bold">AED {Math.round(parseFloat(listing.price_per_sqft) * 10.764).toLocaleString()}/m²</p>
+                </div>
               </div>
             </div>
           )}
