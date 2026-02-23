@@ -84,7 +84,7 @@ const taskPriorita = ['bassa', 'normale', 'alta', 'urgente'];
 
 // Theme Colors - Section Based
 const theme = {
-  bg: { primary: '#09090B', secondary: '#0F0F11', tertiary: '#18181B', elevated: '#1F1F23' },
+  bg: { primary: '#1c1c1e', secondary: '#242428', tertiary: '#18181B', elevated: '#1F1F23' },
   border: { subtle: '#27272A', default: '#3F3F46', strong: '#52525B' },
   text: { primary: '#FAFAFA', secondary: '#A1A1AA', tertiary: '#71717A', muted: '#52525B' },
   sections: {
@@ -270,7 +270,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   const sizes = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl' };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} />
       <div className={`relative bg-[#18181B] border border-[#27272A] rounded-2xl w-full ${sizes[size]} max-h-[85vh] overflow-hidden animate-scaleIn`}>
         <div className="flex items-center justify-between p-5 border-b border-[#27272A]">
           <h3 className="text-lg font-semibold text-white">{title}</h3>
@@ -287,7 +287,7 @@ const BottomSheet = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 md:flex md:items-center md:justify-center md:p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} />
       <div className="absolute bottom-0 left-0 right-0 md:relative md:max-w-lg md:w-full bg-[#18181B] border-t md:border border-[#27272A] rounded-t-3xl md:rounded-2xl max-h-[90vh] overflow-hidden animate-slideUp">
         <div className="flex items-center justify-between p-5 border-b border-[#27272A]">
           <h3 className="text-lg font-semibold text-white">{title}</h3>
@@ -346,7 +346,7 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
   
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-scaleIn">
         {/* Search Input */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-[#27272A]">
@@ -881,7 +881,7 @@ export default function App() {
   // ==================== LOGIN VIEW ====================
   if (view === 'login') {
     return (
-      <div className="min-h-screen bg-[#09090B] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#1c1c1e] flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
           <div className="text-center mb-10">
             <img src="/logo.png" alt="KeyPrime" className="h-20 mx-auto mb-4" />
@@ -919,8 +919,8 @@ export default function App() {
     // Form View (same for mobile/desktop)
     if (showForm) {
       return (
-        <div className="min-h-screen bg-[#09090B]">
-          <div className="sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A] px-4 py-4">
+        <div className="min-h-screen bg-[#1c1c1e]">
+          <div className="sticky top-0 z-40 bg-[#1c1c1e]/95 backdrop-blur-xl border-b border-[#27272A] px-4 py-4">
             <div className="flex items-center justify-between max-w-lg mx-auto">
               <button onClick={() => setShowForm(null)} className="text-zinc-400 hover:text-white flex items-center gap-2 transition-colors">
                 <ChevronLeft className="w-5 h-5" />Indietro
@@ -933,7 +933,7 @@ export default function App() {
             {showForm === 'lead' && <LeadForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addLead} />}
             {showForm === 'vendita' && <SaleForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addSale} />}
           </div>
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#09090B]/95 backdrop-blur-xl border-t border-[#27272A]">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#1c1c1e]/95 backdrop-blur-xl border-t border-[#27272A]">
             <Button onClick={() => document.getElementById('submitBtn')?.click()} className="w-full py-4">
               {showForm === 'lead' ? 'Salva Lead' : 'Registra Vendita'}
             </Button>
@@ -943,9 +943,9 @@ export default function App() {
     }
 
     return (
-      <div className="min-h-screen bg-[#09090B] lg:flex">
+      <div className="min-h-screen bg-[#1c1c1e] lg:flex">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#0F0F11] p-4 fixed h-full">
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#242428] p-4 fixed h-full">
           <div className="mb-8">
             <img src="/logo.png" alt="KeyPrime" className="h-16" />
           </div>
@@ -969,7 +969,7 @@ export default function App() {
         {/* Main Content */}
         <div className="flex-1 lg:ml-64 pb-24 lg:pb-0">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A]">
+          <div className="lg:hidden sticky top-0 z-40 bg-[#1c1c1e]/95 backdrop-blur-xl border-b border-[#27272A]">
             <div className="flex items-center justify-between px-4 py-4">
               <img src="/logo.png" alt="KeyPrime" className="h-12" />
               <div className="flex items-center gap-3">
@@ -983,7 +983,7 @@ export default function App() {
           </div>
 
           {/* Desktop Header */}
-          <div className="hidden lg:block sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A]">
+          <div className="hidden lg:block sticky top-0 z-40 bg-[#1c1c1e]/95 backdrop-blur-xl border-b border-[#27272A]">
             <div className="flex items-center justify-between px-6 py-4">
               <div>
                 <h1 className="text-xl font-semibold text-white capitalize">{activeTab === 'home' ? `Ciao, ${user?.nome}` : tabs.find(t => t.id === activeTab)?.label}</h1>
@@ -1115,7 +1115,7 @@ export default function App() {
           </div>
 
           {/* Mobile Bottom Nav */}
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#09090B]/95 backdrop-blur-xl border-t border-[#27272A] px-4 py-2 z-30">
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#1c1c1e]/95 backdrop-blur-xl border-t border-[#27272A] px-4 py-2 z-30">
             <div className="flex justify-around">
               {tabs.map(t => (
                 <button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex flex-col items-center py-2 px-3 ${activeTab === t.id ? 'text-white' : 'text-zinc-500'}`}>
@@ -1177,9 +1177,9 @@ export default function App() {
     ];
 
     return (
-      <div className="min-h-screen bg-[#09090B] flex">
+      <div className="min-h-screen bg-[#1c1c1e] flex">
         {/* Sidebar - Desktop */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#0F0F11] p-4">
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#27272A] bg-[#242428] p-4">
           <div className="mb-8">
             <img src="/logo.png" alt="KeyPrime" className="h-20" />
           </div>
@@ -1205,7 +1205,7 @@ export default function App() {
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-b border-[#27272A]">
+          <div className="lg:hidden sticky top-0 z-40 bg-[#1c1c1e]/95 backdrop-blur-xl border-b border-[#27272A]">
             <div className="flex items-center justify-between px-4 py-4">
               <button onClick={() => setMobileMenuOpen(true)} className="text-zinc-400"><Menu className="w-6 h-6" /></button>
               <img src="/logo.png" alt="KeyPrime" className="h-16" />
@@ -1420,8 +1420,8 @@ export default function App() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
-            <div className="absolute inset-0 bg-black/60" onClick={() => setMobileMenuOpen(false)} />
-            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#0F0F11] p-4 animate-slideRight">
+            <div className="absolute inset-0 bg-zinc-900/60" onClick={() => setMobileMenuOpen(false)} />
+            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#242428] p-4 animate-slideRight">
               <div className="flex items-center justify-between mb-8">
                 <img src="/logo.png" alt="KeyPrime" className="h-16" />
                 <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-400"><X className="w-5 h-5" /></button>
@@ -1909,20 +1909,26 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
   };
 
   const handleBulkAction = async (action, value) => {
+    console.log('Bulk action:', action, value, 'IDs:', selectedIds);
+    
     if (action === 'delete') {
       if (window.confirm(`Eliminare ${selectedIds.length} clienti?`)) {
         for (const id of selectedIds) {
-          await onDelete(id, true); // skipConfirm = true
+          await onDelete(id, true);
         }
         setSelectedIds([]);
       }
-    } else if (action === 'stato' && onUpdateCliente) {
+    } else if (action === 'stato') {
+      if (!onUpdateCliente) { console.error('onUpdateCliente not provided'); return; }
       for (const id of selectedIds) {
+        console.log('Updating stato for', id, 'to', value);
         await onUpdateCliente(id, { stato: value });
       }
       setSelectedIds([]);
-    } else if (action === 'assegnato' && onUpdateCliente) {
+    } else if (action === 'assegnato') {
+      if (!onUpdateCliente) { console.error('onUpdateCliente not provided'); return; }
       for (const id of selectedIds) {
+        console.log('Assigning', id, 'to', value);
         await onUpdateCliente(id, { assegnato_a: value });
       }
       setSelectedIds([]);
@@ -2468,7 +2474,7 @@ function AgentDetailView({ agent, sales, onBack }) {
   }, {});
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#09090B] overflow-auto">
+    <div className="fixed inset-0 z-50 bg-[#1c1c1e] overflow-auto">
       <div className="max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
@@ -2759,7 +2765,7 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
                   <Building2 className="w-12 h-12 text-zinc-600" />
                 </div>
               )}
-              <button onClick={(e) => { e.stopPropagation(); setPopupProject(null); }} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full text-white hover:bg-black/70">
+              <button onClick={(e) => { e.stopPropagation(); setPopupProject(null); }} className="absolute top-2 right-2 p-1.5 bg-zinc-900/50 rounded-full text-white hover:bg-zinc-900/70">
                 <X className="w-4 h-4" />
               </button>
               <div className="absolute bottom-2 left-2 px-2 py-1 bg-orange-500 text-white text-xs font-medium rounded-lg">
@@ -3306,8 +3312,8 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                           <span className={'px-2 py-1 text-white text-xs font-medium rounded-lg ' + (project.construction_phase_key === 'completed' ? 'bg-green-500/90' : project.construction_phase_key === 'under_construction' ? 'bg-orange-500/90' : 'bg-blue-500/90')}>{project.construction_phase_key === 'completed' ? 'Completato' : project.construction_phase_key === 'under_construction' ? 'In Costruzione' : 'Lancio'}</span>
                           {project.hotness_level >= 80 && <span className="px-2 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-medium rounded-lg">🔥</span>}
                         </div>
-                        {formatDelivery(project.delivery_date) && <div className="absolute top-2 right-12 px-2 py-1 bg-black/70 text-white text-xs rounded-lg">{formatDelivery(project.delivery_date)}</div>}
-                        <button onClick={(e) => { e.stopPropagation(); isListingSaved(project.project_id) ? onRemoveListing(project.project_id) : onSaveListing(project); }} className={'absolute top-2 right-2 p-2 rounded-full transition-colors ' + (isListingSaved(project.project_id) ? 'bg-orange-500 text-white' : 'bg-black/50 text-white hover:bg-orange-500')}><svg className="w-4 h-4" fill={isListingSaved(project.project_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg></button>
+                        {formatDelivery(project.delivery_date) && <div className="absolute top-2 right-12 px-2 py-1 bg-zinc-900/70 text-white text-xs rounded-lg">{formatDelivery(project.delivery_date)}</div>}
+                        <button onClick={(e) => { e.stopPropagation(); isListingSaved(project.project_id) ? onRemoveListing(project.project_id) : onSaveListing(project); }} className={'absolute top-2 right-2 p-2 rounded-full transition-colors ' + (isListingSaved(project.project_id) ? 'bg-orange-500 text-white' : 'bg-zinc-900/50 text-white hover:bg-orange-500')}><svg className="w-4 h-4" fill={isListingSaved(project.project_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg></button>
                       </div>
                       <div className="space-y-2">
                         <p className="text-white font-medium line-clamp-1">{project.title}</p>
@@ -3387,9 +3393,9 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         )}
 
         {viewMode === 'map' && (
-          <div className="fixed inset-0 z-50 bg-[#09090B]">
+          <div className="fixed inset-0 z-50 bg-[#1c1c1e]">
             {/* Header with Logo and Filters */}
-            <div className="absolute top-0 left-0 right-0 z-10 bg-[#09090B] border-b border-zinc-800">
+            <div className="absolute top-0 left-0 right-0 z-10 bg-[#1c1c1e] border-b border-zinc-800">
               <div className="px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <img src="/logo.png" alt="KeyPrime" className="h-10" />
@@ -3423,7 +3429,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
             {/* Main Content */}
             <div className="pt-28 h-full flex">
               {/* Left Sidebar - Projects List */}
-              <div className="w-96 h-full bg-[#0F0F11] border-r border-zinc-800 flex flex-col">
+              <div className="w-96 h-full bg-[#242428] border-r border-zinc-800 flex flex-col">
                 <div className="p-3 border-b border-zinc-800">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -3780,7 +3786,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
   // Fullscreen Gallery
   if (showFullGallery) {
     return (
-      <div className="fixed inset-0 z-[60] bg-black">
+      <div className="fixed inset-0 z-[60] bg-zinc-900">
         <button onClick={() => setShowFullGallery(false)} className="absolute top-4 right-4 z-10 p-3 bg-white/10 backdrop-blur rounded-full text-white hover:bg-white/20">
           <X className="w-6 h-6" />
         </button>
@@ -3821,8 +3827,8 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#0F0F11] border border-[#27272A] rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-scaleIn">
+      <div className="absolute inset-0 bg-zinc-900/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#242428] border border-[#27272A] rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-scaleIn">
         
         {/* Hero Image Section with Gallery */}
         <div className="relative h-72 md:h-80">
@@ -3835,7 +3841,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           )}
           
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F11] via-transparent to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#242428] via-transparent to-black/30" />
           
           {/* Top controls */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
@@ -3849,16 +3855,16 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                 </span>
               )}
               {formatDelivery(listing.delivery_date) && (
-                <span className="px-3 py-1.5 bg-black/60 backdrop-blur text-white text-sm rounded-full">
+                <span className="px-3 py-1.5 bg-zinc-900/60 backdrop-blur text-white text-sm rounded-full">
                   📅 {formatDelivery(listing.delivery_date)}
                 </span>
               )}
             </div>
             <div className="flex gap-2">
-              <button onClick={onToggleSave} className={`p-2.5 rounded-full shadow-lg transition-all ${isSaved ? 'bg-orange-500 text-white' : 'bg-black/60 backdrop-blur text-white hover:bg-orange-500'}`}>
+              <button onClick={onToggleSave} className={`p-2.5 rounded-full shadow-lg transition-all ${isSaved ? 'bg-orange-500 text-white' : 'bg-zinc-900/60 backdrop-blur text-white hover:bg-orange-500'}`}>
                 <svg className="w-5 h-5" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
               </button>
-              <button onClick={onClose} className="p-2.5 bg-black/60 backdrop-blur rounded-full text-white hover:bg-black/80 shadow-lg">
+              <button onClick={onClose} className="p-2.5 bg-zinc-900/60 backdrop-blur rounded-full text-white hover:bg-zinc-900/80 shadow-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -3885,7 +3891,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           
           {/* Expand gallery button */}
           {images.length > 1 && (
-            <button onClick={() => setShowFullGallery(true)} className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/60 backdrop-blur text-white text-sm rounded-full hover:bg-black/80 flex items-center gap-1.5">
+            <button onClick={() => setShowFullGallery(true)} className="absolute bottom-4 right-4 px-3 py-1.5 bg-zinc-900/60 backdrop-blur text-white text-sm rounded-full hover:bg-zinc-900/80 flex items-center gap-1.5">
               <Eye className="w-4 h-4" /> {images.length} foto
             </button>
           )}
@@ -4124,7 +4130,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                 {images.slice(0, 12).map((img, idx) => (
                   <button key={idx} onClick={() => { setActiveImageIndex(idx); setShowFullGallery(true); }} className="relative h-20 rounded-lg overflow-hidden group">
                     <img src={img.small_image_url || img.medium_image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                    <div className="absolute inset-0 bg-zinc-900/0 group-hover:bg-zinc-900/30 transition-colors flex items-center justify-center">
                       <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </button>
@@ -4200,7 +4206,7 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-zinc-900/70 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-md animate-scaleIn">
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
           <h3 className="text-lg font-semibold text-white">Crea Lead da Annuncio</h3>
