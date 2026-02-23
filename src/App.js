@@ -2412,21 +2412,59 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
     if (resetPage) setOffset(0);
     try {
       const params = new URLSearchParams();
-      params.append('limit', '50');
+      params.append('limit', '100');
       params.append('offset', currentOffset.toString());
       if (filters.minPrice) params.append('price_from', filters.minPrice);
       if (filters.maxPrice) params.append('price_to', filters.maxPrice);
+      // Try to pass search/location to API
+      if (filters.location) params.append('query', filters.location);
+      if (filters.search) params.append('query', filters.search);
+      
       const url = 'https://' + PF_API_HOST + '/projects?' + params.toString();
       const response = await fetch(url, { method: 'GET', headers: { 'x-rapidapi-host': PF_API_HOST, 'x-rapidapi-key': PF_API_KEY } });
       if (!response.ok) throw new Error('API Error: ' + response.status);
       const data = await response.json();
       let filteredProjects = data.data || [];
-      if (filters.search) { const s = filters.search.toLowerCase(); filteredProjects = filteredProjects.filter(p => p.title?.toLowerCase().includes(s) || p.developer?.name?.toLowerCase().includes(s) || p.location?.full_name?.toLowerCase().includes(s)); }
-      if (filters.location) { const l = filters.location.toLowerCase(); filteredProjects = filteredProjects.filter(p => p.location?.full_name?.toLowerCase().includes(l) || p.location?.name?.toLowerCase().includes(l)); }
-      if (filters.bedrooms) { const tb = filters.bedrooms === 'Studio' ? 0 : filters.bedrooms === '5+' ? 5 : parseInt(filters.bedrooms); filteredProjects = filteredProjects.filter(p => { if (!p.bedrooms?.available) return true; if (filters.bedrooms === '5+') return p.bedrooms.available.some(b => b >= 5); return p.bedrooms.available.includes(tb); }); }
-      if (filters.developer) { const d = filters.developer.toLowerCase(); filteredProjects = filteredProjects.filter(p => p.developer?.name?.toLowerCase().includes(d)); }
+      
+      // Debug: log first project to see available fields
+      if (filteredProjects.length > 0) {
+        console.log('API Project Fields:', Object.keys(filteredProjects[0]));
+        console.log('First Project Sample:', filteredProjects[0]);
+      }
+      
+      // Additional client-side filtering for precision
+      if (filters.location) { 
+        const l = filters.location.toLowerCase().replace(/\s+/g, '');
+        filteredProjects = filteredProjects.filter(p => {
+          const fullName = (p.location?.full_name || '').toLowerCase().replace(/\s+/g, '');
+          const name = (p.location?.name || '').toLowerCase().replace(/\s+/g, '');
+          const pathName = (p.location?.path_name || '').toLowerCase().replace(/\s+/g, '');
+          return fullName.includes(l) || name.includes(l) || pathName.includes(l) || l.includes(name);
+        }); 
+      }
+      if (filters.search) { 
+        const s = filters.search.toLowerCase(); 
+        filteredProjects = filteredProjects.filter(p => 
+          p.title?.toLowerCase().includes(s) || 
+          p.developer?.name?.toLowerCase().includes(s) || 
+          p.location?.full_name?.toLowerCase().includes(s)
+        ); 
+      }
+      if (filters.bedrooms) { 
+        const tb = filters.bedrooms === 'Studio' ? 0 : filters.bedrooms === '5+' ? 5 : parseInt(filters.bedrooms); 
+        filteredProjects = filteredProjects.filter(p => { 
+          if (!p.bedrooms?.available) return true; 
+          if (filters.bedrooms === '5+') return p.bedrooms.available.some(b => b >= 5); 
+          return p.bedrooms.available.includes(tb); 
+        }); 
+      }
+      if (filters.developer) { 
+        const d = filters.developer.toLowerCase(); 
+        filteredProjects = filteredProjects.filter(p => p.developer?.name?.toLowerCase().includes(d)); 
+      }
+      
       if (resetPage) setListings(filteredProjects); else setListings(prev => [...prev, ...filteredProjects]);
-      setTotalResults(data.pagination?.total || 0);
+      setTotalResults(filteredProjects.length);
       setHasMore(data.pagination?.has_next || false);
     } catch (err) { console.error('PF API Error:', err); setError('Impossibile caricare i progetti.'); }
     finally { setLoading(false); }
@@ -2524,26 +2562,26 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                   <span className="text-zinc-400">{displayProjects.length} progetti</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button variant="secondary" size="sm" onClick={() => searchListings(true)} icon={RefreshCw}>Aggiorna</Button>
                   <Button variant="ghost" size="sm" onClick={() => setViewMode('list')} icon={X}>Chiudi</Button>
                 </div>
               </div>
               {/* Filters Row */}
               <div className="px-4 pb-3 flex items-center gap-3 overflow-x-auto">
-                <select value={filters.location} onChange={(e) => { setFilters(f => ({ ...f, location: e.target.value })); searchListings(true); }} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[140px]">
+                <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[140px]">
                   <option value="">Tutte le zone</option>
                   {dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
-                <select value={filters.developer} onChange={(e) => { setFilters(f => ({ ...f, developer: e.target.value })); searchListings(true); }} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[140px]">
+                <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[140px]">
                   <option value="">Tutti i developer</option>
                   {topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
-                <select value={filters.bedrooms} onChange={(e) => { setFilters(f => ({ ...f, bedrooms: e.target.value })); searchListings(true); }} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[100px]">
+                <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[100px]">
                   <option value="">Camere</option>
                   {bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}
                 </select>
-                <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} onBlur={() => searchListings(true)} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
-                <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} onBlur={() => searchListings(true)} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
+                <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
+                <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
+                <Button onClick={() => searchListings(true)} icon={Search} disabled={loading}>{loading ? '...' : 'Cerca'}</Button>
               </div>
             </div>
             
