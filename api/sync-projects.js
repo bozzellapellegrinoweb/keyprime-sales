@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://wqtylxrrerhbxagdzftn.supabase.co';
@@ -44,17 +43,25 @@ async function fetchProjectsPage(offset) {
 
 export default async function handler(req, res) {
   const startTime = Date.now();
-  
   const mode = req.query.mode || 'update';
-  const maxPages = mode === 'full' ? 1000 : 20;
   
-  let offset = 0;
+  // Get current count to resume from where we left off
+  const { count: currentCount } = await supabase
+    .from('pf_projects')
+    .select('*', { count: 'exact', head: true });
+  
+  // For 'full' mode, start from current count (resume)
+  // For 'update' mode, start from 0 (check for new projects)
+  let offset = mode === 'full' ? (currentCount || 0) : 0;
+  const startOffset = offset;
+  
   let totalSynced = 0;
   let errors = 0;
-  let page = 0;
+  let pages = 0;
+  const maxPages = 50; // ~2500 projects per call
   
   try {
-    while (page < maxPages) {
+    while (pages < maxPages) {
       const data = await fetchProjectsPage(offset);
       const projects = data.data || [];
       
@@ -75,27 +82,35 @@ export default async function handler(req, res) {
         totalSynced += projects.length;
       }
       
-      if (!data.pagination?.has_next) break;
+      if (!data.pagination?.has_next) {
+        // Reached the end!
+        break;
+      }
       
       offset += 50;
-      page++;
+      pages++;
       
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 100));
     }
     
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     
-    const { count } = await supabase
+    const { count: newCount } = await supabase
       .from('pf_projects')
       .select('*', { count: 'exact', head: true });
+    
+    const isComplete = pages < maxPages;
     
     return res.status(200).json({
       success: true,
       mode,
+      resumedFrom: startOffset,
       synced: totalSynced,
       errors,
       duration: `${duration}s`,
-      totalInDb: count
+      totalInDb: newCount,
+      isComplete,
+      message: isComplete ? '✅ Sync completato!' : `⏳ Richiama ancora per continuare (${newCount}/47000)`
     });
     
   } catch (err) {
@@ -106,3 +121,8 @@ export default async function handler(req, res) {
     });
   }
 }
+```
+
+Clicca **"Commit changes"**, aspetta 1 minuto, poi richiama:
+```
+https://keyprime-sales-1npw.vercel.app/api/sync-projects?mode=full
