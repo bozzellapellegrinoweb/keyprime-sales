@@ -32,14 +32,32 @@ export default async function handler(req, res) {
   try {
     const startTime = Date.now();
     
-    const { count } = await supabase
-      .from('pf_projects')
-      .select('*', { count: 'exact', head: true });
+    // Get last synced offset from a tracking table or use query param
+    const manualOffset = req.query.offset ? parseInt(req.query.offset) : null;
     
-    const offset = count || 0;
+    let currentOffset;
+    if (manualOffset !== null) {
+      currentOffset = manualOffset;
+    } else {
+      // Get max offset from last sync - stored in a simple way
+      const { data: lastSync } = await supabase
+        .from('pf_projects')
+        .select('raw_data')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      // Fallback: count * 1 (approximate, but use manual offset for accuracy)
+      const { count } = await supabase
+        .from('pf_projects')
+        .select('*', { count: 'exact', head: true });
+      
+      currentOffset = count || 0;
+    }
+    
+    const startOffset = currentOffset;
     let totalSynced = 0;
     let skipped = 0;
-    let currentOffset = offset;
+    let newProjects = 0;
     
     for (let i = 0; i < 40; i++) {
       const url = `https://${PF_API_HOST}/projects?limit=50&offset=${currentOffset}`;
@@ -62,7 +80,10 @@ export default async function handler(req, res) {
       
       if (activeProjects.length > 0) {
         const transformed = activeProjects.map(transformProject);
-        await supabase.from('pf_projects').upsert(transformed, { onConflict: 'project_id' });
+        const { data: upserted } = await supabase
+          .from('pf_projects')
+          .upsert(transformed, { onConflict: 'project_id' })
+          .select('project_id');
         totalSynced += activeProjects.length;
       }
       
@@ -77,13 +98,20 @@ export default async function handler(req, res) {
     
     return res.status(200).json({
       success: true,
-      startedFrom: offset,
+      startedFrom: startOffset,
+      endedAt: currentOffset,
       synced: totalSynced,
       skipped,
       totalInDb: newCount,
+      nextCall: `?offset=${currentOffset}`,
       duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's'
     });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
 }
+```
+
+Dopo il commit, chiama con offset manuale:
+```
+https://keyprime-sales-1npw.vercel.app/api/sync-projects?offset=4000
