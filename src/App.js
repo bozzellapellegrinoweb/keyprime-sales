@@ -3233,11 +3233,8 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
       a.download = `${listing.title.replace(/[^a-zA-Z0-9]/g, '_')}_KeyPrime.html`;
       a.click();
       URL.revokeObjectURL(url);
-      
-      showToast('Scheda scaricata! Apri il file e stampa come PDF', 'success');
     } catch (err) {
       console.error('PDF error:', err);
-      showToast('Errore nel download', 'error');
     }
     setGeneratingPdf(false);
   };
