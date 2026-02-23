@@ -4,10 +4,10 @@
       "path": "/api/sync-projects",
       "schedule": "0 3 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/*.mjs": {
+      "runtime": "nodejs18.x"
+    }
+  }
 }
-```
-
-8. Aspetta 1-2 minuti e prova:
-```
-https://keyprime-sales-1npw.vercel.app/api/sync-projects
