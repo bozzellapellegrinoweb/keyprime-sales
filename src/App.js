@@ -2391,9 +2391,20 @@ function ProjectCardCompact({ project, isSelected, onClick, onHover }) {
 function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRemoveListing, user }) {
   const [viewMode, setViewMode] = useState('list');
   const [listings, setListings] = useState([]);
+  const [allMapProjects, setAllMapProjects] = useState([]); // All projects for map
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({ search: '', location: '', minPrice: '', maxPrice: '', bedrooms: '', developer: '' });
+  const [filters, setFilters] = useState({ 
+    search: '', 
+    location: '', 
+    minPrice: '', 
+    maxPrice: '', 
+    bedrooms: '', 
+    developer: '',
+    status: '', // completed, under_construction, launch
+    deliveryYear: '',
+    sortBy: 'hotness' // hotness, price_asc, price_desc, delivery
+  });
   const [selectedListing, setSelectedListing] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(null);
   const [page, setPage] = useState(1);
@@ -2401,12 +2412,116 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
   const [totalResults, setTotalResults] = useState(0);
   const [selectedAreaProjects, setSelectedAreaProjects] = useState(null);
   const [selectedAreaName, setSelectedAreaName] = useState('');
+  const [stats, setStats] = useState({ byZone: [], byDeveloper: [], avgPrice: 0 });
+  const [showStats, setShowStats] = useState(false);
   
   const ITEMS_PER_PAGE = 24;
 
   const dubaiAreas = ['Dubai Marina', 'Downtown Dubai', 'Business Bay', 'Palm Jumeirah', 'JBR', 'Dubai Hills Estate', 'Mohammed Bin Rashid City', 'Dubai Creek Harbour', 'Jumeirah Village Circle', 'Dubai South', 'DAMAC Hills', 'Arabian Ranches', 'Meydan', 'DIFC', 'Al Marjan Island', 'Dubai Islands', 'Expo City', 'Yas Island', 'Saadiyat Island'];
   const topDevelopers = ['Emaar Properties', 'Damac Properties', 'Sobha Realty', 'Nakheel', 'Meraas', 'Aldar Properties', 'Azizi Developments', 'Binghatti', 'Ellington', 'Omniyat Group'];
   const bedroomOptions = ['Studio', '1', '2', '3', '4', '5+'];
+  const statusOptions = [
+    { value: '', label: 'Tutti gli stati' },
+    { value: 'completed', label: 'Completato' },
+    { value: 'under_construction', label: 'In Costruzione' },
+    { value: 'launch', label: 'Lancio' }
+  ];
+  const deliveryYears = ['2024', '2025', '2026', '2027', '2028', '2029', '2030'];
+  const sortOptions = [
+    { value: 'hotness', label: 'Più popolari' },
+    { value: 'price_asc', label: 'Prezzo ↑' },
+    { value: 'price_desc', label: 'Prezzo ↓' },
+    { value: 'delivery', label: 'Consegna più vicina' }
+  ];
+
+  // Load stats on mount
+  useEffect(() => {
+    loadStats();
+    loadAllMapProjects();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      // Get projects by zone
+      const { data: zoneData } = await supabase
+        .from('pf_projects')
+        .select('location_name, price_from');
+      
+      if (zoneData) {
+        // Group by zone
+        const zoneMap = {};
+        let totalPrice = 0;
+        let priceCount = 0;
+        
+        zoneData.forEach(p => {
+          const zone = p.location_name || 'Altro';
+          if (!zoneMap[zone]) zoneMap[zone] = { count: 0, totalPrice: 0 };
+          zoneMap[zone].count++;
+          if (p.price_from > 0) {
+            zoneMap[zone].totalPrice += p.price_from;
+            totalPrice += p.price_from;
+            priceCount++;
+          }
+        });
+        
+        const byZone = Object.entries(zoneMap)
+          .map(([name, data]) => ({ name, count: data.count, avgPrice: data.totalPrice / data.count || 0 }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10);
+        
+        setStats(s => ({ ...s, byZone, avgPrice: totalPrice / priceCount || 0 }));
+      }
+      
+      // Get projects by developer
+      const { data: devData } = await supabase
+        .from('pf_projects')
+        .select('developer_name')
+        .not('developer_name', 'is', null);
+      
+      if (devData) {
+        const devMap = {};
+        devData.forEach(p => {
+          const dev = p.developer_name;
+          devMap[dev] = (devMap[dev] || 0) + 1;
+        });
+        
+        const byDeveloper = Object.entries(devMap)
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10);
+        
+        setStats(s => ({ ...s, byDeveloper }));
+      }
+    } catch (err) {
+      console.error('Stats error:', err);
+    }
+  };
+
+  // Load all projects with coordinates for map
+  const loadAllMapProjects = async () => {
+    try {
+      const { data } = await supabase
+        .from('pf_projects')
+        .select('project_id, title, location_name, location_full, price_from, construction_phase, raw_data')
+        .not('raw_data->location->coordinates', 'is', null)
+        .limit(2000);
+      
+      if (data) {
+        const mapProjects = data.map(p => ({
+          project_id: p.project_id,
+          title: p.title,
+          location: { name: p.location_name, full_name: p.location_full },
+          price_from: p.price_from,
+          construction_phase_key: p.construction_phase,
+          coordinates: p.raw_data?.location?.coordinates
+        })).filter(p => p.coordinates?.lat && p.coordinates?.lon);
+        
+        setAllMapProjects(mapProjects);
+      }
+    } catch (err) {
+      console.error('Map projects error:', err);
+    }
+  };
 
   // Search from Supabase with real SQL filters
   const searchListings = async (newPage = 1) => {
@@ -2428,6 +2543,47 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         query = query.or(`location_name.ilike.%${filters.location}%,location_full.ilike.%${filters.location}%`);
       }
       if (filters.developer) {
+        query = query.ilike('developer_name', `%${filters.developer}%`);
+      }
+      if (filters.minPrice) {
+        query = query.gte('price_from', parseInt(filters.minPrice));
+      }
+      if (filters.maxPrice) {
+        query = query.lte('price_from', parseInt(filters.maxPrice));
+      }
+      if (filters.status) {
+        query = query.eq('construction_phase', filters.status);
+      }
+      if (filters.deliveryYear) {
+        const startDate = `${filters.deliveryYear}-01-01`;
+        const endDate = `${filters.deliveryYear}-12-31`;
+        query = query.gte('delivery_date', startDate).lte('delivery_date', endDate);
+      }
+      if (filters.bedrooms) {
+        if (filters.bedrooms === 'Studio') {
+          query = query.contains('bedrooms', { available: [0] });
+        } else if (filters.bedrooms !== '5+') {
+          query = query.contains('bedrooms', { available: [parseInt(filters.bedrooms)] });
+        }
+      }
+      
+      // Apply sorting
+      switch (filters.sortBy) {
+        case 'price_asc':
+          query = query.order('price_from', { ascending: true, nullsFirst: false });
+          break;
+        case 'price_desc':
+          query = query.order('price_from', { ascending: false, nullsFirst: false });
+          break;
+        case 'delivery':
+          query = query.order('delivery_date', { ascending: true, nullsFirst: false });
+          break;
+        default:
+          query = query.order('hotness_level', { ascending: false, nullsFirst: false });
+      }
+      
+      // Paginate
+      query = query.range((newPage - 1) * ITEMS_PER_PAGE, newPage * ITEMS_PER_PAGE - 1);
         query = query.ilike('developer_name', `%${filters.developer}%`);
       }
       if (filters.minPrice) {
@@ -2505,6 +2661,54 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
     }
   };
 
+  // Export filtered projects to CSV
+  const exportProjectsCSV = async () => {
+    try {
+      // Build same query as search but get all results
+      let query = supabase
+        .from('pf_projects')
+        .select('title, location_full, developer_name, price_from, construction_phase, delivery_date, url');
+      
+      if (filters.search) query = query.or(`title.ilike.%${filters.search}%,location_full.ilike.%${filters.search}%,developer_name.ilike.%${filters.search}%`);
+      if (filters.location) query = query.or(`location_name.ilike.%${filters.location}%,location_full.ilike.%${filters.location}%`);
+      if (filters.developer) query = query.ilike('developer_name', `%${filters.developer}%`);
+      if (filters.minPrice) query = query.gte('price_from', parseInt(filters.minPrice));
+      if (filters.maxPrice) query = query.lte('price_from', parseInt(filters.maxPrice));
+      if (filters.status) query = query.eq('construction_phase', filters.status);
+      if (filters.deliveryYear) {
+        query = query.gte('delivery_date', `${filters.deliveryYear}-01-01`).lte('delivery_date', `${filters.deliveryYear}-12-31`);
+      }
+      
+      query = query.order('hotness_level', { ascending: false }).limit(1000);
+      
+      const { data } = await query;
+      
+      if (!data?.length) return;
+      
+      const headers = ['Progetto', 'Location', 'Developer', 'Prezzo Da (AED)', 'Stato', 'Consegna', 'URL'];
+      const rows = data.map(p => [
+        p.title,
+        p.location_full,
+        p.developer_name,
+        p.price_from,
+        p.construction_phase === 'completed' ? 'Completato' : p.construction_phase === 'under_construction' ? 'In Costruzione' : 'Lancio',
+        p.delivery_date,
+        p.url
+      ]);
+      
+      const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${(c || '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `offplan-projects-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+    }
+  };
+
   useEffect(() => { searchListings(1); }, []);
 
   const isListingSaved = (projectId) => savedListings?.some(s => s.property_id === projectId);
@@ -2523,20 +2727,90 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
             <h2 className="text-xl font-semibold text-white flex items-center gap-2"><Building2 className="w-6 h-6 text-orange-400" />Off-Plan Projects</h2>
             <p className="text-zinc-500 text-sm mt-1">{totalResults > 0 ? totalResults.toLocaleString() + ' progetti' : 'Cerca progetti'}{selectedAreaName && ' • ' + selectedAreaName}</p>
           </div>
-          <div className="flex items-center gap-2 bg-zinc-800/50 p-1 rounded-xl">
-            <button onClick={() => { setViewMode('list'); setSelectedAreaProjects(null); }} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'list' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Lista"><List className="w-5 h-5" /></button>
-            <button onClick={() => setViewMode('map')} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'map' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Mappa"><Map className="w-5 h-5" /></button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setShowStats(!showStats)} icon={PieChart}>
+              {showStats ? 'Nascondi' : 'Stats'}
+            </Button>
+            <div className="flex items-center gap-2 bg-zinc-800/50 p-1 rounded-xl">
+              <button onClick={() => { setViewMode('list'); setSelectedAreaProjects(null); }} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'list' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Lista"><List className="w-5 h-5" /></button>
+              <button onClick={() => setViewMode('map')} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'map' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Mappa"><Map className="w-5 h-5" /></button>
+            </div>
           </div>
         </div>
+        
+        {/* Stats Panel */}
+        {showStats && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <Card className="p-4">
+              <h3 className="text-white font-medium mb-3 flex items-center gap-2"><MapPin className="w-4 h-4 text-orange-400" />Top Zone</h3>
+              <div className="space-y-2">
+                {stats.byZone.slice(0, 5).map((z, i) => (
+                  <div key={z.name} className="flex items-center justify-between">
+                    <span className="text-zinc-400 text-sm truncate flex-1">{z.name}</span>
+                    <span className="text-white text-sm font-medium ml-2">{z.count}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+            <Card className="p-4">
+              <h3 className="text-white font-medium mb-3 flex items-center gap-2"><Building2 className="w-4 h-4 text-orange-400" />Top Developer</h3>
+              <div className="space-y-2">
+                {stats.byDeveloper.slice(0, 5).map((d, i) => (
+                  <div key={d.name} className="flex items-center justify-between">
+                    <span className="text-zinc-400 text-sm truncate flex-1">{d.name}</span>
+                    <span className="text-white text-sm font-medium ml-2">{d.count}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+            <Card className="p-4">
+              <h3 className="text-white font-medium mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-orange-400" />Statistiche</h3>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-zinc-500 text-xs">Totale Progetti</p>
+                  <p className="text-white text-xl font-bold">{totalResults.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-zinc-500 text-xs">Prezzo Medio</p>
+                  <p className="text-orange-400 text-xl font-bold">AED {(stats.avgPrice / 1000000).toFixed(1)}M</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
         <Card className="mb-4">
-          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
-          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto, zona o developer..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
             <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}</select>
-            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutti i developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
+            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
             <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
-            <input type="number" placeholder="Prezzo min" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
-            <input type="number" placeholder="Prezzo max" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
-            <Button onClick={() => { setSelectedAreaProjects(null); searchListings(1); }} icon={Search} disabled={loading}>{loading ? 'Cercando...' : 'Cerca'}</Button>
+            <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
+            <select value={filters.deliveryYear} onChange={(e) => setFilters(f => ({ ...f, deliveryYear: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Consegna</option>{deliveryYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
+            <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <Button onClick={() => { setSelectedAreaProjects(null); searchListings(1); }} icon={Search} disabled={loading}>{loading ? '...' : 'Cerca'}</Button>
+          </div>
+          {/* Sorting and active filters */}
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-800">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-zinc-500 text-sm">Ordina:</span>
+                <select value={filters.sortBy} onChange={(e) => { setFilters(f => ({ ...f, sortBy: e.target.value })); searchListings(1); }} className="bg-transparent border-none text-orange-400 text-sm focus:outline-none cursor-pointer">
+                  {sortOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </select>
+              </div>
+              {listings.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={exportProjectsCSV}>
+                  <Download className="w-4 h-4 mr-1" />Export CSV
+                </Button>
+              )}
+            </div>
+            {(filters.location || filters.developer || filters.status || filters.deliveryYear || filters.minPrice || filters.maxPrice || filters.bedrooms) && (
+              <Button variant="ghost" size="sm" onClick={() => { setFilters({ search: '', location: '', minPrice: '', maxPrice: '', bedrooms: '', developer: '', status: '', deliveryYear: '', sortBy: 'hotness' }); searchListings(1); }}>
+                <X className="w-4 h-4 mr-1" />Reset filtri
+              </Button>
+            )}
           </div>
         </Card>
         {selectedAreaProjects && <div className="flex items-center gap-2 mb-4"><span className="text-zinc-400 text-sm">Filtrato: <span className="text-orange-400">{selectedAreaName}</span></span><Button variant="ghost" size="sm" onClick={() => { setSelectedAreaProjects(null); setSelectedAreaName(''); }}><X className="w-4 h-4 mr-1" />Rimuovi</Button></div>}
