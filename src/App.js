@@ -2584,29 +2584,6 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
       
       // Paginate
       query = query.range((newPage - 1) * ITEMS_PER_PAGE, newPage * ITEMS_PER_PAGE - 1);
-        query = query.ilike('developer_name', `%${filters.developer}%`);
-      }
-      if (filters.minPrice) {
-        query = query.gte('price_from', parseInt(filters.minPrice));
-      }
-      if (filters.maxPrice) {
-        query = query.lte('price_from', parseInt(filters.maxPrice));
-      }
-      if (filters.bedrooms) {
-        // Filter by bedrooms in JSONB
-        if (filters.bedrooms === 'Studio') {
-          query = query.contains('bedrooms', { available: [0] });
-        } else if (filters.bedrooms === '5+') {
-          // 5+ is harder with contains, we'll filter client-side for this
-        } else {
-          query = query.contains('bedrooms', { available: [parseInt(filters.bedrooms)] });
-        }
-      }
-      
-      // Order and paginate
-      query = query
-        .order('hotness_level', { ascending: false, nullsFirst: false })
-        .range((newPage - 1) * ITEMS_PER_PAGE, newPage * ITEMS_PER_PAGE - 1);
       
       const { data, error: queryError, count } = await query;
       
