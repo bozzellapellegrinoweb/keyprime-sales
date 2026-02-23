@@ -4,6 +4,35 @@ import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, C
 
 const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NjkyNjAsImV4cCI6MjA4NzI0NTI2MH0.oXUs9ITNi6lEFat_5FH0x-Exw5MDgRhwx6T0yL3xiWQ');
 
+// OneSignal Config
+const ONESIGNAL_APP_ID = '071cd2c3-4a3d-4d2f-8deb-fa575aec578d';
+const ONESIGNAL_API_KEY = 'os_v2_org_smhi42kgobfc3j2hrydqjbsdgnpywruusi5ezzuyl6zgh3hjjmjl7whervr34juizss3emayoctdt2c6hpbt7rkovk3uwjbmdodg2ky';
+
+// Send Push Notification via OneSignal
+const sendPushNotification = async (title, message, url = null) => {
+  try {
+    const payload = {
+      app_id: ONESIGNAL_APP_ID,
+      contents: { en: message, it: message },
+      headings: { en: title, it: title },
+      included_segments: ['All'],
+    };
+    if (url) payload.url = url;
+    
+    await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${ONESIGNAL_API_KEY}`
+      },
+      body: JSON.stringify(payload)
+    });
+    console.log('Push sent:', title);
+  } catch (err) {
+    console.log('Push error:', err);
+  }
+};
+
 // Config
 const RESEND_API_KEY = 're_jCpLJKfw_MfWu2jbSzPPgz6pLHQXMAXJb';
 const EMAIL_FROM = 'onboarding@resend.dev';
@@ -734,6 +763,13 @@ export default function App() {
       inserted_as: user?.ruolo
     }]);
     
+    // Notifica push per nuovo lead
+    await sendPushNotification(
+      '🎯 Nuovo Lead!',
+      `${leadData.progetto} - ${leadData.zona} - ${user?.nome}`,
+      'https://keyprime-sales-1npw.vercel.app'
+    );
+    
     loadSales();
     showToast('Lead creato da Off-Plan');
   };
@@ -794,6 +830,25 @@ export default function App() {
 
   const updateSale = async (id, u) => {
     const s = sales.find(x => x.id === id);
+    
+    // Notifica push per vendita chiusa
+    if (u.stato === 'vinto' && s?.stato !== 'vinto') {
+      await sendPushNotification(
+        '🎉 Vendita Chiusa!',
+        `${s.progetto} - ${fmt(s.valore)} AED`,
+        'https://keyprime-sales-1npw.vercel.app'
+      );
+    }
+    
+    // Notifica push per lead incassato
+    if (u.stato === 'incassato' && s?.stato !== 'incassato') {
+      await sendPushNotification(
+        '💰 Incasso Registrato!',
+        `${s.progetto} - ${fmt(s.valore)} AED`,
+        'https://keyprime-sales-1npw.vercel.app'
+      );
+    }
+    
     if (u.pagato === true && !s?.pagato) {
       const tn = s.agente || s.segnalatore;
       if (tn) {
@@ -834,9 +889,33 @@ export default function App() {
   };
 
   // Task Handlers
-  const createTask = async (d) => { await supabase.from('tasks').insert([{ ...d, created_by: user?.nome }]); loadTasks(); setShowTaskModal(null); showToast('Task creato'); };
+  const createTask = async (d) => { 
+    await supabase.from('tasks').insert([{ ...d, created_by: user?.nome }]); 
+    // Notifica push per nuovo task assegnato
+    if (d.assegnato_a) {
+      await sendPushNotification(
+        '📋 Nuovo Task Assegnato',
+        `${d.titolo} - Scadenza: ${d.scadenza ? new Date(d.scadenza).toLocaleDateString('it-IT') : 'N/A'}`,
+        'https://keyprime-sales-1npw.vercel.app'
+      );
+    }
+    loadTasks(); setShowTaskModal(null); showToast('Task creato'); 
+  };
   const updateTask = async (id, d) => { await supabase.from('tasks').update(d).eq('id', id); loadTasks(); setShowTaskModal(null); showToast('Salvato'); };
-  const completeTask = async (id) => { const task = tasks.find(t => t.id === id); await supabase.from('tasks').update({ stato: 'completato', completed_at: new Date().toISOString() }).eq('id', id); if (task && user?.ruolo !== 'admin') await notifyTaskCompleted(task, user?.nome); showToast('Completato!'); loadTasks(); };
+  const completeTask = async (id) => { 
+    const task = tasks.find(t => t.id === id); 
+    await supabase.from('tasks').update({ stato: 'completato', completed_at: new Date().toISOString() }).eq('id', id); 
+    // Notifica push per task completato (per admin)
+    if (task && user?.ruolo !== 'admin') {
+      await sendPushNotification(
+        '✅ Task Completato',
+        `${task.titolo} - Completato da ${user?.nome}`,
+        'https://keyprime-sales-1npw.vercel.app'
+      );
+      await notifyTaskCompleted(task, user?.nome); 
+    }
+    showToast('Completato!'); loadTasks(); 
+  };
   const addTaskNote = async (id, note) => { const task = tasks.find(t => t.id === id); await supabase.from('tasks').update({ note }).eq('id', id); if (task && user?.ruolo !== 'admin') await notifyTaskNote(task, user?.nome, note); loadTasks(); setShowNoteModal(null); showToast('Nota inviata'); };
   const deleteTask = async (id) => { if (!window.confirm('Eliminare?')) return; await supabase.from('tasks').delete().eq('id', id); loadTasks(); };
 
