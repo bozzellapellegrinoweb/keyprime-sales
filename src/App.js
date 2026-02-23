@@ -2442,10 +2442,11 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
 
   const loadStats = async () => {
     try {
-      // Get projects by zone
+      // Get projects by zone (excluding completed)
       const { data: zoneData } = await supabase
         .from('pf_projects')
-        .select('location_name, price_from');
+        .select('location_name, price_from')
+        .neq('construction_phase', 'completed');
       
       if (zoneData) {
         // Group by zone
@@ -2472,11 +2473,12 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         setStats(s => ({ ...s, byZone, avgPrice: totalPrice / priceCount || 0 }));
       }
       
-      // Get projects by developer
+      // Get projects by developer (excluding completed)
       const { data: devData } = await supabase
         .from('pf_projects')
         .select('developer_name')
-        .not('developer_name', 'is', null);
+        .not('developer_name', 'is', null)
+        .neq('construction_phase', 'completed');
       
       if (devData) {
         const devMap = {};
@@ -2497,12 +2499,13 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
     }
   };
 
-  // Load all projects with coordinates for map
+  // Load all projects with coordinates for map (excluding completed)
   const loadAllMapProjects = async () => {
     try {
       const { data } = await supabase
         .from('pf_projects')
         .select('project_id, title, location_name, location_full, price_from, construction_phase, raw_data')
+        .neq('construction_phase', 'completed')
         .not('raw_data->location->coordinates', 'is', null)
         .limit(2000);
       
@@ -2535,6 +2538,17 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         .from('pf_projects')
         .select('*', { count: 'exact' });
       
+      // EXCLUDE completed projects by default (they're not off-plan anymore)
+      // Only show completed if explicitly filtered
+      if (filters.status) {
+        query = query.eq('construction_phase', filters.status);
+      } else {
+        query = query.neq('construction_phase', 'completed');
+      }
+      
+      // Exclude projects with past delivery dates (before 2024)
+      query = query.or('delivery_date.is.null,delivery_date.gte.2024-01-01');
+      
       // Apply filters
       if (filters.search) {
         query = query.or(`title.ilike.%${filters.search}%,location_full.ilike.%${filters.search}%,developer_name.ilike.%${filters.search}%`);
@@ -2550,9 +2564,6 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
       }
       if (filters.maxPrice) {
         query = query.lte('price_from', parseInt(filters.maxPrice));
-      }
-      if (filters.status) {
-        query = query.eq('construction_phase', filters.status);
       }
       if (filters.deliveryYear) {
         const startDate = `${filters.deliveryYear}-01-01`;
