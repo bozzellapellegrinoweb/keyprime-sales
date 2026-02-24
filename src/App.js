@@ -648,7 +648,14 @@ export default function App() {
   // Auth
   useEffect(() => {
     const s = localStorage.getItem('keyprime_user');
-    if (s) { const u = JSON.parse(s); setUser(u); setActiveTab(u.ruolo === 'admin' ? 'dashboard' : 'home'); setView(u.ruolo === 'admin' ? 'admin' : u.ruolo); }
+    if (s) { 
+      const u = JSON.parse(s); 
+      setUser(u); 
+      setActiveTab(u.ruolo === 'admin' ? 'dashboard' : 'home'); 
+      // agente_admin usa la stessa view di agente
+      const viewRole = u.ruolo === 'admin' ? 'admin' : (u.ruolo === 'agente_admin' ? 'agente' : u.ruolo);
+      setView(viewRole); 
+    }
   }, []);
   
   // Data Loading
@@ -687,7 +694,9 @@ export default function App() {
     if (!data) { setError('Credenziali non valide'); setLoading(false); return; }
     setUser(data); localStorage.setItem('keyprime_user', JSON.stringify(data));
     setActiveTab(data.ruolo === 'admin' ? 'dashboard' : 'home');
-    setView(data.ruolo === 'admin' ? 'admin' : data.ruolo); setLoading(false);
+    // agente_admin usa la stessa view di agente
+    const viewRole = data.ruolo === 'admin' ? 'admin' : (data.ruolo === 'agente_admin' ? 'agente' : data.ruolo);
+    setView(viewRole); setLoading(false);
   };
   
   const handleLogout = () => { setUser(null); localStorage.removeItem('keyprime_user'); setView('login'); setMobileMenuOpen(false); };
@@ -1002,11 +1011,14 @@ export default function App() {
 
   // ==================== AGENT/SEGNALATORE VIEW ====================
   if (view === 'agente' || view === 'segnalatore') {
-    const type = view;
+    // Per agente_admin, usa la view agente ma con ruolo originale per calcoli
+    const type = user?.ruolo === 'agente_admin' ? 'agente' : view;
+    const isAgenteAdmin = user?.ruolo === 'agente_admin';
     const mySales = sales.filter(s => type === 'agente' ? s.agente === user?.nome : s.segnalatore === user?.nome);
     const myTasks = tasks.filter(t => t.assegnato_a === user?.nome && t.stato === 'pending');
     const myClienti = clienti.filter(c => c.created_by === user?.nome || c.agente_riferimento === user?.nome);
-    const rate = type === 'agente' ? 0.7 : 0.3;
+    // agente_admin prende 70% come agente normale, il 30% va a Pellegrino
+    const rate = (type === 'agente' || isAgenteAdmin) ? 0.7 : 0.3;
     const myVendite = mySales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
     const totalComm = myVendite.reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * rate), 0);
     const pagate = myVendite.filter(s => s.pagato).reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * rate), 0);
@@ -1300,11 +1312,25 @@ export default function App() {
     const vendite = periodSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
     const totals = periodSales.reduce((a, s) => {
       const c = Number(s.valore) * (s.commission_pct || 5) / 100;
+      // Check if agent is agente_admin
+      const agentUser = users.find(u => u.nome === s.agente);
+      const isAgenteAdmin = agentUser?.ruolo === 'agente_admin';
+      
       const ag = s.agente ? c * 0.7 : 0;
       const sg = s.segnalatore ? c * 0.3 : 0;
       const n = c - ag - sg;
-      const p = s.referente === 'Pellegrino' ? n * 0.7 : (s.referente === 'Giovanni' ? n * 0.3 : 0);
-      const g = s.referente === 'Giovanni' ? n * 0.7 : (s.referente === 'Pellegrino' ? n * 0.3 : 0);
+      
+      // Per agente_admin: 70% all'agente_admin, 30% a Pellegrino (non al referente)
+      let p, g;
+      if (isAgenteAdmin) {
+        // Il 30% della commissione va a Pellegrino
+        p = c * 0.3;
+        g = 0;
+      } else {
+        p = s.referente === 'Pellegrino' ? n * 0.7 : (s.referente === 'Giovanni' ? n * 0.3 : 0);
+        g = s.referente === 'Giovanni' ? n * 0.7 : (s.referente === 'Pellegrino' ? n * 0.3 : 0);
+      }
+      
       return { valore: a.valore + Number(s.valore), comm: a.comm + c, ag: a.ag + ag, sg: a.sg + sg, netto: a.netto + n, pell: a.pell + p, giov: a.giov + g };
     }, { valore: 0, comm: 0, ag: 0, sg: 0, netto: 0, pell: 0, giov: 0 });
     
@@ -2580,7 +2606,7 @@ function TeamTab({ users, onCreate, onEdit, onDelete }) {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <p className="text-white font-medium">{u.nome}</p>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${u.ruolo === 'admin' ? 'bg-violet-500/20 text-violet-400' : u.ruolo === 'agente' ? 'bg-blue-500/20 text-blue-400' : 'bg-emerald-500/20 text-emerald-400'}`}>{u.ruolo}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${u.ruolo === 'admin' ? 'bg-violet-500/20 text-violet-400' : u.ruolo === 'agente_admin' ? 'bg-purple-500/20 text-purple-400' : u.ruolo === 'agente' ? 'bg-blue-500/20 text-blue-400' : 'bg-emerald-500/20 text-emerald-400'}`}>{u.ruolo === 'agente_admin' ? 'Ag. Admin' : u.ruolo}</span>
                   {!u.attivo && <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400">Disattivo</span>}
                 </div>
                 <p className="text-zinc-500 text-sm mt-1">{u.username} / {u.password}{u.email && ` • ${u.email}`}</p>
@@ -4877,13 +4903,19 @@ function UserModal({ user, onSave, onClose }) {
         <div className="grid grid-cols-2 gap-3">
           <Select label="Ruolo" value={form.ruolo} onChange={(e) => setForm({ ...form, ruolo: e.target.value })}>
             <option value="agente">Agente</option>
+            <option value="agente_admin">Agente Admin (70/30)</option>
             <option value="segnalatore">Segnalatore</option>
           </Select>
-          <Select label="Referente" value={form.referente} onChange={(e) => setForm({ ...form, referente: e.target.value })}>
+          <Select label="Referente" value={form.referente} onChange={(e) => setForm({ ...form, referente: e.target.value })} disabled={form.ruolo === 'agente_admin'}>
             <option value="Pellegrino">Pellegrino</option>
             <option value="Giovanni">Giovanni</option>
           </Select>
         </div>
+        {form.ruolo === 'agente_admin' && (
+          <Card padding="p-3" className="bg-violet-500/10 border-violet-500/20">
+            <p className="text-violet-400 text-sm">💡 <strong>Agente Admin:</strong> 70% commissione all'agente, 30% a Pellegrino</p>
+          </Card>
+        )}
         {user && (
           <Card padding="p-3" className="flex items-center gap-3">
             <input type="checkbox" id="attivo" checked={form.attivo} onChange={(e) => setForm({ ...form, attivo: e.target.checked })} className="w-4 h-4 rounded" />
