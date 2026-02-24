@@ -12,8 +12,6 @@ const sendPushNotification = async (title, message, url = null) => {
 };
 
 // Config
-const RESEND_API_KEY = 're_jCpLJKfw_MfWu2jbSzPPgz6pLHQXMAXJb';
-const EMAIL_FROM = 'onboarding@resend.dev';
 const ADMIN_EMAIL = 'bozzellapellegrino@gmail.com';
 
 // Leaflet Config (no token needed - free!)
@@ -124,8 +122,21 @@ const isOverdue = (d) => d && new Date(d) < new Date();
 const isToday = (d) => d && new Date(d).toDateString() === new Date().toDateString();
 const getInitials = (nome, cognome) => `${(nome || '')[0] || ''}${(cognome || '')[0] || ''}`.toUpperCase() || '?';
 
-// Email Functions
-const sendEmail = async (to, subject, html) => { try { await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: EMAIL_FROM, to: [to], subject, html }) }); return true; } catch (e) { return false; } };
+// Email Functions - via serverless to avoid CORS
+const sendEmail = async (to, subject, html) => { 
+  try { 
+    const response = await fetch('/api/send-email', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ to, subject, html }) 
+    }); 
+    const data = await response.json();
+    return data.success || false; 
+  } catch (e) { 
+    console.log('Email error:', e);
+    return false; 
+  } 
+};
 const notifyTaskCompleted = async (task, agentName) => { await sendEmail(ADMIN_EMAIL, `✅ Task completato: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px"><h2>Task Completato</h2><p><strong>${task.titolo}</strong></p><p>Completato da: ${agentName}</p></div>`); };
 const notifyTaskNote = async (task, agentName, note) => { await sendEmail(ADMIN_EMAIL, `💬 Nota: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px"><h2>Nuova Nota</h2><p><strong>${task.titolo}</strong></p><p>Da: ${agentName}</p><p>Nota: ${note}</p></div>`); };
 const notifyNewTaskToAgent = async (task, agentEmail) => { if (!agentEmail) return; await sendEmail(agentEmail, `📋 Nuovo Task: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#a78bfa">📋 Nuovo Task Assegnato</h2><p style="font-size:18px;margin:16px 0"><strong>${task.titolo}</strong></p><p style="color:#94a3b8">Priorità: ${task.priorita || 'normale'}</p><p style="color:#94a3b8">Scadenza: ${task.scadenza ? new Date(task.scadenza).toLocaleDateString('it-IT') : 'Nessuna'}</p>${task.descrizione ? `<p style="margin-top:16px;padding:12px;background:#1e293b;border-radius:8px">${task.descrizione}</p>` : ''}<a href="https://keyprime-sales-1npw.vercel.app" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#8b5cf6;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`); };
