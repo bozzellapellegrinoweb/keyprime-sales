@@ -876,7 +876,9 @@ export default function App() {
         }
       }
     }
-    await supabase.from('sales').update(u).eq('id', id); loadSales();
+    await supabase.from('sales').update(u).eq('id', id); 
+    await loadSales();
+    showToast('Salvato');
   };
 
   const deleteSale = async (id) => { if (!window.confirm('Eliminare questo lead?')) return; await supabase.from('sales').delete().eq('id', id); showToast('Eliminato'); loadSales(); };
@@ -1574,7 +1576,7 @@ export default function App() {
                     {Object.entries(byStato).map(([st, items]) => (
                       <div key={st} className="text-center p-3 rounded-xl" style={{ background: theme.status[st]?.bg }}>
                         <div className="text-xl font-semibold text-white">{items.length}</div>
-                        <div className="text-xs capitalize" style={{ color: theme.status[st]?.color }}>{st}</div>
+                        <div className="text-xs" style={{ color: theme.status[st]?.color }}>{pipelineLabels[st] || st}</div>
                       </div>
                     ))}
                   </div>
@@ -1717,7 +1719,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
         </div>
         <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50">
           <option value="">Tutti gli stati</option>
-          {pipelineStati.map(s => <option key={s} value={s}>{s}</option>)}
+          {pipelineStati.map(s => <option key={s} value={s}>{pipelineLabels[s] || s}</option>)}
         </select>
       </div>
 
@@ -1772,7 +1774,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
                   </td>
                   <td className="px-4 py-3 text-center">
                     <select value={s.stato || 'lead'} onChange={(e) => updateSale(s.id, { stato: e.target.value })} className="rounded px-2 py-1 text-xs text-white w-20 focus:outline-none" style={{ background: theme.status[s.stato || 'lead']?.bg, color: theme.status[s.stato || 'lead']?.color }}>
-                      {pipelineStati.map(st => <option key={st} value={st} className="bg-zinc-800">{st}</option>)}
+                      {pipelineStati.map(st => <option key={st} value={st} className="bg-zinc-800">{pipelineLabels[st] || st}</option>)}
                     </select>
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -1811,7 +1813,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [bulkAction, setBulkAction] = useState(null);
 
-  const pipelineStati = ['lead', 'contattato', 'in trattativa', 'proposta', 'vinto', 'perso'];
+  // Usa pipelineStati globale (già definito sopra)
   const fmt = (n) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'AED', maximumFractionDigits: 0 }).format(n);
   
   const getCliente = (id) => clienti.find(c => c.id === id);
@@ -1913,7 +1915,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
           >
             <option value="">Tutti gli stati</option>
             {pipelineStati.map(s => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>{pipelineLabels[s] || s}</option>
             ))}
           </select>
         </div>
@@ -2114,7 +2116,7 @@ function PipelineTab({ byStato, onSelectLead, onUpdateSaleStatus }) {
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ background: theme.status[st]?.color }} />
-                <span className="text-sm font-medium text-white capitalize">{st}</span>
+                <span className="text-sm font-medium text-white">{pipelineLabels[st] || st}</span>
               </div>
               <span className="text-xs text-zinc-500 bg-zinc-700/50 px-2 py-0.5 rounded-full">{byStato[st]?.length || 0}</span>
             </div>
@@ -2790,7 +2792,7 @@ function AgentDetailView({ agent, sales, onBack }) {
             {pipelineStati.map(st => (
               <div key={st} className="text-center p-3 rounded-xl" style={{ background: theme.status[st]?.bg }}>
                 <div className="text-xl font-semibold text-white">{byStato[st] || 0}</div>
-                <div className="text-xs capitalize" style={{ color: theme.status[st]?.color }}>{st}</div>
+                <div className="text-xs" style={{ color: theme.status[st]?.color }}>{pipelineLabels[st] || st}</div>
               </div>
             ))}
           </div>
@@ -5191,7 +5193,7 @@ function LeadForm({ type, userName, clienti, onSubmit }) {
         <div className="flex flex-wrap gap-2">
           {pipelineStati.slice(0, 4).map(st => (
             <button key={st} type="button" onClick={() => setForm({ ...form, stato: st })} className={`px-4 py-2 rounded-xl text-sm transition-all ${form.stato === st ? 'text-white' : 'text-zinc-500'}`} style={form.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#334155' }}>
-              {st}
+              {pipelineLabels[st] || st}
             </button>
           ))}
         </div>
