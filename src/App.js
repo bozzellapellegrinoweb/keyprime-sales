@@ -665,6 +665,21 @@ export default function App() {
   
   useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); loadSavedListings(); if (user.ruolo === 'admin') loadUsers(); }}, [user]);
 
+  // Global refresh function
+  const refreshAllData = async () => {
+    setLoading(true);
+    showToast('Aggiornamento...');
+    await Promise.all([
+      loadSales(),
+      loadClienti(),
+      loadTasks(),
+      loadSavedListings(),
+      user?.ruolo === 'admin' ? loadUsers() : Promise.resolve()
+    ]);
+    setLoading(false);
+    showToast('Dati aggiornati ✓');
+  };
+
   // Auth Handlers
   const handleLogin = async (username, password) => {
     setLoading(true); setError(null);
@@ -1072,6 +1087,9 @@ export default function App() {
             <div className="flex items-center justify-between px-4 py-4">
               <img src="/logo.png" alt="KeyPrime" className="h-12" />
               <div className="flex items-center gap-3">
+                <button onClick={refreshAllData} className="p-2 text-zinc-400 hover:text-white" title="Aggiorna">
+                  <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                </button>
                 <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white">
                   <Bell className="w-5 h-5" />
                   {notificationCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
@@ -1097,6 +1115,9 @@ export default function App() {
                 <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white bg-[#334155] rounded-xl">
                   <Bell className="w-5 h-5" />
                   {notificationCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
+                </button>
+                <button onClick={refreshAllData} className="p-2 text-zinc-400 hover:text-white bg-[#334155] rounded-xl" title="Aggiorna">
+                  <RefreshCw className="w-5 h-5" />
                 </button>
                 <Button onClick={() => setShowForm('lead')} icon={Plus}>Nuovo Lead</Button>
                 <Button onClick={() => setShowForm('vendita')} variant="secondary" icon={DollarSign}>Vendita</Button>
@@ -1340,10 +1361,15 @@ export default function App() {
             <div className="flex items-center justify-between px-4 py-4">
               <button onClick={() => setMobileMenuOpen(true)} className="text-zinc-400"><Menu className="w-6 h-6" /></button>
               <img src="/logo.png" alt="KeyPrime" className="h-16" />
-              <button onClick={() => setShowNotifications(true)} className="relative text-zinc-400">
-                <Bell className="w-5 h-5" />
-                {notificationCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">{notificationCount}</span>}
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={refreshAllData} className="text-zinc-400 hover:text-white" title="Aggiorna">
+                  <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+                <button onClick={() => setShowNotifications(true)} className="relative text-zinc-400">
+                  <Bell className="w-5 h-5" />
+                  {notificationCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">{notificationCount}</span>}
+                </button>
+              </div>
             </div>
             {/* Mobile Tabs */}
             <div className="flex gap-1 px-4 pb-3 overflow-x-auto">
@@ -1383,7 +1409,7 @@ export default function App() {
                   <Bell className="w-5 h-5" />
                   {notificationCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
                 </button>
-                <Button variant="secondary" icon={RefreshCw} onClick={() => { loadSales(); loadClienti(); loadTasks(); loadUsers(); }}>Aggiorna</Button>
+                <Button variant="secondary" icon={RefreshCw} onClick={refreshAllData}>Aggiorna</Button>
               </div>
             </div>
 
