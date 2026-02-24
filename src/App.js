@@ -881,7 +881,8 @@ export default function App() {
     const { error } = await supabase.from('sales').update(u).eq('id', id);
     if (error) {
       console.error('Update error:', error);
-      showToast('Errore: ' + error.message);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      showToast('Errore: ' + (error.message || error.details || 'Sconosciuto'));
       return;
     }
     console.log('Update success, reloading...');
@@ -4614,6 +4615,12 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
   }, [sale]);
   
   const handleSave = async () => {
+    console.log('handleSave called, sale:', sale);
+    console.log('sale.id:', sale?.id);
+    if (!sale?.id) {
+      console.error('No sale.id!');
+      return;
+    }
     setSaving(true);
     await onUpdateSale(sale.id, {
       progetto: editForm.progetto,
