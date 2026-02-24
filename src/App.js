@@ -1,7 +1,7 @@
 /* eslint-disable */
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List } from 'lucide-react';
+import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List, ExternalLink } from 'lucide-react';
 
 const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NjkyNjAsImV4cCI6MjA4NzI0NTI2MH0.oXUs9ITNi6lEFat_5FH0x-Exw5MDgRhwx6T0yL3xiWQ');
 
@@ -1669,6 +1669,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
               <tr className="border-b border-[#334155]">
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Data</th>
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Progetto</th>
+                <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Zona</th>
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Cliente</th>
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Agente</th>
                 <th className="text-right text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Valore</th>
@@ -1683,7 +1684,25 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
               {sales.map(s => (
                 <tr key={s.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-4 py-3 text-sm text-zinc-400">{fmtShort(s.data)}</td>
-                  <td className="px-4 py-3"><span className="text-white text-sm font-medium">{s.progetto}</span><br /><span className="text-xs text-zinc-500">{s.developer}</span></td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div>
+                        <span className="text-white text-sm font-medium">{s.progetto}</span>
+                        <br /><span className="text-xs text-zinc-500">{s.developer}</span>
+                      </div>
+                      {s.note && (
+                        <span title={s.note} className="text-amber-400 cursor-help">
+                          <FileText className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                      {s.pf_url && (
+                        <a href={s.pf_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-zinc-400">{s.zona || '-'}</td>
                   <td className="px-4 py-3 text-sm text-blue-400">{s.cliente_nome || '-'}</td>
                   <td className="px-4 py-3 text-sm text-zinc-400">{s.agente || s.segnalatore || '-'}</td>
                   <td className="px-4 py-3 text-right text-sm font-medium text-white">{s.valore > 0 ? fmt(s.valore) : '-'}</td>
@@ -1698,7 +1717,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
                     </select>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <select value={s.referente || ''} onChange={(e) => updateSale(s.id, { referente: e.target.value || null })} className="bg-zinc-700/50 rounded px-2 py-1 text-xs text-white w-12 focus:outline-none">
+                    <select value={s.referente || ''} onChange={(e) => updateSale(s.id, { referente: e.target.value || null })} className={`rounded px-2 py-1 text-xs font-medium w-12 focus:outline-none ${s.referente === 'Pellegrino' ? 'bg-green-500/20 text-green-400' : s.referente === 'Giovanni' ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-700/50 text-zinc-500'}`}>
                       <option value="">-</option>
                       <option value="Pellegrino">P</option>
                       <option value="Giovanni">G</option>
