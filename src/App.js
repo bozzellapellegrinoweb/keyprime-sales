@@ -1312,8 +1312,8 @@ export default function App() {
     const vendite = periodSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
     const totals = periodSales.reduce((a, s) => {
       const c = Number(s.valore) * (s.commission_pct || 5) / 100;
-      // Check if agent is agente_admin
-      const agentUser = users.find(u => u.nome === s.agente);
+      // Check if agent is agente_admin - cerca specificamente ruolo agente_admin
+      const agentUser = users.find(u => u.nome === s.agente && (u.ruolo === 'agente' || u.ruolo === 'agente_admin'));
       const isAgenteAdmin = agentUser?.ruolo === 'agente_admin';
       
       const ag = s.agente ? c * 0.7 : 0;
@@ -4885,10 +4885,13 @@ function TaskModal({ task, clienti, users, onSave, onClose }) {
 // User Modal
 function UserModal({ user, onSave, onClose }) {
   const [form, setForm] = useState(user || { nome: '', username: '', password: '', email: '', ruolo: 'agente', referente: 'Pellegrino', attivo: true });
+  const [saving, setSaving] = useState(false);
 
   const save = async () => {
     if (!form.nome || !form.username || !form.password) { alert('Compila i campi obbligatori'); return; }
+    setSaving(true);
     await onSave(form);
+    setSaving(false);
   };
 
   return (
@@ -4902,6 +4905,7 @@ function UserModal({ user, onSave, onClose }) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Select label="Ruolo" value={form.ruolo} onChange={(e) => setForm({ ...form, ruolo: e.target.value })}>
+            <option value="admin">Admin</option>
             <option value="agente">Agente</option>
             <option value="agente_admin">Agente Admin (70/30)</option>
             <option value="segnalatore">Segnalatore</option>
@@ -4924,7 +4928,7 @@ function UserModal({ user, onSave, onClose }) {
         )}
         <div className="flex gap-3 pt-2">
           <Button variant="secondary" onClick={onClose} className="flex-1">Annulla</Button>
-          <Button onClick={save} className="flex-1">Salva</Button>
+          <Button onClick={save} className="flex-1" disabled={saving}>{saving ? 'Salvataggio...' : 'Salva'}</Button>
         </div>
       </div>
     </Modal>
