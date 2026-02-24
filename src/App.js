@@ -320,11 +320,12 @@ const BottomSheet = ({ isOpen, onClose, title, children }) => {
 };
 
 // Sidebar Nav Item
-const NavItem = ({ icon: Icon, label, active, onClick, accent, badge }) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${active ? 'bg-white/10 text-white' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
+const NavItem = ({ icon: Icon, label, active, onClick, accent, badge, isNew }) => (
+  <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all relative ${active ? 'bg-white/10 text-white' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
     <Icon className="w-5 h-5" style={active ? { color: accent } : {}} />
     <span className="font-medium flex-1">{label}</span>
     {badge > 0 && <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">{badge}</span>}
+    {isNew && <span className="px-1.5 py-0.5 bg-emerald-500 text-white text-[10px] font-bold rounded animate-pulse">LIVE</span>}
   </button>
 );
 
@@ -1044,7 +1045,7 @@ export default function App() {
       { id: 'leads', icon: Target, label: 'Lead', accent: theme.sections.pipeline.accent },
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.vendite.accent },
       { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent },
-      { id: 'calculator', icon: Calculator, label: 'Calcolatore', accent: theme.sections.calculator.accent },
+      { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent, isNew: true },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: myTasks.length },
       { id: 'settings', icon: Settings, label: 'Account', accent: theme.sections.utenti.accent }
     ];
@@ -1090,7 +1091,7 @@ export default function App() {
           </div>
           <nav className="space-y-1 flex-1">
             {tabs.map(t => (
-              <NavItem key={t.id} icon={t.icon} label={t.label} active={activeTab === t.id} onClick={() => setActiveTab(t.id)} accent={t.accent} badge={t.badge} />
+              <NavItem key={t.id} icon={t.icon} label={t.label} active={activeTab === t.id} onClick={() => setActiveTab(t.id)} accent={t.accent} badge={t.badge} isNew={t.isNew} />
             ))}
           </nav>
           <div className="pt-4 border-t border-[#334155]">
@@ -1432,7 +1433,7 @@ export default function App() {
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.pipeline.accent },
       { id: 'crm', icon: Users, label: 'CRM', accent: theme.sections.crm.accent },
       { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent },
-      { id: 'calculator', icon: Calculator, label: 'Calcolatore', accent: theme.sections.calculator.accent },
+      { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent, isNew: true },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: pendingTasks.length },
       { id: 'utenti', icon: Settings, label: 'Team', accent: theme.sections.utenti.accent }
     ];
@@ -1447,7 +1448,7 @@ export default function App() {
           
           <nav className="space-y-1 flex-1">
             {tabs.map(t => (
-              <NavItem key={t.id} icon={t.icon} label={t.label} active={activeTab === t.id} onClick={() => { setActiveTab(t.id); setShowClienteDetail(null); }} accent={t.accent} badge={t.badge} />
+              <NavItem key={t.id} icon={t.icon} label={t.label} active={activeTab === t.id} onClick={() => { setActiveTab(t.id); setShowClienteDetail(null); }} accent={t.accent} badge={t.badge} isNew={t.isNew} />
             ))}
           </nav>
           
@@ -1698,7 +1699,7 @@ export default function App() {
               </div>
               <nav className="space-y-1">
                 {tabs.map(t => (
-                  <NavItem key={t.id} icon={t.icon} label={t.label} active={activeTab === t.id} onClick={() => { setActiveTab(t.id); setMobileMenuOpen(false); setShowClienteDetail(null); }} accent={t.accent} badge={t.badge} />
+                  <NavItem key={t.id} icon={t.icon} label={t.label} active={activeTab === t.id} onClick={() => { setActiveTab(t.id); setMobileMenuOpen(false); setShowClienteDetail(null); }} accent={t.accent} badge={t.badge} isNew={t.isNew} />
                 ))}
               </nav>
               <div className="absolute bottom-4 left-4 right-4">
