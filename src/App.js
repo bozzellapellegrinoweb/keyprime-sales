@@ -4616,6 +4616,7 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
     });
     setSaving(false);
     setEditing(false);
+    onClose(); // Chiudi il modal per mostrare i dati aggiornati
   };
   
   return (
