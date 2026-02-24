@@ -1044,6 +1044,7 @@ export default function App() {
       { id: 'leads', icon: Target, label: 'Lead', accent: theme.sections.pipeline.accent },
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.vendite.accent },
       { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent },
+      { id: 'calculator', icon: Calculator, label: 'Calcolatore', accent: theme.sections.calculator.accent },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: myTasks.length },
       { id: 'settings', icon: Settings, label: 'Account', accent: theme.sections.utenti.accent }
     ];
@@ -1503,6 +1504,7 @@ export default function App() {
                   {activeTab === 'pipeline' && 'Gestisci il flusso di vendita'}
                   {activeTab === 'crm' && `${clienti.length} clienti in database`}
                   {activeTab === 'offplan' && `Progetti Off-Plan • ${savedListings.length} salvati`}
+                  {activeTab === 'calculator' && 'Calcola rendimenti immobiliari UAE'}
                   {activeTab === 'tasks' && `${pendingTasks.length} task da completare`}
                   {activeTab === 'utenti' && `${users.length} membri del team`}
                 </p>
@@ -1673,6 +1675,9 @@ export default function App() {
 
             {/* OFF-PLAN */}
             {activeTab === 'offplan' && <OffPlanTab clienti={clienti} onCreateLead={createLeadFromListing} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeListing} user={user} />}
+
+            {/* CALCULATOR */}
+            {activeTab === 'calculator' && <ROICalculator />}
 
             {/* TASKS */}
             {activeTab === 'tasks' && <AdminTasksTab tasks={tasks} clienti={clienti} users={users} onComplete={completeTask} onDelete={deleteTask} onEdit={setShowTaskModal} onCreate={() => setShowTaskModal({})} />}
