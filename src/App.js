@@ -1030,6 +1030,7 @@ export default function App() {
     const tabs = [
       { id: 'home', icon: LayoutDashboard, label: 'Home', accent: theme.sections.dashboard.accent },
       { id: 'leads', icon: Target, label: 'Lead', accent: theme.sections.pipeline.accent },
+      { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.vendite.accent },
       { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: myTasks.length },
       { id: 'settings', icon: Settings, label: 'Account', accent: theme.sections.utenti.accent }
@@ -1118,6 +1119,7 @@ export default function App() {
                 <p className="text-zinc-500 text-sm">
                   {activeTab === 'home' && 'Il tuo riepilogo'}
                   {activeTab === 'leads' && `${mySales.length} lead totali`}
+                  {activeTab === 'pipeline' && 'Stato dei tuoi lead'}
                   {activeTab === 'offplan' && 'Progetti Off-Plan'}
                   {activeTab === 'tasks' && `${myTasks.length} task pendenti`}
                 </p>
@@ -1270,6 +1272,45 @@ export default function App() {
                 users={[]}
                 isAdmin={false}
               />
+            )}
+
+            {activeTab === 'pipeline' && (
+              <div className="space-y-6">
+                {/* Pipeline Overview */}
+                <div className="grid grid-cols-5 gap-3">
+                  {pipelineStati.map(st => (
+                    <Card key={st} padding="p-4" className="text-center">
+                      <p className="text-3xl font-bold" style={{ color: theme.status[st]?.color }}>{byStato[st]?.length || 0}</p>
+                      <p className="text-xs text-zinc-500 mt-1">{pipelineLabels[st] || st}</p>
+                    </Card>
+                  ))}
+                </div>
+                
+                {/* Kanban style */}
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  {pipelineStati.map(st => (
+                    <div key={st}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-3 h-3 rounded-full" style={{ background: theme.status[st]?.color }} />
+                        <span className="text-white font-medium text-sm">{pipelineLabels[st] || st}</span>
+                        <span className="text-zinc-500 text-xs">({byStato[st]?.length || 0})</span>
+                      </div>
+                      <div className="space-y-2">
+                        {(byStato[st] || []).map(s => (
+                          <Card key={s.id} hover onClick={() => setShowLeadDetail(s)} padding="p-3" className="border-l-2" style={{ borderLeftColor: theme.status[st]?.color }}>
+                            <p className="text-white text-sm font-medium truncate">{s.progetto}</p>
+                            <p className="text-zinc-500 text-xs">{s.developer}</p>
+                            {s.valore > 0 && <p className="text-emerald-400 text-sm mt-1">{fmt(s.valore)}</p>}
+                          </Card>
+                        ))}
+                        {(!byStato[st] || byStato[st].length === 0) && (
+                          <div className="text-center py-4 text-zinc-600 text-xs">Nessun lead</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {activeTab === 'tasks' && <AgentTasksTab tasks={myTasks} allTasks={tasks.filter(t => t.assegnato_a === user?.nome)} clienti={clienti} onComplete={completeTask} onAddNote={(t) => setShowNoteModal(t)} />}
@@ -4541,6 +4582,7 @@ function LoginForm({ onLogin, loading }) {
 function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert, isAdmin }) {
   const mc = (sale?.stato === 'venduto' || sale?.stato === 'incassato') ? Number(sale.valore) * (sale.commission_pct || 5) / 100 * rate : 0;
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({
     progetto: sale?.progetto || '',
     developer: sale?.developer || '',
@@ -4561,14 +4603,16 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
     }
   }, [sale]);
   
-  const handleSave = () => {
-    onUpdateSale(sale.id, {
+  const handleSave = async () => {
+    setSaving(true);
+    await onUpdateSale(sale.id, {
       progetto: editForm.progetto,
       developer: editForm.developer,
       zona: editForm.zona,
       valore: editForm.valore ? parseFloat(editForm.valore) : 0,
       note: editForm.note
     });
+    setSaving(false);
     setEditing(false);
   };
   
@@ -4616,8 +4660,10 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
                 </div>
               </div>
               <div className="flex gap-2 mt-4">
-                <Button variant="secondary" onClick={() => setEditing(false)} className="flex-1">Annulla</Button>
-                <Button onClick={handleSave} className="flex-1">Salva</Button>
+                <Button variant="secondary" onClick={() => setEditing(false)} className="flex-1" disabled={saving}>Annulla</Button>
+                <Button onClick={handleSave} className="flex-1" disabled={saving}>
+                  {saving ? <><RefreshCw className="w-4 h-4 animate-spin mr-2" />Salvataggio...</> : 'Salva'}
+                </Button>
               </div>
             </Card>
           </div>
@@ -4676,7 +4722,7 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
             <div className="flex gap-2 overflow-x-auto pb-2">
               {pipelineStati.slice(0, -1).map(st => (
                 <button key={st} onClick={() => { onUpdateSale(sale.id, { stato: st }); if (st !== sale.stato) onClose(); }} className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${sale?.stato === st ? 'text-white' : 'text-zinc-500 hover:text-white'}`} style={sale?.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#334155' }}>
-                  {st}
+                  {pipelineLabels[st] || st}
                 </button>
               ))}
             </div>
