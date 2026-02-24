@@ -1044,7 +1044,7 @@ export default function App() {
       { id: 'home', icon: LayoutDashboard, label: 'Home', accent: theme.sections.dashboard.accent },
       { id: 'leads', icon: Target, label: 'Lead', accent: theme.sections.pipeline.accent },
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.vendite.accent },
-      { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent },
+      { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent, isNew: true },
       { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent, isNew: true },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: myTasks.length },
       { id: 'settings', icon: Settings, label: 'Account', accent: theme.sections.utenti.accent }
@@ -1432,7 +1432,7 @@ export default function App() {
       { id: 'vendite', icon: DollarSign, label: 'Vendite', accent: theme.sections.vendite.accent },
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.pipeline.accent },
       { id: 'crm', icon: Users, label: 'CRM', accent: theme.sections.crm.accent },
-      { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent },
+      { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent, isNew: true },
       { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent, isNew: true },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: pendingTasks.length },
       { id: 'utenti', icon: Settings, label: 'Team', accent: theme.sections.utenti.accent }
