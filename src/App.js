@@ -3007,8 +3007,10 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
       marker.on('click', (e) => {
         // Stop event propagation to prevent map click handler
         window.L.DomEvent.stopPropagation(e);
+        setJustOpened(true);
         setPopupProject(project);
-        // Don't call onSelectProject here - let user click "Dettagli" button in popup
+        // Reset after a tick
+        setTimeout(() => setJustOpened(false), 100);
       });
 
       markersMap.current[project.project_id] = marker;
@@ -3025,7 +3027,14 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
   }, [selectedProject, mapLoaded, projectsByLocation]);
 
   // Close popup when clicking elsewhere
-  const handleMapClick = () => setPopupProject(null);
+  // Close popup when clicking elsewhere, but not immediately after opening
+  const [justOpened, setJustOpened] = useState(false);
+  const handleMapClick = () => {
+    if (!justOpened) {
+      setPopupProject(null);
+    }
+    setJustOpened(false);
+  };
 
   const formatPrice = (price) => {
     if (!price || price === 0) return 'TBD';
@@ -3210,22 +3219,25 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
   
   const ITEMS_PER_PAGE = 24;
 
-  const emirates = ['Dubai', 'Abu Dhabi', 'Ras Al Khaimah', 'Sharjah', 'Ajman'];
-  const dubaiAreas = [
-    // Dubai
-    'Dubai Marina', 'Downtown Dubai', 'Business Bay', 'Palm Jumeirah', 'JBR', 'Dubai Hills Estate', 
-    'Mohammed Bin Rashid City', 'Dubai Creek Harbour', 'Jumeirah Village Circle', 'JVC', 'JLT',
-    'Dubai South', 'DAMAC Hills', 'DAMAC Hills 2', 'Arabian Ranches', 'Meydan', 'DIFC', 
-    'Dubai Islands', 'Expo City', 'City Walk', 'Sobha Hartland', 'Tilal Al Ghaf', 'The Valley',
-    'Motor City', 'Sports City', 'Al Furjan', 'Discovery Gardens', 'International City',
-    'Dubai Silicon Oasis', 'Arjan', 'Al Barsha', 'Jumeirah', 'Umm Suqeim',
-    // Abu Dhabi
-    'Yas Island', 'Saadiyat Island', 'Al Reem Island', 'Al Raha Beach', 'Khalifa City', 'Masdar City',
-    // RAK
-    'Al Marjan Island', 'Mina Al Arab', 'Al Hamra Village',
-    // Sharjah
-    'Aljada', 'Al Mamzar', 'Al Nahda'
-  ];
+  const emirates = ['Dubai', 'Abu Dhabi', 'Ras Al Khaimah', 'Sharjah', 'Ajman', 'Umm Al Quwain'];
+  
+  const zonesByEmirate = {
+    'Dubai': ['Dubai Marina', 'Downtown Dubai', 'Business Bay', 'Palm Jumeirah', 'JBR', 'Dubai Hills Estate', 
+      'Mohammed Bin Rashid City', 'Dubai Creek Harbour', 'Jumeirah Village Circle', 'JVC', 'JLT',
+      'Dubai South', 'DAMAC Hills', 'DAMAC Hills 2', 'Arabian Ranches', 'Meydan', 'DIFC', 
+      'Dubai Islands', 'Expo City', 'City Walk', 'Sobha Hartland', 'Tilal Al Ghaf', 'The Valley',
+      'Motor City', 'Sports City', 'Al Furjan', 'Discovery Gardens', 'International City',
+      'Dubai Silicon Oasis', 'Arjan', 'Al Barsha', 'Jumeirah', 'Umm Suqeim', 'Al Quoz', 'Deira', 'Bur Dubai'],
+    'Abu Dhabi': ['Yas Island', 'Saadiyat Island', 'Al Reem Island', 'Al Raha Beach', 'Khalifa City', 'Masdar City', 'Al Ghadeer', 'Al Shamkha', 'Corniche'],
+    'Ras Al Khaimah': ['Al Marjan Island', 'Mina Al Arab', 'Al Hamra Village', 'Hayat Island', 'RAK Central', 'Yasmin Village'],
+    'Sharjah': ['Aljada', 'Al Mamzar Sharjah', 'Al Nahda Sharjah', 'Al Majaz', 'Muwaileh', 'Al Khan'],
+    'Ajman': ['Ajman Downtown', 'Ajman Corniche', 'Al Rashidiya', 'Al Nuaimiya', 'Emirates City'],
+    'Umm Al Quwain': ['UAQ Marina', 'UAQ Corniche', 'Al Salamah']
+  };
+  
+  // Get zones based on selected emirate or all
+  const availableZones = filters.emirate ? zonesByEmirate[filters.emirate] || [] : Object.values(zonesByEmirate).flat();
+  
   const topDevelopers = ['Emaar Properties', 'Damac Properties', 'Sobha Realty', 'Nakheel', 'Meraas', 'Aldar Properties', 'Azizi Developments', 'Binghatti', 'Ellington', 'Omniyat Group', 'Danube Properties', 'Select Group', 'Deyaar', 'MAG', 'Reportage Properties'];
   const bedroomOptions = ['Studio', '1', '2', '3', '4', '5+'];
   const statusOptions = [
@@ -3588,7 +3600,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
           <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto, zona o developer..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-3">
             <select value={filters.emirate} onChange={(e) => setFilters(f => ({ ...f, emirate: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">🇦🇪 Emirato</option>{emirates.map(e => <option key={e} value={e}>{e}</option>)}</select>
-            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}</select>
+            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{availableZones.map(a => <option key={a} value={a}>{a}</option>)}</select>
             <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
             <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
             <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
@@ -3740,7 +3752,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                 </select>
                 <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm min-w-[120px] flex-shrink-0">
                   <option value="">Tutte le zone</option>
-                  {dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}
+                  {availableZones.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
                 <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm min-w-[130px] flex-shrink-0">
                   <option value="">Tutti i developer</option>
@@ -3796,7 +3808,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                 </div>
                 {/* Map */}
                 <div className="flex-1 relative">
-                  <MapboxMap projects={allMapProjects.length > 0 ? allMapProjects : listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} />
+                  <MapboxMap projects={listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} />
                 </div>
               </div>
 
@@ -3804,7 +3816,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
               <div className="lg:hidden h-full flex flex-col">
                 {/* Map takes most space */}
                 <div className="flex-1 relative">
-                  <MapboxMap projects={allMapProjects.length > 0 ? allMapProjects : listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} />
+                  <MapboxMap projects={listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} />
                 </div>
                 
                 {/* Bottom Carousel */}
