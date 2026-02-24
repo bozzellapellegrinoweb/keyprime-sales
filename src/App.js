@@ -876,7 +876,15 @@ export default function App() {
         }
       }
     }
-    await supabase.from('sales').update(u).eq('id', id); 
+    
+    console.log('Updating sale:', id, u);
+    const { error } = await supabase.from('sales').update(u).eq('id', id);
+    if (error) {
+      console.error('Update error:', error);
+      showToast('Errore: ' + error.message);
+      return;
+    }
+    console.log('Update success, reloading...');
     await loadSales();
     showToast('Salvato');
   };
