@@ -596,6 +596,7 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   
   // Modals
   const [showForm, setShowForm] = useState(null);
@@ -782,6 +783,8 @@ export default function App() {
 
   // Sales Handlers
   const addLead = async (ld) => {
+    if (submitting) return;
+    setSubmitting(true);
     try {
       let cliente_id = ld.cliente_id;
       if (!cliente_id && ld.cliente_nome) {
@@ -799,12 +802,15 @@ export default function App() {
         agente: ld.agente, segnalatore: ld.segnalatore, referente: user?.referente, commission_pct: 5,
         inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: ld.stato || 'lead', cliente_id
       }]);
-      if (error) { console.error('Insert error:', error); showToast('Errore: ' + error.message); return; }
+      if (error) { console.error('Insert error:', error); showToast('Errore: ' + error.message); setSubmitting(false); return; }
       showToast('Lead aggiunto'); setShowForm(null); loadSales(); loadClienti();
     } catch (err) { console.error('addLead error:', err); showToast('Errore salvataggio'); }
+    setSubmitting(false);
   };
 
   const addSale = async (sd) => {
+    if (submitting) return;
+    setSubmitting(true);
     try {
       let cliente_id = sd.cliente_id;
       if (!cliente_id && sd.nuovo_cliente_nome) {
@@ -822,9 +828,10 @@ export default function App() {
         agente: sd.agente, segnalatore: sd.segnalatore, cliente_id,
         referente: user?.referente, commission_pct: 5, inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: 'venduto'
       }]);
-      if (error) { console.error('Insert error:', error); showToast('Errore: ' + error.message); return; }
+      if (error) { console.error('Insert error:', error); showToast('Errore: ' + error.message); setSubmitting(false); return; }
       showToast('Vendita registrata'); setShowForm(null); loadSales(); loadClienti();
     } catch (err) { console.error('addSale error:', err); showToast('Errore salvataggio'); }
+    setSubmitting(false);
   };
 
   const convertLeadToSale = async (id, v) => {
@@ -1031,8 +1038,14 @@ export default function App() {
             {showForm === 'vendita' && <SaleForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addSale} />}
           </div>
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0f172a]/95 backdrop-blur-xl border-t border-[#334155]">
-            <Button onClick={() => document.getElementById('submitBtn')?.click()} className="w-full py-4">
-              {showForm === 'lead' ? 'Salva Lead' : 'Registra Vendita'}
+            <Button onClick={() => document.getElementById('submitBtn')?.click()} className="w-full py-4" disabled={submitting}>
+              {submitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Salvataggio...
+                </span>
+              ) : (
+                showForm === 'lead' ? 'Salva Lead' : 'Registra Vendita'
+              )}
             </Button>
           </div>
         </div>
@@ -4452,6 +4465,37 @@ function LoginForm({ onLogin, loading }) {
 // Lead Detail Sheet
 function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert, isAdmin }) {
   const mc = (sale?.stato === 'venduto' || sale?.stato === 'incassato') ? Number(sale.valore) * (sale.commission_pct || 5) / 100 * rate : 0;
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    progetto: sale?.progetto || '',
+    developer: sale?.developer || '',
+    zona: sale?.zona || '',
+    valore: sale?.valore || '',
+    note: sale?.note || ''
+  });
+  
+  useEffect(() => {
+    if (sale) {
+      setEditForm({
+        progetto: sale.progetto || '',
+        developer: sale.developer || '',
+        zona: sale.zona || '',
+        valore: sale.valore || '',
+        note: sale.note || ''
+      });
+    }
+  }, [sale]);
+  
+  const handleSave = () => {
+    onUpdateSale(sale.id, {
+      progetto: editForm.progetto,
+      developer: editForm.developer,
+      zona: editForm.zona,
+      valore: editForm.valore ? parseFloat(editForm.valore) : 0,
+      note: editForm.note
+    });
+    setEditing(false);
+  };
   
   return (
     <BottomSheet isOpen={!!sale} onClose={onClose} title={sale?.progetto || 'Lead'}>
@@ -4459,24 +4503,84 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
         {/* Status */}
         <div className="flex items-center justify-between">
           <StatusBadge status={sale?.stato || 'lead'} />
-          <span className="text-zinc-500 text-sm">{fmtDate(sale?.data)}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-zinc-500 text-sm">{fmtDate(sale?.data)}</span>
+            <button onClick={() => setEditing(!editing)} className="p-1.5 rounded-lg bg-zinc-700/50 text-zinc-400 hover:text-white">
+              <Edit2 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Value */}
-        <Card className="border-amber-500/20 bg-amber-500/5">
-          <p className="text-zinc-400 text-sm">Valore</p>
-          <p className="text-2xl font-semibold text-white mt-1">{sale?.valore > 0 ? `${fmt(sale.valore)} AED` : 'TBD'}</p>
-          {mc > 0 && <p className="text-emerald-400 text-sm mt-1">Commissione: {fmt(mc)} AED {sale?.pagato ? '✓' : ''}</p>}
-        </Card>
+        {editing ? (
+          /* Edit Mode */
+          <div className="space-y-3">
+            <Card className="border-blue-500/20 bg-blue-500/5">
+              <p className="text-blue-400 text-xs font-medium mb-3">Modifica Lead</p>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-zinc-500 text-xs">Progetto/Immobile</label>
+                  <input type="text" value={editForm.progetto} onChange={(e) => setEditForm({...editForm, progetto: e.target.value})} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-zinc-500 text-xs">Developer</label>
+                    <input type="text" value={editForm.developer} onChange={(e) => setEditForm({...editForm, developer: e.target.value})} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-zinc-500 text-xs">Zona</label>
+                    <input type="text" value={editForm.zona} onChange={(e) => setEditForm({...editForm, zona: e.target.value})} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-zinc-500 text-xs">Valore (AED)</label>
+                  <input type="number" value={editForm.valore} onChange={(e) => setEditForm({...editForm, valore: e.target.value})} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                </div>
+                <div>
+                  <label className="text-zinc-500 text-xs">Note</label>
+                  <textarea value={editForm.note} onChange={(e) => setEditForm({...editForm, note: e.target.value})} rows={2} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1 resize-none" />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <Button variant="secondary" onClick={() => setEditing(false)} className="flex-1">Annulla</Button>
+                <Button onClick={handleSave} className="flex-1">Salva</Button>
+              </div>
+            </Card>
+          </div>
+        ) : (
+          /* View Mode */
+          <>
+            {/* Value */}
+            <Card className="border-amber-500/20 bg-amber-500/5">
+              <p className="text-zinc-400 text-sm">Valore</p>
+              <p className="text-2xl font-semibold text-white mt-1">{sale?.valore > 0 ? `${fmt(sale.valore)} AED` : 'TBD'}</p>
+              {mc > 0 && <p className="text-emerald-400 text-sm mt-1">Commissione: {fmt(mc)} AED {sale?.pagato ? '✓' : ''}</p>}
+            </Card>
 
-        {/* Details */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card padding="p-3"><p className="text-zinc-500 text-xs">Developer</p><p className="text-white">{sale?.developer}</p></Card>
-          <Card padding="p-3"><p className="text-zinc-500 text-xs">Zona</p><p className="text-white">{sale?.zona}</p></Card>
-        </div>
+            {/* Property/Immobile Details */}
+            <Card>
+              <p className="text-zinc-500 text-xs mb-2">Immobile</p>
+              <p className="text-white font-medium text-lg">{sale?.progetto || 'N/A'}</p>
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div><p className="text-zinc-500 text-xs">Developer</p><p className="text-white text-sm">{sale?.developer || 'N/A'}</p></div>
+                <div><p className="text-zinc-500 text-xs">Zona</p><p className="text-white text-sm">{sale?.zona || 'N/A'}</p></div>
+              </div>
+              {sale?.note && (
+                <div className="mt-3 pt-3 border-t border-zinc-700">
+                  <p className="text-zinc-500 text-xs">Note</p>
+                  <p className="text-zinc-300 text-sm mt-1">{sale.note}</p>
+                </div>
+              )}
+              {sale?.pf_url && (
+                <a href={sale.pf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-3 text-blue-400 text-sm hover:underline">
+                  <Building2 className="w-3 h-3" /> Vedi su PropertyFinder
+                </a>
+              )}
+            </Card>
+          </>
+        )}
 
         {/* Cliente */}
-        {cliente && (
+        {cliente && !editing && (
           <Card>
             <p className="text-zinc-500 text-xs mb-2">Cliente</p>
             <div className="flex items-center gap-3 mb-3">
@@ -4491,25 +4595,27 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
         )}
 
         {/* Status Change */}
-        <div>
-          <p className="text-zinc-500 text-xs mb-2">Cambia stato</p>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {pipelineStati.slice(0, -1).map(st => (
-              <button key={st} onClick={() => { onUpdateSale(sale.id, { stato: st }); if (st !== sale.stato) onClose(); }} className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${sale?.stato === st ? 'text-white' : 'text-zinc-500 hover:text-white'}`} style={sale?.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#334155' }}>
-                {st}
-              </button>
-            ))}
+        {!editing && (
+          <div>
+            <p className="text-zinc-500 text-xs mb-2">Cambia stato</p>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {pipelineStati.slice(0, -1).map(st => (
+                <button key={st} onClick={() => { onUpdateSale(sale.id, { stato: st }); if (st !== sale.stato) onClose(); }} className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${sale?.stato === st ? 'text-white' : 'text-zinc-500 hover:text-white'}`} style={sale?.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#334155' }}>
+                  {st}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Actions */}
-        {['prenotato', 'trattativa'].includes(sale?.stato) && (
+        {!editing && ['prenotato', 'trattativa'].includes(sale?.stato) && (
           <Button onClick={onConvert} icon={DollarSign} className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white">
             Registra Vendita
           </Button>
         )}
 
-        {isAdmin && (
+        {isAdmin && !editing && (
           <Button variant="danger" icon={Trash2} className="w-full">Elimina Lead</Button>
         )}
       </div>
