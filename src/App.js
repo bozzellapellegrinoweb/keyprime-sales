@@ -78,7 +78,8 @@ const getLocationCoords = (locationName) => {
 const zones = ['Palm Jumeirah', 'Dubai Marina', 'Downtown', 'Dubai Creek', 'JBR', 'Business Bay', 'JLT', 'DIFC', 'MBR City', 'Dubai Hills', 'Altro'];
 const developers = ['Emaar', 'Damac', 'Sobha', 'Meraas', 'Nakheel', 'Dubai Properties', 'Azizi', 'Danube', 'Binghatti', 'Altro'];
 const commissions = [2, 4, 5, 6];
-const pipelineStati = ['lead', 'trattativa', 'prenotato', 'venduto', 'incassato'];
+const pipelineStati = ['lead', 'trattativa', 'EOI', 'venduto', 'incassato'];
+const pipelineLabels = { 'lead': 'Lead', 'trattativa': 'Trattativa', 'EOI': 'EOI', 'venduto': 'Venduto (SPA)', 'incassato': 'Incassato' };
 const clienteStati = ['nuovo', 'contattato', 'interessato', 'trattativa', 'acquistato', 'perso'];
 const taskPriorita = ['bassa', 'normale', 'alta', 'urgente'];
 
@@ -99,7 +100,8 @@ const theme = {
   status: {
     lead: { color: '#71717A', bg: 'rgba(113,113,122,0.15)' },
     trattativa: { color: '#60A5FA', bg: 'rgba(96,165,250,0.15)' },
-    prenotato: { color: '#FBBF24', bg: 'rgba(251,191,36,0.15)' },
+    EOI: { color: '#FBBF24', bg: 'rgba(251,191,36,0.15)' },
+    prenotato: { color: '#FBBF24', bg: 'rgba(251,191,36,0.15)' }, // legacy
     venduto: { color: '#34D399', bg: 'rgba(52,211,153,0.15)' },
     incassato: { color: '#22C55E', bg: 'rgba(34,197,94,0.15)' }
   },
@@ -171,7 +173,8 @@ const Avatar = ({ nome, cognome, size = 'md', color }) => {
 const StatusBadge = ({ status, type = 'pipeline' }) => {
   const config = type === 'pipeline' ? theme.status[status] : type === 'priority' ? theme.priority[status] : theme.status[status];
   if (!config) return null;
-  return <span className="px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: config.bg, color: config.color }}>{status}</span>;
+  const label = pipelineLabels[status] || status;
+  return <span className="px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: config.bg, color: config.color }}>{label}</span>;
 };
 
 // Card Component
@@ -1151,20 +1154,35 @@ export default function App() {
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <MetricCard label="Lead Attivi" value={mySales.filter(s => s.stato !== 'venduto' && s.stato !== 'incassato').length} icon={Target} color="#60A5FA" onClick={() => setActiveTab('leads')} />
-                  <MetricCard label="Vendite" value={myVendite.length} icon={TrendingUp} color="#34D399" />
-                  <MetricCard label="Commissioni" value={fmt(totalComm)} icon={DollarSign} color="#FBBF24" />
-                  <MetricCard label="Task" value={myTasks.length} icon={ListTodo} color="#F472B6" onClick={() => setActiveTab('tasks')} />
+                  <MetricCard label="Vendite (SPA)" value={myVendite.length} icon={TrendingUp} color="#34D399" />
+                  <MetricCard label="Comm. Maturate" value={fmt(totalComm)} icon={DollarSign} color="#FBBF24" />
+                  <MetricCard label="Comm. Pagate" value={fmt(pagate)} icon={Check} color="#34D399" />
                 </div>
+
+                {/* Pipeline */}
+                <Card>
+                  <h3 className="text-white font-medium mb-4">Pipeline</h3>
+                  <div className="grid grid-cols-5 gap-2">
+                    {pipelineStati.map(st => (
+                      <div key={st} className="text-center">
+                        <div className="rounded-xl py-3 px-2" style={{ background: theme.status[st]?.bg || '#334155' }}>
+                          <p className="text-2xl font-bold" style={{ color: theme.status[st]?.color || '#fff' }}>{byStato[st]?.length || 0}</p>
+                        </div>
+                        <p className="text-xs text-zinc-500 mt-2">{pipelineLabels[st] || st}</p>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
 
                 <Card>
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-white font-medium">Commissioni</span>
-                    <span className="text-zinc-400 text-sm">{fmt(totalComm)} AED totali</span>
+                    <span className="text-zinc-400 text-sm">{fmt(totalComm)} AED maturate</span>
                   </div>
                   <ProgressBar value={pagate} max={totalComm || 1} color="#34D399" />
                   <div className="flex justify-between mt-3 text-sm">
-                    <span className="text-emerald-400">Pagate: {fmt(pagate)} AED</span>
-                    <span className="text-zinc-500">Pending: {fmt(totalComm - pagate)} AED</span>
+                    <span className="text-emerald-400">✓ Pagate: {fmt(pagate)} AED</span>
+                    <span className="text-amber-400">⏳ Pending: {fmt(totalComm - pagate)} AED</span>
                   </div>
                 </Card>
 
@@ -1187,13 +1205,13 @@ export default function App() {
                     <h2 className="text-lg font-semibold text-white">Lead Aperti</h2>
                     <button onClick={() => setActiveTab('leads')} className="text-sm text-violet-400">Tutti →</button>
                   </div>
-                  {mySales.filter(s => s.stato === 'lead' || s.stato === 'trattativa' || s.stato === 'proposta').length === 0 ? (
+                  {mySales.filter(s => s.stato === 'lead' || s.stato === 'trattativa' || s.stato === 'EOI').length === 0 ? (
                     <Card padding="p-6" className="text-center">
                       <p className="text-zinc-500">Nessun lead aperto</p>
                     </Card>
                   ) : (
                     <div className="grid gap-3 lg:grid-cols-2">
-                      {mySales.filter(s => s.stato === 'lead' || s.stato === 'trattativa' || s.stato === 'proposta').slice(0, 4).map(s => (
+                      {mySales.filter(s => s.stato === 'lead' || s.stato === 'trattativa' || s.stato === 'EOI').slice(0, 4).map(s => (
                         <Card key={s.id} hover onClick={() => setShowLeadDetail(s)} padding="p-4">
                           <div className="flex items-center gap-4">
                             <div className="w-1 h-12 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
