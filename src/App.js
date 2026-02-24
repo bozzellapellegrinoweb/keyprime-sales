@@ -4320,7 +4320,12 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
     `${c.nome} ${c.cognome} ${c.telefono}`.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
+  // Check if we can create lead
+  const canCreate = selectedCliente || (createNew && newCliente.nome.trim());
+  
   const handleCreate = () => {
+    if (!canCreate) return;
+    
     const leadData = {
       progetto: listing.title?.substring(0, 50) || listing.location?.name,
       developer: listing.location?.name || 'TBD',
@@ -4366,10 +4371,10 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
           
           {/* Client Selection */}
           <div>
-            <label className="text-sm text-zinc-400 mb-2 block">Associa a Cliente (opzionale)</label>
-            <input type="text" placeholder="Cerca cliente..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCreateNew(false); }} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <label className="text-sm text-zinc-400 mb-2 block">Associa a Cliente <span className="text-red-400">*</span></label>
+            <input type="text" placeholder="Cerca cliente o digita nome per crearne uno nuovo..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setSelectedCliente(null); setCreateNew(false); }} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
             
-            {searchQuery && !createNew && (
+            {searchQuery && !createNew && !selectedCliente && (
               <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
                 {filteredClienti.slice(0, 5).map(c => (
                   <button key={c.id} onClick={() => { setSelectedCliente(c); setSearchQuery(`${c.nome} ${c.cognome}`); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${selectedCliente?.id === c.id ? 'bg-orange-500/20 text-orange-400' : 'hover:bg-zinc-700/50 text-zinc-300'}`}>
@@ -4377,32 +4382,42 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
                     <span className="text-sm">{c.nome} {c.cognome}</span>
                   </button>
                 ))}
-                {filteredClienti.length === 0 && (
-                  <button onClick={() => { setCreateNew(true); setNewCliente(n => ({ ...n, nome: searchQuery.split(' ')[0], cognome: searchQuery.split(' ')[1] || '' })); }} className="w-full text-left p-2 rounded-lg text-orange-400 hover:bg-zinc-700/50 text-sm">
-                    + Crea nuovo cliente "{searchQuery}"
-                  </button>
-                )}
+                <button onClick={() => { setCreateNew(true); setNewCliente(n => ({ ...n, nome: searchQuery.split(' ')[0], cognome: searchQuery.split(' ')[1] || '' })); }} className="w-full text-left p-2 rounded-lg text-orange-400 hover:bg-zinc-700/50 text-sm">
+                  + Crea nuovo cliente "{searchQuery}"
+                </button>
+              </div>
+            )}
+            
+            {selectedCliente && (
+              <div className="mt-2 flex items-center gap-2 p-2 bg-emerald-500/20 rounded-lg">
+                <Avatar nome={selectedCliente.nome} cognome={selectedCliente.cognome} size="xs" />
+                <span className="text-sm text-emerald-400">{selectedCliente.nome} {selectedCliente.cognome}</span>
+                <button onClick={() => { setSelectedCliente(null); setSearchQuery(''); }} className="ml-auto text-zinc-400 hover:text-white"><X className="w-4 h-4" /></button>
               </div>
             )}
           </div>
           
           {/* New Client Form */}
           {createNew && (
-            <div className="space-y-3 p-3 bg-zinc-700/50/30 rounded-xl">
-              <p className="text-sm text-zinc-400">Nuovo Cliente</p>
+            <div className="space-y-3 p-3 bg-zinc-700/30 rounded-xl border border-orange-500/30">
+              <p className="text-sm text-orange-400 font-medium">Nuovo Cliente</p>
               <div className="grid grid-cols-2 gap-2">
-                <input type="text" placeholder="Nome" value={newCliente.nome} onChange={(e) => setNewCliente(n => ({ ...n, nome: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+                <input type="text" placeholder="Nome *" value={newCliente.nome} onChange={(e) => setNewCliente(n => ({ ...n, nome: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
                 <input type="text" placeholder="Cognome" value={newCliente.cognome} onChange={(e) => setNewCliente(n => ({ ...n, cognome: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
               </div>
               <input type="tel" placeholder="Telefono" value={newCliente.telefono} onChange={(e) => setNewCliente(n => ({ ...n, telefono: e.target.value }))} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
               <input type="email" placeholder="Email" value={newCliente.email} onChange={(e) => setNewCliente(n => ({ ...n, email: e.target.value }))} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
             </div>
           )}
+          
+          {!canCreate && (
+            <p className="text-xs text-zinc-500 text-center">Seleziona un cliente esistente o creane uno nuovo per continuare</p>
+          )}
         </div>
         
         <div className="flex gap-3 p-4 border-t border-zinc-800">
           <Button variant="secondary" className="flex-1" onClick={onClose}>Annulla</Button>
-          <Button className="flex-1" onClick={handleCreate}>Crea Lead</Button>
+          <Button className="flex-1" onClick={handleCreate} disabled={!canCreate} style={{ opacity: canCreate ? 1 : 0.5 }}>Crea Lead</Button>
         </div>
       </div>
     </div>
