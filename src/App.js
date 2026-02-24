@@ -2893,12 +2893,20 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
   const projectsByLocation = React.useMemo(() => {
     const grouped = {};
     projects.forEach(p => {
-      const locName = p.location?.full_name || p.location?.name || 'Unknown';
-      const coords = getLocationCoords(locName);
+      // Try to use real coordinates first (from allMapProjects)
+      let coords = null;
+      if (p.coordinates?.lat && p.coordinates?.lon) {
+        coords = { lat: p.coordinates.lat, lng: p.coordinates.lon, zoom: 14 };
+      } else {
+        // Fallback to location name lookup
+        const locName = p.location?.full_name || p.location?.name || 'Unknown';
+        coords = getLocationCoords(locName);
+      }
+      
       if (coords) {
         // Add small random offset to prevent overlap
-        const offsetLat = (Math.random() - 0.5) * 0.01;
-        const offsetLng = (Math.random() - 0.5) * 0.01;
+        const offsetLat = (Math.random() - 0.5) * 0.008;
+        const offsetLng = (Math.random() - 0.5) * 0.008;
         grouped[p.project_id] = { 
           ...p, 
           coords: { 
@@ -2996,9 +3004,11 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
       const marker = window.L.marker([coords.lat, coords.lng], { icon: customIcon })
         .addTo(markersLayer.current);
 
-      marker.on('click', () => {
+      marker.on('click', (e) => {
+        // Stop event propagation to prevent map click handler
+        window.L.DomEvent.stopPropagation(e);
         setPopupProject(project);
-        if (onSelectProject) onSelectProject(project);
+        // Don't call onSelectProject here - let user click "Dettagli" button in popup
       });
 
       markersMap.current[project.project_id] = marker;
@@ -3064,12 +3074,18 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
             </div>
             <div className="p-4">
               <h3 className="text-white font-semibold truncate">{popupProject.title}</h3>
-              <p className="text-zinc-400 text-sm truncate">{popupProject.location?.full_name}</p>
+              <p className="text-zinc-400 text-sm truncate">{popupProject.location?.full_name || popupProject.location?.name}</p>
               <div className="flex items-center justify-between mt-3">
-                <p className="text-orange-400 font-bold">AED {formatPrice(popupProject.price_from)}</p>
-                <Button size="sm" onClick={(e) => { e.stopPropagation(); onSelectProject(popupProject); }}>
-                  Dettagli
-                </Button>
+                <p className="text-orange-400 font-bold">{popupProject.price_from > 0 ? 'AED ' + formatPrice(popupProject.price_from) : 'TBD'}</p>
+                {popupProject.url ? (
+                  <a href={popupProject.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg flex items-center gap-1">
+                    <ExternalLink className="w-3.5 h-3.5" /> PropertyFinder
+                  </a>
+                ) : (
+                  <Button size="sm" onClick={(e) => { e.stopPropagation(); setPopupProject(null); }}>
+                    Chiudi
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -3280,7 +3296,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
     try {
       const { data } = await supabase
         .from('pf_projects')
-        .select('project_id, title, location_name, location_full, price_from, construction_phase, raw_data')
+        .select('project_id, title, location_name, location_full, price_from, construction_phase, url, raw_data')
         .neq('construction_phase', 'completed')
         .not('raw_data->location->coordinates', 'is', null)
         .limit(2000);
@@ -3292,6 +3308,8 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
           location: { name: p.location_name, full_name: p.location_full },
           price_from: p.price_from,
           construction_phase_key: p.construction_phase,
+          url: p.url,
+          images: p.raw_data?.images,
           coordinates: p.raw_data?.location?.coordinates
         })).filter(p => p.coordinates?.lat && p.coordinates?.lon);
         
@@ -3754,7 +3772,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                 </div>
                 {/* Map */}
                 <div className="flex-1 relative">
-                  <MapboxMap projects={listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} />
+                  <MapboxMap projects={allMapProjects.length > 0 ? allMapProjects : listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} />
                 </div>
               </div>
 
@@ -3762,7 +3780,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
               <div className="lg:hidden h-full flex flex-col">
                 {/* Map takes most space */}
                 <div className="flex-1 relative">
-                  <MapboxMap projects={listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} />
+                  <MapboxMap projects={allMapProjects.length > 0 ? allMapProjects : listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} />
                 </div>
                 
                 {/* Bottom Carousel */}
