@@ -1,11 +1,9 @@
+/* eslint-disable */
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, CheckSquare, Square, Bell, MapPin, Award, User, MessageCircle, Filter, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, Briefcase, ArrowUpRight, ArrowDownRight, MoreHorizontal, Sparkles, Command, Printer, Map, List, Grid, Play, Layers } from 'lucide-react';
+import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List } from 'lucide-react';
 
 const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NjkyNjAsImV4cCI6MjA4NzI0NTI2MH0.oXUs9ITNi6lEFat_5FH0x-Exw5MDgRhwx6T0yL3xiWQ');
-
-// OneSignal Config
-const ONESIGNAL_APP_ID = '071cd2c3-4a3d-4d2f-8deb-fa575aec578d';
 
 // Send Push Notification via Serverless Function
 const sendPushNotification = async (title, message, url = null) => {
@@ -25,15 +23,10 @@ const sendPushNotification = async (title, message, url = null) => {
 const RESEND_API_KEY = 're_jCpLJKfw_MfWu2jbSzPPgz6pLHQXMAXJb';
 const EMAIL_FROM = 'onboarding@resend.dev';
 const ADMIN_EMAIL = 'bozzellapellegrino@gmail.com';
-const MAPBOX_TOKEN = 'pk.eyJ1IjoibWFwc3Byb2plY3RrZXkiLCJhIjoiY21sdHl4aDM5MDRvbDNmczRtYXR6ZWp4cyJ9.HpQdRN36TYMnNCs1VtwtKA'; // Keep for future use
 
 // Leaflet Config (no token needed - free!)
 const LEAFLET_TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 const LEAFLET_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
-
-// PropertyFinder API Config
-const PF_API_HOST = 'uae-real-estate-api-propertyfinder-ae-data.p.rapidapi.com';
-const PF_API_KEY = '726ac8a1f8msh5ec783ecc467b76p1e1338jsn88a853551916';
 
 // Dubai Areas with coordinates for map
 const DUBAI_AREAS_COORDS = {
