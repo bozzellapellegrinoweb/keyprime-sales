@@ -1,7 +1,7 @@
 /* eslint-disable */
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List, ExternalLink } from 'lucide-react';
+import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List, ExternalLink, Calculator } from 'lucide-react';
 
 const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NjkyNjAsImV4cCI6MjA4NzI0NTI2MH0.oXUs9ITNi6lEFat_5FH0x-Exw5MDgRhwx6T0yL3xiWQ');
 
@@ -95,7 +95,8 @@ const theme = {
     crm: { accent: '#FBBF24', bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.2)' },
     tasks: { accent: '#F472B6', bg: 'rgba(244,114,182,0.08)', border: 'rgba(244,114,182,0.2)' },
     utenti: { accent: '#22D3EE', bg: 'rgba(34,211,238,0.08)', border: 'rgba(34,211,238,0.2)' },
-    offplan: { accent: '#F97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.2)' }
+    offplan: { accent: '#F97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.2)' },
+    calculator: { accent: '#10B981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)' }
   },
   status: {
     lead: { color: '#71717A', bg: 'rgba(113,113,122,0.15)' },
@@ -1132,6 +1133,7 @@ export default function App() {
                   {activeTab === 'leads' && `${mySales.length} lead totali`}
                   {activeTab === 'pipeline' && 'Stato dei tuoi lead'}
                   {activeTab === 'offplan' && 'Progetti Off-Plan'}
+                  {activeTab === 'calculator' && 'Calcola rendimenti immobiliari UAE'}
                   {activeTab === 'tasks' && `${myTasks.length} task pendenti`}
                 </p>
               </div>
@@ -1326,6 +1328,7 @@ export default function App() {
 
             {activeTab === 'tasks' && <AgentTasksTab tasks={myTasks} allTasks={tasks.filter(t => t.assegnato_a === user?.nome)} clienti={clienti} onComplete={completeTask} onAddNote={(t) => setShowNoteModal(t)} />}
             {activeTab === 'offplan' && <OffPlanTab clienti={myClienti} onCreateLead={createLeadFromListing} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeListing} user={user} />}
+            {activeTab === 'calculator' && <ROICalculator />}
             
             {activeTab === 'settings' && (
               <Card className="max-w-lg">
@@ -1428,6 +1431,7 @@ export default function App() {
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.pipeline.accent },
       { id: 'crm', icon: Users, label: 'CRM', accent: theme.sections.crm.accent },
       { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent },
+      { id: 'calculator', icon: Calculator, label: 'Calcolatore', accent: theme.sections.calculator.accent },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: pendingTasks.length },
       { id: 'utenti', icon: Settings, label: 'Team', accent: theme.sections.utenti.accent }
     ];
@@ -5277,6 +5281,391 @@ function SaleForm({ type, userName, clienti, onSubmit }) {
 
       <button type="submit" id="submitBtn" className="hidden">Submit</button>
     </form>
+  );
+}
+
+// ==================== ROI CALCULATOR ====================
+const roiZones = {
+  // DUBAI
+  'Palm Jumeirah': { emirate: 'Dubai', cat: 'Ultra Premium', e: '🌴', lt: 5.5, rent: 180000, sqft: 2800, occ: 78, night: 1200, opAppr: 15, opDisc: 10, opHand: 30, secAppr: 8, scNew: 22, scOld: 30, dewa: 8000, ageNew: '2020+', ageMid: '2010-19', ageOld: '2005-09' },
+  'Emirates Hills': { emirate: 'Dubai', cat: 'Ultra Premium', e: '⛳', lt: 4.0, rent: 250000, sqft: 3500, occ: 50, night: 2500, opAppr: 8, opDisc: 5, opHand: 36, secAppr: 5, scNew: 5, scOld: 7, dewa: 15000, ageNew: '2020+', ageMid: '2008-19', ageOld: '2003-07' },
+  'Bluewaters Island': { emirate: 'Dubai', cat: 'Ultra Premium', e: '🎡', lt: 5.2, rent: 160000, sqft: 3000, occ: 75, night: 1100, opAppr: 12, opDisc: 8, opHand: 24, secAppr: 7, scNew: 25, scOld: 32, dewa: 7500, ageNew: '2020+', ageMid: '2018-19', ageOld: null },
+  'Downtown Dubai': { emirate: 'Dubai', cat: 'Premium', e: '🏙️', lt: 5.8, rent: 130000, sqft: 2400, occ: 82, night: 900, opAppr: 18, opDisc: 12, opHand: 30, secAppr: 8, scNew: 18, scOld: 28, dewa: 7500, ageNew: '2020+', ageMid: '2010-19', ageOld: '2006-09' },
+  'Dubai Marina': { emirate: 'Dubai', cat: 'Premium', e: '⛵', lt: 6.2, rent: 105000, sqft: 1700, occ: 82, night: 700, opAppr: 12, opDisc: 10, opHand: 24, secAppr: 6, scNew: 15, scOld: 22, dewa: 6500, ageNew: '2018+', ageMid: '2008-17', ageOld: '2003-07' },
+  'DIFC': { emirate: 'Dubai', cat: 'Premium', e: '🏦', lt: 5.0, rent: 150000, sqft: 3200, occ: 65, night: 950, opAppr: 10, opDisc: 8, opHand: 30, secAppr: 6, scNew: 28, scOld: 38, dewa: 8000, ageNew: '2020+', ageMid: '2010-19', ageOld: '2005-09' },
+  'Jumeirah': { emirate: 'Dubai', cat: 'Premium', e: '🏖️', lt: 4.8, rent: 140000, sqft: 2600, occ: 60, night: 1000, opAppr: 8, opDisc: 5, opHand: 30, secAppr: 5, scNew: 8, scOld: 12, dewa: 9000, ageNew: '2015+', ageMid: '2000-14', ageOld: '1990-99' },
+  'Al Wasl': { emirate: 'Dubai', cat: 'Premium', e: '🌇', lt: 5.0, rent: 135000, sqft: 2500, occ: 55, night: 900, opAppr: 7, opDisc: 5, opHand: 28, secAppr: 5, scNew: 8, scOld: 12, dewa: 8500, ageNew: '2018+', ageMid: '2005-17', ageOld: '1995-04' },
+  'JBR': { emirate: 'Dubai', cat: 'High-End', e: '🏖️', lt: 6.0, rent: 110000, sqft: 1900, occ: 85, night: 800, opAppr: 10, opDisc: 8, opHand: 24, secAppr: 5, scNew: 14, scOld: 18, dewa: 6000, ageNew: '2018+', ageMid: '2008-17', ageOld: '2005-07' },
+  'Dubai Creek Harbour': { emirate: 'Dubai', cat: 'High-End', e: '🌊', lt: 6.5, rent: 95000, sqft: 1600, occ: 70, night: 600, opAppr: 25, opDisc: 15, opHand: 30, secAppr: 12, scNew: 14, scOld: 18, dewa: 6000, ageNew: '2020+', ageMid: '2018-19', ageOld: null },
+  'Dubai Hills Estate': { emirate: 'Dubai', cat: 'High-End', e: '🌳', lt: 6.5, rent: 100000, sqft: 1700, occ: 60, night: 650, opAppr: 20, opDisc: 12, opHand: 28, secAppr: 10, scNew: 12, scOld: 16, dewa: 6500, ageNew: '2020+', ageMid: '2017-19', ageOld: null },
+  'MBR City': { emirate: 'Dubai', cat: 'High-End', e: '👑', lt: 6.8, rent: 90000, sqft: 1500, occ: 65, night: 550, opAppr: 22, opDisc: 15, opHand: 30, secAppr: 12, scNew: 11, scOld: 15, dewa: 6000, ageNew: '2020+', ageMid: '2016-19', ageOld: null },
+  'City Walk': { emirate: 'Dubai', cat: 'High-End', e: '🛍️', lt: 5.5, rent: 120000, sqft: 2200, occ: 72, night: 750, opAppr: 12, opDisc: 8, opHand: 24, secAppr: 7, scNew: 18, scOld: 24, dewa: 7000, ageNew: '2020+', ageMid: '2015-19', ageOld: null },
+  'Sobha Hartland': { emirate: 'Dubai', cat: 'High-End', e: '🌿', lt: 6.2, rent: 95000, sqft: 1650, occ: 62, night: 580, opAppr: 18, opDisc: 12, opHand: 28, secAppr: 10, scNew: 13, scOld: 17, dewa: 6200, ageNew: '2020+', ageMid: '2018-19', ageOld: null },
+  'Arabian Ranches': { emirate: 'Dubai', cat: 'High-End', e: '🐎', lt: 5.5, rent: 120000, sqft: 1800, occ: 50, night: 700, opAppr: 10, opDisc: 8, opHand: 28, secAppr: 6, scNew: 4, scOld: 6, dewa: 8000, ageNew: '2020+', ageMid: '2008-19', ageOld: '2004-07' },
+  'Wasl Gate': { emirate: 'Dubai', cat: 'High-End', e: '🚪', lt: 6.5, rent: 85000, sqft: 1400, occ: 68, night: 520, opAppr: 15, opDisc: 10, opHand: 26, secAppr: 8, scNew: 12, scOld: 16, dewa: 5800, ageNew: '2020+', ageMid: '2016-19', ageOld: null },
+  'Business Bay': { emirate: 'Dubai', cat: 'Mid-Market', e: '💼', lt: 7.2, rent: 78000, sqft: 1350, occ: 75, night: 500, opAppr: 15, opDisc: 12, opHand: 24, secAppr: 8, scNew: 14, scOld: 20, dewa: 5500, ageNew: '2020+', ageMid: '2012-19', ageOld: '2008-11' },
+  'JLT': { emirate: 'Dubai', cat: 'Mid-Market', e: '🏢', lt: 7.5, rent: 68000, sqft: 1050, occ: 70, night: 420, opAppr: 8, opDisc: 8, opHand: 24, secAppr: 5, scNew: 11, scOld: 16, dewa: 5000, ageNew: '2018+', ageMid: '2008-17', ageOld: '2006-07' },
+  'JVC': { emirate: 'Dubai', cat: 'Mid-Market', e: '🏘️', lt: 8.0, rent: 55000, sqft: 850, occ: 78, night: 350, opAppr: 18, opDisc: 15, opHand: 22, secAppr: 10, scNew: 9, scOld: 14, dewa: 4500, ageNew: '2020+', ageMid: '2015-19', ageOld: '2010-14' },
+  'JVT': { emirate: 'Dubai', cat: 'Mid-Market', e: '📐', lt: 7.8, rent: 52000, sqft: 820, occ: 72, night: 330, opAppr: 16, opDisc: 14, opHand: 22, secAppr: 9, scNew: 9, scOld: 13, dewa: 4400, ageNew: '2020+', ageMid: '2015-19', ageOld: '2010-14' },
+  'Al Barsha': { emirate: 'Dubai', cat: 'Mid-Market', e: '🏬', lt: 7.0, rent: 65000, sqft: 1100, occ: 68, night: 400, opAppr: 8, opDisc: 6, opHand: 24, secAppr: 4, scNew: 10, scOld: 15, dewa: 5000, ageNew: '2018+', ageMid: '2008-17', ageOld: '2000-07' },
+  'Tecom': { emirate: 'Dubai', cat: 'Mid-Market', e: '💻', lt: 7.3, rent: 62000, sqft: 1000, occ: 68, night: 400, opAppr: 8, opDisc: 8, opHand: 24, secAppr: 5, scNew: 10, scOld: 15, dewa: 4800, ageNew: '2018+', ageMid: '2005-17', ageOld: '2002-04' },
+  'Sports City': { emirate: 'Dubai', cat: 'Value', e: '⚽', lt: 8.5, rent: 48000, sqft: 700, occ: 72, night: 320, opAppr: 12, opDisc: 12, opHand: 20, secAppr: 7, scNew: 8, scOld: 12, dewa: 4200, ageNew: '2020+', ageMid: '2012-19', ageOld: '2008-11' },
+  'Arjan': { emirate: 'Dubai', cat: 'Value', e: '🦋', lt: 7.8, rent: 50000, sqft: 800, occ: 65, night: 300, opAppr: 18, opDisc: 15, opHand: 20, secAppr: 10, scNew: 8, scOld: 12, dewa: 4300, ageNew: '2020+', ageMid: '2016-19', ageOld: null },
+  'Al Furjan': { emirate: 'Dubai', cat: 'Value', e: '🏡', lt: 7.3, rent: 58000, sqft: 950, occ: 62, night: 350, opAppr: 14, opDisc: 12, opHand: 22, secAppr: 8, scNew: 8, scOld: 11, dewa: 4800, ageNew: '2020+', ageMid: '2015-19', ageOld: '2012-14' },
+  'Motor City': { emirate: 'Dubai', cat: 'Value', e: '🏎️', lt: 7.5, rent: 52000, sqft: 850, occ: 58, night: 320, opAppr: 10, opDisc: 10, opHand: 22, secAppr: 6, scNew: 9, scOld: 13, dewa: 4600, ageNew: '2018+', ageMid: '2008-17', ageOld: '2005-07' },
+  'Mudon': { emirate: 'Dubai', cat: 'Value', e: '🏠', lt: 7.2, rent: 60000, sqft: 1000, occ: 55, night: 380, opAppr: 12, opDisc: 10, opHand: 24, secAppr: 7, scNew: 5, scOld: 7, dewa: 5000, ageNew: '2020+', ageMid: '2015-19', ageOld: null },
+  'Mirdif': { emirate: 'Dubai', cat: 'Value', e: '🌺', lt: 6.8, rent: 55000, sqft: 950, occ: 55, night: 350, opAppr: 8, opDisc: 8, opHand: 24, secAppr: 5, scNew: 7, scOld: 10, dewa: 5000, ageNew: '2018+', ageMid: '2008-17', ageOld: '2000-07' },
+  'Silicon Oasis': { emirate: 'Dubai', cat: 'Affordable', e: '💻', lt: 9.0, rent: 45000, sqft: 650, occ: 68, night: 280, opAppr: 15, opDisc: 12, opHand: 22, secAppr: 8, scNew: 7, scOld: 11, dewa: 4000, ageNew: '2020+', ageMid: '2012-19', ageOld: '2008-11' },
+  'International City': { emirate: 'Dubai', cat: 'Affordable', e: '🌍', lt: 9.5, rent: 35000, sqft: 480, occ: 65, night: 220, opAppr: 8, opDisc: 8, opHand: 20, secAppr: 5, scNew: 5, scOld: 8, dewa: 3500, ageNew: '2018+', ageMid: '2008-17', ageOld: '2005-07' },
+  'Discovery Gardens': { emirate: 'Dubai', cat: 'Affordable', e: '🌻', lt: 9.2, rent: 38000, sqft: 520, occ: 60, night: 240, opAppr: 5, opDisc: 5, opHand: 20, secAppr: 3, scNew: 6, scOld: 10, dewa: 3800, ageNew: '2015+', ageMid: '2008-14', ageOld: '2005-07' },
+  'DIP': { emirate: 'Dubai', cat: 'Affordable', e: '🏭', lt: 9.8, rent: 32000, sqft: 420, occ: 55, night: 200, opAppr: 8, opDisc: 8, opHand: 22, secAppr: 4, scNew: 5, scOld: 8, dewa: 3200, ageNew: '2018+', ageMid: '2008-17', ageOld: '2005-07' },
+  'Al Nahda Dubai': { emirate: 'Dubai', cat: 'Affordable', e: '🏠', lt: 8.5, rent: 40000, sqft: 580, occ: 62, night: 250, opAppr: 6, opDisc: 6, opHand: 22, secAppr: 4, scNew: 6, scOld: 10, dewa: 3600, ageNew: '2015+', ageMid: '2005-14', ageOld: '1998-04' },
+  'Deira': { emirate: 'Dubai', cat: 'Affordable', e: '🕌', lt: 8.2, rent: 42000, sqft: 620, occ: 65, night: 280, opAppr: 6, opDisc: 5, opHand: 24, secAppr: 3, scNew: 7, scOld: 12, dewa: 3800, ageNew: '2015+', ageMid: '2000-14', ageOld: '1990-99' },
+  'Bur Dubai': { emirate: 'Dubai', cat: 'Affordable', e: '🛶', lt: 7.8, rent: 45000, sqft: 700, occ: 70, night: 320, opAppr: 5, opDisc: 5, opHand: 24, secAppr: 3, scNew: 8, scOld: 14, dewa: 4000, ageNew: '2015+', ageMid: '2000-14', ageOld: '1985-99' },
+  'Jebel Ali': { emirate: 'Dubai', cat: 'Affordable', e: '🚢', lt: 8.8, rent: 38000, sqft: 550, occ: 58, night: 240, opAppr: 10, opDisc: 10, opHand: 24, secAppr: 6, scNew: 6, scOld: 10, dewa: 3600, ageNew: '2018+', ageMid: '2008-17', ageOld: '2000-07' },
+  'Dubai South': { emirate: 'Dubai', cat: 'Emerging', e: '✈️', lt: 8.5, rent: 40000, sqft: 600, occ: 55, night: 250, opAppr: 25, opDisc: 20, opHand: 28, secAppr: 15, scNew: 7, scOld: 10, dewa: 3800, ageNew: '2022+', ageMid: '2018-21', ageOld: null },
+  'Expo City': { emirate: 'Dubai', cat: 'Emerging', e: '🎪', lt: 7.5, rent: 55000, sqft: 900, occ: 60, night: 350, opAppr: 30, opDisc: 18, opHand: 30, secAppr: 18, scNew: 10, scOld: 14, dewa: 4500, ageNew: '2022+', ageMid: null, ageOld: null },
+  'Damac Hills': { emirate: 'Dubai', cat: 'Emerging', e: '🏌️', lt: 7.8, rent: 52000, sqft: 820, occ: 62, night: 320, opAppr: 18, opDisc: 15, opHand: 24, secAppr: 10, scNew: 8, scOld: 12, dewa: 4300, ageNew: '2020+', ageMid: '2017-19', ageOld: null },
+  'Damac Hills 2': { emirate: 'Dubai', cat: 'Emerging', e: '🏡', lt: 8.5, rent: 42000, sqft: 620, occ: 55, night: 280, opAppr: 20, opDisc: 18, opHand: 22, secAppr: 12, scNew: 6, scOld: 9, dewa: 4000, ageNew: '2021+', ageMid: '2019-20', ageOld: null },
+  'Town Square': { emirate: 'Dubai', cat: 'Emerging', e: '🏪', lt: 8.2, rent: 48000, sqft: 720, occ: 58, night: 290, opAppr: 15, opDisc: 12, opHand: 22, secAppr: 9, scNew: 7, scOld: 10, dewa: 4100, ageNew: '2020+', ageMid: '2017-19', ageOld: null },
+  'Tilal Al Ghaf': { emirate: 'Dubai', cat: 'Emerging', e: '🌴', lt: 6.5, rent: 85000, sqft: 1400, occ: 50, night: 500, opAppr: 25, opDisc: 15, opHand: 30, secAppr: 15, scNew: 5, scOld: 7, dewa: 6000, ageNew: '2022+', ageMid: null, ageOld: null },
+  'The Valley': { emirate: 'Dubai', cat: 'Emerging', e: '🏞️', lt: 7.0, rent: 55000, sqft: 900, occ: 48, night: 350, opAppr: 28, opDisc: 20, opHand: 32, secAppr: 15, scNew: 6, scOld: 8, dewa: 4500, ageNew: '2024+', ageMid: null, ageOld: null },
+  // RAK
+  'Al Marjan Island': { emirate: 'RAK', cat: 'Premium', e: '🏝️', lt: 7.5, rent: 70000, sqft: 1200, occ: 72, night: 550, opAppr: 25, opDisc: 15, opHand: 28, secAppr: 15, scNew: 14, scOld: 18, dewa: 4500, ageNew: '2022+', ageMid: '2018-21', ageOld: null },
+  'Mina Al Arab': { emirate: 'RAK', cat: 'High-End', e: '🌊', lt: 7.0, rent: 65000, sqft: 1000, occ: 68, night: 480, opAppr: 20, opDisc: 12, opHand: 26, secAppr: 12, scNew: 12, scOld: 16, dewa: 4200, ageNew: '2020+', ageMid: '2016-19', ageOld: null },
+  'Al Hamra Village': { emirate: 'RAK', cat: 'Mid-Market', e: '⛳', lt: 7.8, rent: 55000, sqft: 850, occ: 65, night: 380, opAppr: 15, opDisc: 10, opHand: 24, secAppr: 10, scNew: 10, scOld: 14, dewa: 3800, ageNew: '2018+', ageMid: '2008-17', ageOld: '2005-07' },
+  'Yasmin Village RAK': { emirate: 'RAK', cat: 'Affordable', e: '🌸', lt: 11.0, rent: 35000, sqft: 450, occ: 70, night: 250, opAppr: 10, opDisc: 8, opHand: 20, secAppr: 6, scNew: 6, scOld: 9, dewa: 3000, ageNew: '2015+', ageMid: '2008-14', ageOld: '2005-07' },
+  'Hayat Island': { emirate: 'RAK', cat: 'Emerging', e: '🏖️', lt: 7.2, rent: 60000, sqft: 950, occ: 62, night: 420, opAppr: 22, opDisc: 15, opHand: 28, secAppr: 14, scNew: 11, scOld: 15, dewa: 4000, ageNew: '2023+', ageMid: null, ageOld: null },
+  // ABU DHABI
+  'Saadiyat Island': { emirate: 'Abu Dhabi', cat: 'Ultra Premium', e: '🏛️', lt: 5.0, rent: 180000, sqft: 2800, occ: 60, night: 1100, opAppr: 12, opDisc: 8, opHand: 30, secAppr: 7, scNew: 20, scOld: 28, dewa: 8000, ageNew: '2020+', ageMid: '2015-19', ageOld: null },
+  'Yas Island': { emirate: 'Abu Dhabi', cat: 'Premium', e: '🎢', lt: 6.0, rent: 95000, sqft: 1500, occ: 70, night: 650, opAppr: 15, opDisc: 10, opHand: 28, secAppr: 8, scNew: 14, scOld: 18, dewa: 5500, ageNew: '2020+', ageMid: '2012-19', ageOld: null },
+  'Al Reem Island': { emirate: 'Abu Dhabi', cat: 'High-End', e: '🌆', lt: 7.0, rent: 75000, sqft: 1200, occ: 72, night: 500, opAppr: 12, opDisc: 10, opHand: 26, secAppr: 7, scNew: 12, scOld: 16, dewa: 5000, ageNew: '2018+', ageMid: '2010-17', ageOld: '2008-09' },
+  'Al Raha Beach': { emirate: 'Abu Dhabi', cat: 'High-End', e: '🏖️', lt: 6.5, rent: 85000, sqft: 1350, occ: 65, night: 550, opAppr: 10, opDisc: 8, opHand: 26, secAppr: 6, scNew: 13, scOld: 17, dewa: 5200, ageNew: '2018+', ageMid: '2008-17', ageOld: null },
+  'Khalifa City': { emirate: 'Abu Dhabi', cat: 'Mid-Market', e: '🏘️', lt: 7.5, rent: 55000, sqft: 850, occ: 68, night: 380, opAppr: 8, opDisc: 8, opHand: 24, secAppr: 5, scNew: 8, scOld: 12, dewa: 4200, ageNew: '2018+', ageMid: '2008-17', ageOld: '2000-07' },
+  'Masdar City': { emirate: 'Abu Dhabi', cat: 'Emerging', e: '🌱', lt: 7.8, rent: 58000, sqft: 900, occ: 65, night: 400, opAppr: 18, opDisc: 15, opHand: 28, secAppr: 10, scNew: 10, scOld: 14, dewa: 4500, ageNew: '2020+', ageMid: '2015-19', ageOld: null },
+  // SHARJAH
+  'Al Mamzar SHJ': { emirate: 'Sharjah', cat: 'Mid-Market', e: '🏖️', lt: 8.0, rent: 42000, sqft: 650, occ: 65, night: 300, opAppr: 8, opDisc: 6, opHand: 24, secAppr: 5, scNew: 6, scOld: 10, dewa: 3500, ageNew: '2015+', ageMid: '2005-14', ageOld: '1995-04' },
+  'Al Nahda SHJ': { emirate: 'Sharjah', cat: 'Affordable', e: '🏢', lt: 9.0, rent: 35000, sqft: 500, occ: 75, night: 250, opAppr: 5, opDisc: 5, opHand: 22, secAppr: 3, scNew: 5, scOld: 8, dewa: 3000, ageNew: '2015+', ageMid: '2000-14', ageOld: '1990-99' },
+  'Aljada': { emirate: 'Sharjah', cat: 'Emerging', e: '🏗️', lt: 7.8, rent: 52000, sqft: 800, occ: 60, night: 350, opAppr: 18, opDisc: 15, opHand: 26, secAppr: 10, scNew: 9, scOld: 12, dewa: 4000, ageNew: '2022+', ageMid: null, ageOld: null },
+  // AJMAN
+  'Ajman Downtown': { emirate: 'Ajman', cat: 'Affordable', e: '🏙️', lt: 10.5, rent: 28000, sqft: 380, occ: 70, night: 200, opAppr: 8, opDisc: 8, opHand: 20, secAppr: 5, scNew: 4, scOld: 7, dewa: 2500, ageNew: '2018+', ageMid: '2008-17', ageOld: '2000-07' },
+  'Ajman Corniche': { emirate: 'Ajman', cat: 'Mid-Market', e: '🌅', lt: 9.0, rent: 35000, sqft: 500, occ: 65, night: 250, opAppr: 10, opDisc: 8, opHand: 22, secAppr: 6, scNew: 5, scOld: 9, dewa: 3000, ageNew: '2018+', ageMid: '2008-17', ageOld: '2000-07' },
+  // UAQ
+  'UAQ Marina': { emirate: 'UAQ', cat: 'Affordable', e: '⛵', lt: 9.5, rent: 30000, sqft: 420, occ: 55, night: 220, opAppr: 12, opDisc: 10, opHand: 24, secAppr: 7, scNew: 5, scOld: 8, dewa: 2800, ageNew: '2020+', ageMid: '2015-19', ageOld: null },
+};
+
+const roiBrMult = { rent: [0.55,1,1.55,2.1,2.8], night: [0.65,1,1.45,1.9,2.5], dewa: [0.6,1,1.4,1.8,2.3] };
+const roiAgeMult = { new: {sc:1,maint:0,rent:1.05,appr:1.2}, mid: {sc:1.2,maint:5000,rent:1,appr:1}, old: {sc:1.5,maint:12000,rent:0.92,appr:0.7} };
+
+function ROICalculator() {
+  const [emirate, setEmirate] = useState('all');
+  const [z, setZ] = useState('Business Bay');
+  const [price, setPrice] = useState(1200000);
+  const [sqft, setSqft] = useState(850);
+  const [br, setBr] = useState(1);
+  const [mkt, setMkt] = useState('offplan');
+  const [age, setAge] = useState('new');
+  const [tab, setTab] = useState('overview');
+
+  const d = roiZones[z];
+  const a = roiAgeMult[age];
+  const sc = mkt === 'offplan' ? d.scNew : (age === 'old' ? d.scOld : d.scNew);
+  const costs = sc * sqft * a.sc + d.dewa * roiBrMult.dewa[br] + 1000 + a.maint;
+  
+  const rent = d.rent * roiBrMult.rent[br] * a.rent;
+  const ltNet = rent - costs;
+  const ltYield = (ltNet / price * 100).toFixed(1);
+  
+  const stGross = d.night * roiBrMult.night[br] * 365 * d.occ / 100;
+  const stNet = stGross - costs - 2500 - stGross * 0.28;
+  const stYield = (stNet / price * 100).toFixed(1);
+  
+  const appr = (mkt === 'offplan' ? d.opAppr : d.secAppr) * a.appr;
+  const disc = mkt === 'offplan' ? d.opDisc : 0;
+  const effPrice = price * (1 - disc/100);
+  const futVal = effPrice * (1 + appr/100);
+  const profit = futVal - effPrice;
+  
+  const fmt = n => new Intl.NumberFormat('it-IT').format(Math.round(n));
+
+  // Group zones by emirate
+  const grouped = {};
+  Object.entries(roiZones).forEach(([name, data]) => {
+    const em = data.emirate;
+    if (!grouped[em]) grouped[em] = {};
+    if (!grouped[em][data.cat]) grouped[em][data.cat] = [];
+    grouped[em][data.cat].push({name, ...data});
+  });
+
+  const filteredZones = emirate === 'all' ? grouped : { [emirate]: grouped[emirate] };
+
+  return (
+    <div className="space-y-4">
+      {/* Emirate Filter */}
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        <button onClick={()=>setEmirate('all')} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate==='all'?'bg-emerald-500 text-white':'bg-[#334155] text-zinc-400 hover:bg-[#475569]'}`}>🇦🇪 Tutti</button>
+        {['Dubai','Abu Dhabi','RAK','Sharjah','Ajman','UAQ'].map(em=>(
+          <button key={em} onClick={()=>setEmirate(em)} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate===em?'bg-emerald-500 text-white':'bg-[#334155] text-zinc-400 hover:bg-[#475569]'}`}>
+            {em==='RAK'?'🏝️':em==='Dubai'?'🌆':em==='Abu Dhabi'?'🏛️':em==='Sharjah'?'📚':em==='Ajman'?'🏠':'⛵'} {em}
+          </button>
+        ))}
+      </div>
+
+      {/* Inputs */}
+      <div className="bg-[#1e293b] rounded-xl p-4 border border-[#334155]">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <div className="col-span-2">
+            <label className="text-zinc-500 text-xs block mb-1">Zona</label>
+            <select value={z} onChange={e=>setZ(e.target.value)} className="w-full bg-[#334155] border-none rounded-lg px-3 py-2 text-sm text-white">
+              {Object.entries(filteredZones).map(([em, cats])=>(
+                <optgroup key={em} label={`━━ ${em} ━━`}>
+                  {Object.entries(cats || {}).map(([cat, list])=>(
+                    <React.Fragment key={cat}>
+                      <option disabled className="text-zinc-500">── {cat} ──</option>
+                      {(list || []).map(item=><option key={item.name} value={item.name}>{item.e} {item.name}</option>)}
+                    </React.Fragment>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-zinc-500 text-xs block mb-1">Prezzo (AED)</label>
+            <input type="number" value={price} onChange={e=>setPrice(+e.target.value)} className="w-full bg-[#334155] border-none rounded-lg px-3 py-2 text-sm text-white"/>
+          </div>
+          <div>
+            <label className="text-zinc-500 text-xs block mb-1">Sqft</label>
+            <input type="number" value={sqft} onChange={e=>setSqft(+e.target.value)} className="w-full bg-[#334155] border-none rounded-lg px-3 py-2 text-sm text-white"/>
+          </div>
+          <div>
+            <label className="text-zinc-500 text-xs block mb-1">Camere</label>
+            <select value={br} onChange={e=>setBr(+e.target.value)} className="w-full bg-[#334155] border-none rounded-lg px-3 py-2 text-sm text-white">
+              {['Studio','1BR','2BR','3BR','4+BR'].map((l,i)=><option key={i} value={i}>{l}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-zinc-500 text-xs block mb-1">Mercato</label>
+            <select value={mkt} onChange={e=>setMkt(e.target.value)} className="w-full bg-[#334155] border-none rounded-lg px-3 py-2 text-sm text-white">
+              <option value="offplan">🏗️ Off-Plan</option>
+              <option value="secondary">🏢 Secondary</option>
+            </select>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-3">
+          {mkt === 'secondary' && (
+            <div>
+              <label className="text-zinc-500 text-xs block mb-1">Età Edificio</label>
+              <select value={age} onChange={e=>setAge(e.target.value)} className="w-full bg-[#334155] border-none rounded-lg px-3 py-2 text-sm text-white">
+                <option value="new">🆕 {d.ageNew}</option>
+                {d.ageMid && <option value="mid">📅 {d.ageMid}</option>}
+                {d.ageOld && <option value="old">🏚️ {d.ageOld}</option>}
+              </select>
+            </div>
+          )}
+          <div className="bg-[#334155]/50 rounded-lg p-2">
+            <p className="text-zinc-500 text-xs">{d.emirate} • {d.cat}</p>
+            <p className="text-white font-medium text-sm">{d.e} {z}</p>
+          </div>
+          <div className="bg-amber-500/10 rounded-lg p-2 text-center border border-amber-500/20">
+            <p className="text-amber-400 text-xs">SC/sqft</p>
+            <p className="text-white font-bold">{sc} AED</p>
+          </div>
+          {mkt === 'offplan' ? (
+            <>
+              <div className="bg-emerald-500/10 rounded-lg p-2 text-center border border-emerald-500/20">
+                <p className="text-emerald-400 text-xs">Discount</p>
+                <p className="text-white font-bold">-{disc}%</p>
+              </div>
+              <div className="bg-purple-500/10 rounded-lg p-2 text-center border border-purple-500/20">
+                <p className="text-purple-400 text-xs">Apprezzamento</p>
+                <p className="text-white font-bold">+{d.opAppr}%</p>
+              </div>
+            </>
+          ) : (
+            <div className="bg-red-500/10 rounded-lg p-2 text-center border border-red-500/20">
+              <p className="text-red-400 text-xs">Manutenzione</p>
+              <p className="text-white font-bold">{fmt(a.maint)}/y</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 overflow-x-auto">
+        {['overview','rental','capital','costs'].map(t=>(
+          <button key={t} onClick={()=>setTab(t)} className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${tab===t?'bg-emerald-500 text-white':'bg-[#334155] text-zinc-400 hover:bg-[#475569]'}`}>
+            {t==='overview'?'📊 Overview':t==='rental'?'🏠 Rental':t==='capital'?'📈 Capital':'💰 Costi'}
+          </button>
+        ))}
+      </div>
+
+      {/* Overview Tab */}
+      {tab === 'overview' && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-blue-500/10 rounded-xl p-4 text-center border border-blue-500/20">
+            <p className="text-3xl font-bold text-blue-400">{ltYield}%</p>
+            <p className="text-xs text-zinc-500 mt-1">Yield LT Netto</p>
+          </div>
+          <div className="bg-purple-500/10 rounded-xl p-4 text-center border border-purple-500/20">
+            <p className="text-3xl font-bold text-purple-400">{stYield}%</p>
+            <p className="text-xs text-zinc-500 mt-1">Yield ST Netto</p>
+          </div>
+          <div className="bg-emerald-500/10 rounded-xl p-4 text-center border border-emerald-500/20">
+            <p className="text-3xl font-bold text-emerald-400">+{appr.toFixed(0)}%</p>
+            <p className="text-xs text-zinc-500 mt-1">Apprezzamento</p>
+          </div>
+          <div className="bg-amber-500/10 rounded-xl p-4 text-center border border-amber-500/20">
+            <p className="text-3xl font-bold text-amber-400">{fmt(costs)}</p>
+            <p className="text-xs text-zinc-500 mt-1">Costi/Anno</p>
+          </div>
+          
+          <div className="col-span-2 bg-[#1e293b] rounded-xl p-4 border border-[#334155]">
+            <p className="text-zinc-400 text-xs mb-3">Revenue Annuo Netto</p>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center"><span className="text-zinc-400">🏠 Long Term</span><span className="text-blue-400 font-bold text-lg">{fmt(ltNet)} AED</span></div>
+              <div className="flex justify-between items-center"><span className="text-zinc-400">🏖️ Short Term</span><span className="text-purple-400 font-bold text-lg">{fmt(stNet)} AED</span></div>
+            </div>
+          </div>
+          <div className="col-span-2 bg-[#1e293b] rounded-xl p-4 border border-[#334155]">
+            <p className="text-zinc-400 text-xs mb-3">Capital Gain</p>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center"><span className="text-zinc-400">Valore Futuro</span><span className="text-emerald-400 font-bold text-lg">{fmt(futVal)} AED</span></div>
+              <div className="flex justify-between items-center"><span className="text-zinc-400">Profitto</span><span className="text-emerald-400 font-bold text-lg">+{fmt(profit)} AED</span></div>
+            </div>
+          </div>
+          
+          <div className="col-span-full bg-[#1e293b] rounded-xl p-4 border border-[#334155]">
+            <p className="text-zinc-400 text-xs mb-3">ROI Totale 3 anni (rent + appreciation)</p>
+            <div className="flex items-center gap-4">
+              <div className="flex-1 bg-[#334155] rounded-full h-4 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 transition-all" style={{width:`${Math.min(((ltNet*3+profit)/price)*100, 100)}%`}}/>
+              </div>
+              <span className="text-white font-bold text-xl">{(((ltNet*3+profit)/price)*100).toFixed(0)}%</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rental Tab */}
+      {tab === 'rental' && (
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="bg-[#1e293b] rounded-xl p-4 border border-blue-500/30">
+            <h3 className="font-semibold text-white mb-4">🏠 Long Term Rental</h3>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-blue-500/10 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-blue-400">{(rent/price*100).toFixed(1)}%</p>
+                <p className="text-xs text-zinc-500">Yield Lordo</p>
+              </div>
+              <div className="bg-emerald-500/10 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-emerald-400">{ltYield}%</p>
+                <p className="text-xs text-zinc-500">Yield Netto</p>
+              </div>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Affitto Annuo</span><span className="text-white">{fmt(rent)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Mensile</span><span className="text-white">{fmt(rent/12)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">(-) Costi Annui</span><span className="text-red-400">-{fmt(costs)} AED</span></div>
+              <div className="flex justify-between py-2 font-medium"><span className="text-white">= Netto Annuo</span><span className="text-emerald-400">{fmt(ltNet)} AED</span></div>
+            </div>
+          </div>
+          
+          <div className="bg-[#1e293b] rounded-xl p-4 border border-purple-500/30">
+            <h3 className="font-semibold text-white mb-4">🏖️ Short Term / Airbnb</h3>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-purple-500/10 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-purple-400">{(stGross/price*100).toFixed(1)}%</p>
+                <p className="text-xs text-zinc-500">Yield Lordo</p>
+              </div>
+              <div className="bg-emerald-500/10 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-emerald-400">{stYield}%</p>
+                <p className="text-xs text-zinc-500">Yield Netto</p>
+              </div>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Tariffa/Notte</span><span className="text-white">{fmt(d.night*roiBrMult.night[br])} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Occupancy Media</span><span className="text-white">{d.occ}%</span></div>
+              <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Revenue Lordo</span><span className="text-white">{fmt(stGross)} AED</span></div>
+              <div className="flex justify-between py-2 font-medium"><span className="text-white">= Netto Annuo</span><span className="text-emerald-400">{fmt(stNet)} AED</span></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Capital Tab */}
+      {tab === 'capital' && (
+        <div className="bg-[#1e293b] rounded-xl p-4 border border-emerald-500/30">
+          <h3 className="font-semibold text-white mb-4">📈 Capital Appreciation - {mkt === 'offplan' ? 'Off-Plan' : 'Secondary'}</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="bg-emerald-500/10 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-emerald-400">+{appr.toFixed(0)}%</p>
+              <p className="text-xs text-zinc-500">Apprezzamento</p>
+            </div>
+            <div className="bg-[#334155] rounded-lg p-3 text-center">
+              <p className="text-xl font-bold text-white">{fmt(profit)}</p>
+              <p className="text-xs text-zinc-500">Profitto (AED)</p>
+            </div>
+            <div className="bg-[#334155] rounded-lg p-3 text-center">
+              <p className="text-xl font-bold text-white">{fmt(futVal)}</p>
+              <p className="text-xs text-zinc-500">Valore Futuro</p>
+            </div>
+            {mkt === 'offplan' && (
+              <div className="bg-orange-500/10 rounded-lg p-3 text-center">
+                <p className="text-xl font-bold text-orange-400">{d.opHand}m</p>
+                <p className="text-xs text-zinc-500">Handover</p>
+              </div>
+            )}
+          </div>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Prezzo Acquisto</span><span className="text-white">{fmt(price)} AED</span></div>
+            {mkt === 'offplan' && <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">(-) Launch Discount {disc}%</span><span className="text-emerald-400">-{fmt(price-effPrice)} AED</span></div>}
+            <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Prezzo Effettivo</span><span className="text-white">{fmt(effPrice)} AED</span></div>
+            <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">(+) Apprezzamento {appr.toFixed(0)}%</span><span className="text-emerald-400">+{fmt(profit)} AED</span></div>
+            <div className="flex justify-between py-2 font-medium text-lg"><span className="text-white">= Valore Futuro</span><span className="text-emerald-400">{fmt(futVal)} AED</span></div>
+          </div>
+        </div>
+      )}
+
+      {/* Costs Tab */}
+      {tab === 'costs' && (
+        <div className="bg-[#1e293b] rounded-xl p-4 border border-red-500/30">
+          <h3 className="font-semibold text-white mb-4">💰 Breakdown Costi Annuali</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between py-3 border-b border-[#334155]">
+              <span className="text-zinc-400">Service Charge ({sc} × {sqft} sqft)</span>
+              <span className="text-amber-400 font-bold">{fmt(sc*sqft*a.sc)} AED</span>
+            </div>
+            <div className="flex justify-between py-3 border-b border-[#334155]">
+              <span className="text-zinc-400">DEWA (Utilities)</span>
+              <span className="text-blue-400 font-bold">{fmt(d.dewa*roiBrMult.dewa[br])} AED</span>
+            </div>
+            <div className="flex justify-between py-3 border-b border-[#334155]">
+              <span className="text-zinc-400">Assicurazione</span>
+              <span className="text-green-400 font-bold">~1,000 AED</span>
+            </div>
+            {a.maint > 0 && (
+              <div className="flex justify-between py-3 border-b border-[#334155]">
+                <span className="text-zinc-400">Manutenzione (edificio {age})</span>
+                <span className="text-red-400 font-bold">{fmt(a.maint)} AED</span>
+              </div>
+            )}
+            <div className="flex justify-between py-3 font-bold text-lg">
+              <span className="text-white">TOTALE ANNUO</span>
+              <span className="text-red-400">{fmt(costs)} AED</span>
+            </div>
+            <div className="flex justify-between py-2 text-zinc-500">
+              <span>Mensile</span>
+              <span>{fmt(costs/12)} AED/mese</span>
+            </div>
+          </div>
+          <div className="mt-4 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+            <p className="text-amber-400 text-xs">📌 Service Charge {z}: {sc} AED/sqft • {sc > 20 ? 'Premium (alto)' : sc > 12 ? 'Nella media' : 'Budget (basso)'}</p>
+          </div>
+        </div>
+      )}
+
+      <p className="text-zinc-600 text-xs text-center">⚠️ Stime basate su dati 2024-2025 (RERA, Bayut, DLD). Consulta un professionista prima di investire.</p>
+    </div>
   );
 }
 
