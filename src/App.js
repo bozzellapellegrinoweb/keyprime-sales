@@ -3684,107 +3684,122 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
 
         {viewMode === 'map' && (
           <div className="fixed inset-0 z-50 bg-[#0f172a]">
-            {/* Header with Logo and Filters */}
-            <div className="absolute top-0 left-0 right-0 z-10 bg-[#0f172a] border-b border-zinc-800">
+            {/* Header */}
+            <div className="absolute top-0 left-0 right-0 z-20 bg-[#0f172a]/95 backdrop-blur border-b border-zinc-800">
               <div className="px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <img src="/logo.png" alt="KeyPrime" className="h-10" />
-                  <span className="text-zinc-500">|</span>
-                  <span className="text-zinc-400">{displayProjects.length} progetti</span>
-                </div>
                 <div className="flex items-center gap-3">
-                  <Button variant="ghost" size="sm" onClick={() => setViewMode('list')} icon={X}>Chiudi</Button>
+                  <img src="/logo.png" alt="KeyPrime" className="h-8 lg:h-10" />
+                  <span className="text-zinc-500 hidden sm:inline">|</span>
+                  <span className="text-zinc-400 text-sm">{displayProjects.length} progetti</span>
                 </div>
+                <Button variant="ghost" size="sm" onClick={() => setViewMode('list')} icon={X}>Chiudi</Button>
               </div>
-              {/* Filters Row */}
-              <div className="px-4 pb-3 flex items-center gap-3 overflow-x-auto">
-                <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[140px]">
+              {/* Filters - Horizontal scroll on mobile */}
+              <div className="px-4 pb-3 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm min-w-[120px] flex-shrink-0">
                   <option value="">Tutte le zone</option>
                   {dubaiAreas.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
-                <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[140px]">
+                <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm min-w-[130px] flex-shrink-0">
                   <option value="">Tutti i developer</option>
                   {topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
-                <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none min-w-[100px]">
+                <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm min-w-[90px] flex-shrink-0">
                   <option value="">Camere</option>
                   {bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}
                 </select>
-                <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
-                <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none w-28" />
-                <Button onClick={() => searchListings(1)} icon={Search} disabled={loading}>{loading ? '...' : 'Cerca'}</Button>
+                <Button onClick={() => searchListings(1)} size="sm" className="flex-shrink-0" disabled={loading}>{loading ? '...' : 'Cerca'}</Button>
               </div>
             </div>
             
-            {/* Main Content */}
-            <div className="pt-28 h-full flex">
-              {/* Left Sidebar - Projects List */}
-              <div className="w-96 h-full bg-[#1e293b] border-r border-zinc-800 flex flex-col">
-                <div className="p-3 border-b border-zinc-800">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                    <input 
-                      type="text" 
-                      placeholder="Cerca progetto..." 
-                      value={filters.search} 
-                      onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                      onKeyDown={(e) => e.key === 'Enter' && searchListings(1)}
-                      className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-white text-sm placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
-                    />
+            {/* Map Container - Fullscreen */}
+            <div className="absolute inset-0 pt-24 lg:pt-28">
+              {/* Desktop: Sidebar + Map */}
+              <div className="hidden lg:flex h-full">
+                {/* Left Sidebar */}
+                <div className="w-96 h-full bg-[#1e293b] border-r border-zinc-800 flex flex-col">
+                  <div className="p-3 border-b border-zinc-800">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                      <input type="text" placeholder="Cerca progetto..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-white text-sm placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none" />
+                    </div>
                   </div>
-                </div>
-                <div className="flex-1 overflow-y-auto">
-                  {displayProjects.map(project => (
-                    <div 
-                      key={project.project_id} 
-                      onClick={() => setSelectedListing(project)}
-                      className={'p-3 border-b border-zinc-800/50 cursor-pointer hover:bg-zinc-700/50/50 transition-colors ' + (selectedListing?.project_id === project.project_id ? 'bg-orange-500/10 border-l-2 border-l-orange-500' : '')}
-                    >
-                      <div className="flex gap-3">
-                        <div className="w-20 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700/50">
-                          {project.images?.[0]?.medium_image_url ? (
-                            <img src={project.images[0].medium_image_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center"><Building2 className="w-6 h-6 text-zinc-600" /></div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-white text-sm truncate">{project.title}</h3>
-                          <p className="text-xs text-zinc-500 truncate">{project.location?.full_name}</p>
-                          <p className="text-orange-400 font-semibold text-sm mt-1">
-                            {project.price_from > 0 ? 'From ' + formatPrice(project.price_from) : 'TBD'}
-                          </p>
-                          <div className="flex items-center gap-2 text-xs text-zinc-500">
-                            {formatBedrooms(project.bedrooms) && <span>{formatBedrooms(project.bedrooms)}</span>}
-                            {formatDelivery(project.delivery_date) && <span>• {formatDelivery(project.delivery_date)}</span>}
+                  <div className="flex-1 overflow-y-auto">
+                    {displayProjects.map(project => (
+                      <div key={project.project_id} onClick={() => setSelectedListing(project)} className={'p-3 border-b border-zinc-800/50 cursor-pointer hover:bg-zinc-700/30 transition-colors ' + (selectedListing?.project_id === project.project_id ? 'bg-orange-500/10 border-l-2 border-l-orange-500' : '')}>
+                        <div className="flex gap-3">
+                          <div className="w-20 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700">
+                            {project.images?.[0]?.medium_image_url ? <img src={project.images[0].medium_image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Building2 className="w-6 h-6 text-zinc-600" /></div>}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-white text-sm truncate">{project.title}</h3>
+                            <p className="text-xs text-zinc-500 truncate">{project.location?.full_name}</p>
+                            <p className="text-orange-400 font-semibold text-sm mt-1">{project.price_from > 0 ? 'From ' + formatPrice(project.price_from) : 'TBD'}</p>
+                            <div className="flex items-center gap-2 text-xs text-zinc-500">
+                              {formatBedrooms(project.bedrooms) && <span>{formatBedrooms(project.bedrooms)}</span>}
+                              {formatDelivery(project.delivery_date) && <span>• {formatDelivery(project.delivery_date)}</span>}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                  {totalPages > 1 && (
-                    <div className="p-3 flex items-center justify-center gap-2 border-t border-zinc-800">
-                      <Button variant="ghost" size="sm" onClick={() => handlePageChange(page - 1)} disabled={page === 1}>
-                        <ChevronLeft className="w-4 h-4" />
-                      </Button>
-                      <span className="text-zinc-400 text-sm">Pag. {page}/{totalPages}</span>
-                      <Button variant="ghost" size="sm" onClick={() => handlePageChange(page + 1)} disabled={page === totalPages}>
-                        <ChevronRight className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
-                  {loading && <div className="p-4 text-center text-zinc-500">Caricamento...</div>}
+                    ))}
+                    {totalPages > 1 && (
+                      <div className="p-3 flex items-center justify-center gap-2 border-t border-zinc-800">
+                        <Button variant="ghost" size="sm" onClick={() => handlePageChange(page - 1)} disabled={page === 1}><ChevronLeft className="w-4 h-4" /></Button>
+                        <span className="text-zinc-400 text-sm">Pag. {page}/{totalPages}</span>
+                        <Button variant="ghost" size="sm" onClick={() => handlePageChange(page + 1)} disabled={page === totalPages}><ChevronRight className="w-4 h-4" /></Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {/* Map */}
+                <div className="flex-1 relative">
+                  <MapboxMap projects={listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} />
                 </div>
               </div>
-              
-              {/* Map */}
-              <div className="flex-1 relative">
-                <MapboxMap 
-                  projects={listings} 
-                  onSelectProject={setSelectedListing} 
-                  selectedProject={selectedListing} 
-                  onAreaClick={handleAreaClick} 
-                />
+
+              {/* Mobile: Fullscreen Map + Bottom Carousel */}
+              <div className="lg:hidden h-full flex flex-col">
+                {/* Map takes most space */}
+                <div className="flex-1 relative">
+                  <MapboxMap projects={listings} onSelectProject={setSelectedListing} selectedProject={selectedListing} onAreaClick={handleAreaClick} />
+                </div>
+                
+                {/* Bottom Carousel */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#0f172a] via-[#0f172a]/95 to-transparent pt-8 pb-4">
+                  <div className="flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory scrollbar-hide">
+                    {displayProjects.map(project => (
+                      <div 
+                        key={project.project_id} 
+                        onClick={() => setSelectedListing(project)}
+                        className={'flex-shrink-0 w-72 bg-[#1e293b] rounded-xl p-3 border transition-all snap-start ' + (selectedListing?.project_id === project.project_id ? 'border-orange-500 scale-[1.02]' : 'border-zinc-800')}
+                      >
+                        <div className="flex gap-3">
+                          <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700">
+                            {project.images?.[0]?.medium_image_url ? (
+                              <img src={project.images[0].medium_image_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center"><Building2 className="w-8 h-8 text-zinc-600" /></div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-white text-sm line-clamp-1">{project.title}</h3>
+                            <p className="text-xs text-zinc-500 line-clamp-1">{project.location?.full_name}</p>
+                            <p className="text-orange-400 font-bold mt-1">{project.price_from > 0 ? 'From ' + formatPrice(project.price_from) : 'TBD'}</p>
+                            <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
+                              {formatBedrooms(project.bedrooms) && <span>{formatBedrooms(project.bedrooms)}</span>}
+                              {formatDelivery(project.delivery_date) && <span>• {formatDelivery(project.delivery_date)}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Page indicator */}
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <span className="text-zinc-500 text-xs">{displayProjects.length} progetti • Scorri →</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -5688,5 +5703,7 @@ style.textContent = `
   .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
   * { -webkit-tap-highlight-color: transparent; }
   input, select, textarea { font-size: 16px !important; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 `;
 if (typeof document !== 'undefined') document.head.appendChild(style);
