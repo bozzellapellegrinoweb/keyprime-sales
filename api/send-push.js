@@ -7,11 +7,11 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { title, message, url } = req.body;
   try {
-    const response = await fetch('https://api.onesignal.com/notifications', {
+    const response = await fetch('https://onesignal.com/api/v1/notifications', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer os_v2_app_a4onfq2khvgs7dpl7jlvv3cxrxrqsndhpffui24npxugdjqnltcduawer4odsts27y7lwhao6uzdyqamepmoeattxq7hdtvc3k6khvq'
+        'Authorization': 'Basic os_v2_app_a4onfq2khvgs7dpl7jlvv3cxrxrqsndhpffui24npxugdjqnltcduawer4odsts27y7lwhao6uzdyqamepmoeattxq7hdtvc3k6khvq'
       },
       body: JSON.stringify({
         app_id: '071cd2c3-4a3d-4d2f-8deb-fa575aec578d',
