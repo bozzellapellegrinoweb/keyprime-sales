@@ -4598,8 +4598,7 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
     progetto: sale?.progetto || '',
     developer: sale?.developer || '',
     zona: sale?.zona || '',
-    valore: sale?.valore || '',
-    note: sale?.note || ''
+    valore: sale?.valore || ''
   });
   
   useEffect(() => {
@@ -4608,8 +4607,7 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
         progetto: sale.progetto || '',
         developer: sale.developer || '',
         zona: sale.zona || '',
-        valore: sale.valore || '',
-        note: sale.note || ''
+        valore: sale.valore || ''
       });
     }
   }, [sale]);
@@ -4626,8 +4624,7 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
       progetto: editForm.progetto,
       developer: editForm.developer,
       zona: editForm.zona,
-      valore: editForm.valore ? parseFloat(editForm.valore) : 0,
-      note: editForm.note
+      valore: editForm.valore ? parseFloat(editForm.valore) : 0
     });
     setSaving(false);
     setEditing(false);
@@ -4672,10 +4669,6 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
                   <label className="text-zinc-500 text-xs">Valore (AED)</label>
                   <input type="number" value={editForm.valore} onChange={(e) => setEditForm({...editForm, valore: e.target.value})} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
                 </div>
-                <div>
-                  <label className="text-zinc-500 text-xs">Note</label>
-                  <textarea value={editForm.note} onChange={(e) => setEditForm({...editForm, note: e.target.value})} rows={2} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1 resize-none" />
-                </div>
               </div>
               <div className="flex gap-2 mt-4">
                 <Button variant="secondary" onClick={() => setEditing(false)} className="flex-1" disabled={saving}>Annulla</Button>
@@ -4703,12 +4696,6 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
                 <div><p className="text-zinc-500 text-xs">Developer</p><p className="text-white text-sm">{sale?.developer || 'N/A'}</p></div>
                 <div><p className="text-zinc-500 text-xs">Zona</p><p className="text-white text-sm">{sale?.zona || 'N/A'}</p></div>
               </div>
-              {sale?.note && (
-                <div className="mt-3 pt-3 border-t border-zinc-700">
-                  <p className="text-zinc-500 text-xs">Note</p>
-                  <p className="text-zinc-300 text-sm mt-1">{sale.note}</p>
-                </div>
-              )}
               {sale?.pf_url && (
                 <a href={sale.pf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-3 text-blue-400 text-sm hover:underline">
                   <Building2 className="w-3 h-3" /> Vedi su PropertyFinder
