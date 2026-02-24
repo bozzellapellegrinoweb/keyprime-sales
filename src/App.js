@@ -1312,26 +1312,38 @@ export default function App() {
     const vendite = periodSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
     const totals = periodSales.reduce((a, s) => {
       const c = Number(s.valore) * (s.commission_pct || 5) / 100;
-      // Check if agent is agente_admin - cerca specificamente ruolo agente_admin
+      // Check if agent is agente_admin
       const agentUser = users.find(u => u.nome === s.agente && (u.ruolo === 'agente' || u.ruolo === 'agente_admin'));
       const isAgenteAdmin = agentUser?.ruolo === 'agente_admin';
       
-      const ag = s.agente ? c * 0.7 : 0;
-      const sg = s.segnalatore ? c * 0.3 : 0;
-      const n = c - ag - sg;
+      let ag, sg, p, g;
       
-      // Per agente_admin: 70% all'agente_admin, 30% a Pellegrino (non al referente)
-      let p, g;
       if (isAgenteAdmin) {
-        // Il 30% della commissione va a Pellegrino
-        p = c * 0.3;
-        g = 0;
+        if (s.referente === 'Giovanni') {
+          // REF = G → Giovanni 70%, Pellegrino 30%
+          ag = c * 0.7;
+          sg = 0;
+          g = 0; // Giovanni già prende come agente
+          p = c * 0.3;
+        } else {
+          // REF = P → Giovanni diventa segnalatore (30%), Pellegrino 70%
+          ag = c * 0.3; // Giovanni prende solo 30%
+          sg = 0;
+          g = 0;
+          p = c * 0.7; // Pellegrino prende 70%
+        }
       } else {
+        // Agenti normali - logica originale
+        ag = s.agente ? c * 0.7 : 0;
+        sg = s.segnalatore ? c * 0.3 : 0;
+        const n = c - ag - sg;
         p = s.referente === 'Pellegrino' ? n * 0.7 : (s.referente === 'Giovanni' ? n * 0.3 : 0);
         g = s.referente === 'Giovanni' ? n * 0.7 : (s.referente === 'Pellegrino' ? n * 0.3 : 0);
       }
       
-      return { valore: a.valore + Number(s.valore), comm: a.comm + c, ag: a.ag + ag, sg: a.sg + sg, netto: a.netto + n, pell: a.pell + p, giov: a.giov + g };
+      const n = isAgenteAdmin ? 0 : (c - ag - (s.segnalatore ? c * 0.3 : 0));
+      
+      return { valore: a.valore + Number(s.valore), comm: a.comm + c, ag: a.ag + ag, sg: a.sg + (s.segnalatore && !isAgenteAdmin ? c * 0.3 : 0), netto: a.netto + n, pell: a.pell + p, giov: a.giov + g };
     }, { valore: 0, comm: 0, ag: 0, sg: 0, netto: 0, pell: 0, giov: 0 });
     
     const byStato = pipelineStati.reduce((a, st) => { a[st] = periodSales.filter(s => (s.stato || 'lead') === st); return a; }, {});
