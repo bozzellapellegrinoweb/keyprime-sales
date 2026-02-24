@@ -656,7 +656,12 @@ export default function App() {
   const loadUsers = async () => { const { data } = await supabase.from('user_credentials').select('*').order('created_at', { ascending: false }); setUsers(data || []); };
   const loadClienti = async () => { const { data } = await supabase.from('clienti').select('*').order('created_at', { ascending: false }); setClienti(data || []); };
   const loadTasks = async () => { const { data } = await supabase.from('tasks').select('*').order('scadenza', { ascending: true }); setTasks(data || []); };
-  const loadSavedListings = async () => { const { data } = await supabase.from('saved_listings').select('*').order('created_at', { ascending: false }); setSavedListings(data || []); };
+  const loadSavedListings = async () => { 
+    const { data } = await supabase.from('saved_listings').select('*')
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: false }); 
+    setSavedListings(data || []); 
+  };
   
   useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); loadSavedListings(); if (user.ruolo === 'admin') loadUsers(); }}, [user]);
 
@@ -681,7 +686,7 @@ export default function App() {
   // Saved Listings Handlers
   const saveListing = async (listing) => {
     const { error } = await supabase.from('saved_listings').insert([{
-      property_id: listing.project_id, // Use project_id for off-plan projects
+      property_id: listing.project_id,
       title: listing.title,
       price: parseFloat(listing.price_from) || 0,
       location_full: listing.location?.full_name,
@@ -698,7 +703,8 @@ export default function App() {
       agent_email: null,
       description: listing.title,
       created_by: user?.nome,
-      property_data: listing // Store full listing data for later display
+      user_id: user?.id, // Track which user saved this
+      property_data: listing
     }]);
     if (error) {
       console.error('Save error:', error);
@@ -928,7 +934,12 @@ export default function App() {
   const myPendingTasks = tasks.filter(t => t.stato === 'pending' && (user?.ruolo === 'admin' || t.assegnato_a === user?.nome));
   const overdueTasks = myPendingTasks.filter(t => isOverdue(t.scadenza));
   const todayTasks = myPendingTasks.filter(t => isToday(t.scadenza));
-  const notificationTasks = myPendingTasks.filter(t => isOverdue(t.scadenza) || isToday(t.scadenza));
+  
+  // For agents: show all their assigned tasks as notifications (not just overdue/today)
+  // For admin: show overdue/today tasks + recent sales
+  const notificationTasks = user?.ruolo === 'admin' 
+    ? myPendingTasks.filter(t => isOverdue(t.scadenza) || isToday(t.scadenza))
+    : myPendingTasks; // Agents see ALL their pending tasks
   
   // Recent sales notifications (last 24 hours for admin)
   const recentSalesNotifications = user?.ruolo === 'admin' ? sales.filter(s => {
@@ -938,16 +949,30 @@ export default function App() {
     return hoursDiff <= 24 && !readNotificationIds.includes('sale_' + s.id);
   }) : [];
   
+  // Unread = not in readNotificationIds AND (for agents: created_by !== user, for admin: all)
   const unreadNotificationIds = [
-    ...notificationTasks.filter(t => !readNotificationIds.includes(t.id)).map(t => t.id),
+    ...notificationTasks.filter(t => {
+      const isRead = readNotificationIds.includes(`task_${t.id}_${user?.id}`);
+      // For agents: only unread if someone else created it OR it's overdue
+      if (user?.ruolo !== 'admin') {
+        return !isRead && (t.created_by !== user?.nome || isOverdue(t.scadenza));
+      }
+      return !isRead;
+    }).map(t => `task_${t.id}_${user?.id}`),
     ...recentSalesNotifications.map(s => 'sale_' + s.id)
   ];
   const notificationCount = unreadNotificationIds.length;
 
   const markNotificationsAsRead = () => {
-    const taskIds = notificationTasks.map(t => t.id);
+    const taskIds = notificationTasks.map(t => `task_${t.id}_${user?.id}`);
     const saleIds = recentSalesNotifications.map(s => 'sale_' + s.id);
     const allIds = [...new Set([...readNotificationIds, ...taskIds, ...saleIds])];
+    setReadNotificationIds(allIds);
+    localStorage.setItem('keyprime_read_notifications', JSON.stringify(allIds));
+  };
+
+  const markSingleNotificationAsRead = (notifId) => {
+    const allIds = [...new Set([...readNotificationIds, notifId])];
     setReadNotificationIds(allIds);
     localStorage.setItem('keyprime_read_notifications', JSON.stringify(allIds));
   };
@@ -1130,27 +1155,59 @@ export default function App() {
 
                 <div>
                   <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold text-white">Lead Recenti</h2>
+                    <h2 className="text-lg font-semibold text-white">Lead Aperti</h2>
                     <button onClick={() => setActiveTab('leads')} className="text-sm text-violet-400">Tutti →</button>
                   </div>
-                  <div className="grid gap-3 lg:grid-cols-2">
-                    {mySales.slice(0, 6).map(s => (
-                      <Card key={s.id} hover onClick={() => setShowLeadDetail(s)} padding="p-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-1 h-12 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-white font-medium truncate">{s.progetto}</p>
-                            <p className="text-zinc-500 text-sm">{s.developer}</p>
+                  {mySales.filter(s => s.stato === 'lead' || s.stato === 'trattativa' || s.stato === 'proposta').length === 0 ? (
+                    <Card padding="p-6" className="text-center">
+                      <p className="text-zinc-500">Nessun lead aperto</p>
+                    </Card>
+                  ) : (
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      {mySales.filter(s => s.stato === 'lead' || s.stato === 'trattativa' || s.stato === 'proposta').slice(0, 4).map(s => (
+                        <Card key={s.id} hover onClick={() => setShowLeadDetail(s)} padding="p-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-1 h-12 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white font-medium truncate">{s.progetto}</p>
+                              <p className="text-zinc-500 text-sm">{s.developer}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-emerald-400 font-medium">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
+                              <StatusBadge status={s.stato || 'lead'} />
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-emerald-400 font-medium">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
-                            <StatusBadge status={s.stato || 'lead'} />
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                {/* Vendite Confermate Recenti */}
+                {myVendite.length > 0 && (
+                  <div className="mt-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-lg font-semibold text-white">🎉 Vendite Confermate</h2>
+                    </div>
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      {myVendite.slice(0, 4).map(s => (
+                        <Card key={s.id} hover onClick={() => setShowLeadDetail(s)} padding="p-4" className="border-emerald-500/20">
+                          <div className="flex items-center gap-4">
+                            <div className="w-1 h-12 rounded-full bg-emerald-500" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white font-medium truncate">{s.progetto}</p>
+                              <p className="text-zinc-500 text-sm">{s.developer}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-emerald-400 font-medium">{fmt(s.valore)}</p>
+                              <StatusBadge status={s.stato} />
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
@@ -1203,7 +1260,7 @@ export default function App() {
 
         {showLeadDetail && <LeadDetailSheet sale={showLeadDetail} cliente={clienti.find(c => c.id === showLeadDetail?.cliente_id)} rate={rate} onClose={() => setShowLeadDetail(null)} onUpdateSale={updateSale} onConvert={() => setConvertingSale(showLeadDetail)} />}
         {convertingSale && <ConvertModal sale={convertingSale} onConvert={convertLeadToSale} onCancel={() => setConvertingSale(null)} />}
-        {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} recentSales={recentSalesNotifications} onClose={() => { setShowNotifications(false); markNotificationsAsRead(); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} />}
+        {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} recentSales={recentSalesNotifications} onClose={() => { setShowNotifications(false); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} onMarkAsRead={markSingleNotificationAsRead} userId={user?.id} />}
         {showPasswordModal && <PasswordModal currentPassword={user?.password} onSave={changePassword} onClose={() => setShowPasswordModal(false)} />}
         {showNoteModal && <NoteModal task={showNoteModal} onSave={addTaskNote} onClose={() => setShowNoteModal(null)} />}
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -1518,7 +1575,7 @@ export default function App() {
         {showClienteModal && <ClienteModal cliente={showClienteModal.id ? showClienteModal : null} onSave={showClienteModal.id ? (d) => updateCliente(showClienteModal.id, d) : createCliente} onClose={() => setShowClienteModal(null)} />}
         {showTaskModal && <TaskModal task={showTaskModal.id ? showTaskModal : null} clienti={clienti} users={users} onSave={showTaskModal.id ? (d) => updateTask(showTaskModal.id, d) : createTask} onClose={() => setShowTaskModal(null)} />}
         {showUserModal && <UserModal user={showUserModal.id ? showUserModal : null} onSave={showUserModal.id ? (d) => updateUser(showUserModal.id, d) : createUser} onClose={() => setShowUserModal(null)} />}
-        {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} recentSales={recentSalesNotifications} onClose={() => { setShowNotifications(false); markNotificationsAsRead(); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} />}
+        {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} recentSales={recentSalesNotifications} onClose={() => { setShowNotifications(false); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} onMarkAsRead={markSingleNotificationAsRead} userId={user?.id} />}
         {showGlobalSearch && <GlobalSearch isOpen={showGlobalSearch} onClose={() => setShowGlobalSearch(false)} sales={sales} clienti={clienti} tasks={tasks} onSelectSale={setShowLeadDetail} onSelectCliente={setShowClienteDetail} onSelectTask={() => setActiveTab('tasks')} setActiveTab={setActiveTab} />}
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
@@ -4458,10 +4515,10 @@ function ConvertModal({ sale, onConvert, onCancel }) {
 }
 
 // Notifications Panel
-function NotificationsPanel({ tasks, unreadIds, onClose, onGoToTask, recentSales = [] }) {
+function NotificationsPanel({ tasks, unreadIds, onClose, onGoToTask, recentSales = [], onMarkAsRead, userId }) {
   const allNotifications = [
     ...recentSales.map(s => ({ type: 'sale', id: 'sale_' + s.id, data: s })),
-    ...tasks.map(t => ({ type: 'task', id: t.id, data: t }))
+    ...tasks.map(t => ({ type: 'task', id: `task_${t.id}_${userId}`, data: t }))
   ];
   
   return (
@@ -4481,25 +4538,44 @@ function NotificationsPanel({ tasks, unreadIds, onClose, onGoToTask, recentSales
                   <p className="text-zinc-400 text-xs">{s.progetto} • {s.agente || s.segnalatore}</p>
                   <p className="text-emerald-400 text-xs font-medium mt-1">{fmt(s.valore)} AED</p>
                 </div>
-                <span className="text-zinc-500 text-xs">{fmtShort(s.created_at)}</span>
-              </div>
-            </Card>
-          ))}
-          {tasks.map(t => (
-            <Card key={t.id} hover onClick={onGoToTask} padding="p-3" className={unreadIds.includes(t.id) ? 'border-l-2 border-l-pink-500' : ''}>
-              <div className="flex items-start gap-3">
-                <div className={`w-2 h-2 rounded-full mt-1.5 ${isOverdue(t.scadenza) ? 'bg-red-500' : 'bg-amber-500'}`} />
-                <div className="flex-1">
-                  <p className="text-white text-sm font-medium">{t.titolo}</p>
-                  <p className={`text-xs ${isOverdue(t.scadenza) ? 'text-red-400' : 'text-zinc-500'}`}>
-                    {t.scadenza ? fmtDateTime(t.scadenza) : 'Senza scadenza'}
-                    {isOverdue(t.scadenza) && ' • Scaduto!'}
-                  </p>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-zinc-500 text-xs">{fmtShort(s.created_at)}</span>
+                  {unreadIds.includes('sale_' + s.id) && (
+                    <button onClick={(e) => { e.stopPropagation(); onMarkAsRead('sale_' + s.id); }} className="text-xs text-zinc-500 hover:text-white">
+                      <Check className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
-                <StatusBadge status={t.priorita} type="priority" />
               </div>
             </Card>
           ))}
+          {tasks.map(t => {
+            const taskNotifId = `task_${t.id}_${userId}`;
+            const isUnread = unreadIds.includes(taskNotifId);
+            return (
+              <Card key={t.id} padding="p-3" className={isUnread ? 'border-l-2 border-l-pink-500' : ''}>
+                <div className="flex items-start gap-3">
+                  <div className={`w-2 h-2 rounded-full mt-1.5 ${isOverdue(t.scadenza) ? 'bg-red-500' : 'bg-amber-500'}`} />
+                  <div className="flex-1 cursor-pointer" onClick={onGoToTask}>
+                    <p className="text-white text-sm font-medium">{t.titolo}</p>
+                    <p className={`text-xs ${isOverdue(t.scadenza) ? 'text-red-400' : 'text-zinc-500'}`}>
+                      {t.scadenza ? fmtDateTime(t.scadenza) : 'Senza scadenza'}
+                      {isOverdue(t.scadenza) && ' • Scaduto!'}
+                    </p>
+                    {t.created_by && <p className="text-zinc-600 text-xs mt-1">Da: {t.created_by}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={t.priorita} type="priority" />
+                    {isUnread && (
+                      <button onClick={(e) => { e.stopPropagation(); onMarkAsRead(taskNotifId); }} className="p-1 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded transition-colors" title="Segna come letta">
+                        <Check className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
     </BottomSheet>
