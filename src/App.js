@@ -596,6 +596,8 @@ export default function App() {
   const [users, setUsers] = useState([]);
   const [clienti, setClienti] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [followUps, setFollowUps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
@@ -668,6 +670,8 @@ export default function App() {
   const loadUsers = async () => { const { data } = await supabase.from('user_credentials').select('*').order('created_at', { ascending: false }); setUsers(data || []); };
   const loadClienti = async () => { const { data } = await supabase.from('clienti').select('*').order('created_at', { ascending: false }); setClienti(data || []); };
   const loadTasks = async () => { const { data } = await supabase.from('tasks').select('*').order('scadenza', { ascending: true }); setTasks(data || []); };
+  const loadActivities = async () => { const { data } = await supabase.from('lead_activities').select('*').order('created_at', { ascending: false }); setActivities(data || []); };
+  const loadFollowUps = async () => { const { data } = await supabase.from('follow_ups').select('*').order('data_reminder', { ascending: true }); setFollowUps(data || []); };
   const loadSavedListings = async () => { 
     const { data } = await supabase.from('saved_listings').select('*')
       .eq('user_id', user?.id)
@@ -675,7 +679,7 @@ export default function App() {
     setSavedListings(data || []); 
   };
   
-  useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); loadSavedListings(); if (user.ruolo === 'admin') loadUsers(); }}, [user]);
+  useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); loadActivities(); loadFollowUps(); loadSavedListings(); if (user.ruolo === 'admin') loadUsers(); }}, [user]);
 
   // Global refresh function
   const refreshAllData = async () => {
@@ -685,6 +689,8 @@ export default function App() {
       loadSales(),
       loadClienti(),
       loadTasks(),
+      loadActivities(),
+      loadFollowUps(),
       loadSavedListings(),
       user?.ruolo === 'admin' ? loadUsers() : Promise.resolve()
     ]);
@@ -943,6 +949,41 @@ export default function App() {
   const addTaskNote = async (id, note) => { const task = tasks.find(t => t.id === id); await supabase.from('tasks').update({ note }).eq('id', id); if (task && user?.ruolo !== 'admin') await notifyTaskNote(task, user?.nome, note); loadTasks(); setShowNoteModal(null); showToast('Nota inviata'); };
   const deleteTask = async (id) => { if (!window.confirm('Eliminare?')) return; await supabase.from('tasks').delete().eq('id', id); loadTasks(); };
 
+  // Activity Handlers (Lead Notes/Activities)
+  const addActivity = async (saleId, tipo, contenuto) => {
+    await supabase.from('lead_activities').insert([{ 
+      sale_id: saleId, 
+      tipo, 
+      contenuto, 
+      created_by: user?.nome 
+    }]);
+    loadActivities();
+    showToast('Attività registrata');
+  };
+  const deleteActivity = async (id) => { 
+    await supabase.from('lead_activities').delete().eq('id', id); 
+    loadActivities(); 
+  };
+
+  // Follow-up Handlers
+  const createFollowUp = async (data) => {
+    await supabase.from('follow_ups').insert([{ 
+      ...data, 
+      assegnato_a: data.assegnato_a || user?.nome 
+    }]);
+    loadFollowUps();
+    showToast('Follow-up programmato');
+  };
+  const completeFollowUp = async (id) => {
+    await supabase.from('follow_ups').update({ completato: true }).eq('id', id);
+    loadFollowUps();
+    showToast('Follow-up completato');
+  };
+  const deleteFollowUp = async (id) => { 
+    await supabase.from('follow_ups').delete().eq('id', id); 
+    loadFollowUps(); 
+  };
+
   // User Handlers
   const createUser = async (d) => { await supabase.from('user_credentials').insert([d]); loadUsers(); setShowUserModal(null); showToast('Utente creato'); };
   const updateUser = async (id, d) => { await supabase.from('user_credentials').update(d).eq('id', id); loadUsers(); setShowUserModal(null); showToast('Salvato'); };
@@ -964,6 +1005,11 @@ export default function App() {
   const myPendingTasks = tasks.filter(t => t.stato === 'pending' && (user?.ruolo === 'admin' || t.assegnato_a === user?.nome));
   const overdueTasks = myPendingTasks.filter(t => isOverdue(t.scadenza));
   const todayTasks = myPendingTasks.filter(t => isToday(t.scadenza));
+  
+  // Follow-up reminders
+  const myFollowUps = followUps.filter(f => !f.completato && (user?.ruolo === 'admin' || f.assegnato_a === user?.nome));
+  const todayFollowUps = myFollowUps.filter(f => isToday(f.data_reminder));
+  const overdueFollowUps = myFollowUps.filter(f => isOverdue(f.data_reminder));
   
   // For agents: show all their assigned tasks as notifications (not just overdue/today)
   // For admin: show overdue/today tasks + recent sales
