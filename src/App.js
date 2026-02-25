@@ -3982,7 +3982,6 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
     if (!price || price === 0) return 'Su richiesta';
     return parseFloat(price).toLocaleString();
   };
-  };
   
   const formatBedrooms = (bedrooms) => {
     if (!bedrooms?.available?.length) return null;
