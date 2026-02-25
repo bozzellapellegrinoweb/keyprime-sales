@@ -9,6 +9,9 @@ const PF_API_KEY = '726ac8a1f8msh5ec783ecc467b76p1e1338jsn88a853551916';
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 function transformProject(p) {
+  // Try to find brochure URL in various possible locations
+  const brochureUrl = p.brochure?.url || p.brochure || p.documents?.brochure?.url || p.documents?.brochure || p.media?.brochure?.url || p.media?.brochure || p.brochure_url || null;
+  
   return {
     project_id: p.project_id,
     title: p.title,
@@ -23,6 +26,7 @@ function transformProject(p) {
     images: p.images || null,
     payment_plans: p.payment_plans || null,
     url: p.url || null,
+    brochure_url: brochureUrl,
     raw_data: p,
     updated_at: new Date().toISOString()
   };

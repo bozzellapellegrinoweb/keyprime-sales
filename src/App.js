@@ -3445,7 +3445,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         images: p.images || [],
         payment_plans: p.payment_plans,
         url: p.url,
-        brochure_url: p.raw_data?.brochure?.url || p.raw_data?.brochure
+        brochure_url: p.brochure_url || p.raw_data?.brochure?.url || p.raw_data?.brochure || p.raw_data?.documents?.brochure?.url || p.raw_data?.documents?.brochure || p.raw_data?.media?.brochure?.url || p.raw_data?.media?.brochure || p.raw_data?.brochure_url
       }));
       
       // Additional client-side filter for 5+ bedrooms
