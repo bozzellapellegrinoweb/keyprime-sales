@@ -1408,7 +1408,7 @@ export default function App() {
           </div>
         </div>
 
-        {showLeadDetail && <LeadDetailSheet sale={showLeadDetail} cliente={clienti.find(c => c.id === showLeadDetail?.cliente_id)} rate={rate} onClose={() => setShowLeadDetail(null)} onUpdateSale={updateSale} onConvert={() => setConvertingSale(showLeadDetail)} />}
+        {showLeadDetail && <LeadDetailSheet sale={showLeadDetail} cliente={clienti.find(c => c.id === showLeadDetail?.cliente_id)} rate={rate} onClose={() => setShowLeadDetail(null)} onUpdateSale={updateSale} onConvert={() => setConvertingSale(showLeadDetail)} activities={activities.filter(a => a.sale_id === showLeadDetail?.id)} followUps={followUps.filter(f => f.sale_id === showLeadDetail?.id)} onAddActivity={addActivity} onCreateFollowUp={createFollowUp} onCompleteFollowUp={completeFollowUp} onDeleteActivity={deleteActivity} onDeleteFollowUp={deleteFollowUp} userName={user?.nome} />}
         {convertingSale && <ConvertModal sale={convertingSale} onConvert={convertLeadToSale} onCancel={() => setConvertingSale(null)} />}
         {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} recentSales={recentSalesNotifications} onClose={() => { setShowNotifications(false); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} onMarkAsRead={markSingleNotificationAsRead} userId={user?.id} />}
         {showPasswordModal && <PasswordModal currentPassword={user?.password} onSave={changePassword} onClose={() => setShowPasswordModal(false)} />}
@@ -1756,7 +1756,7 @@ export default function App() {
         )}
 
         {/* Modals */}
-        {showLeadDetail && <LeadDetailSheet sale={showLeadDetail} cliente={clienti.find(c => c.id === showLeadDetail?.cliente_id)} rate={0.7} onClose={() => setShowLeadDetail(null)} onUpdateSale={updateSale} onConvert={() => setConvertingSale(showLeadDetail)} isAdmin />}
+        {showLeadDetail && <LeadDetailSheet sale={showLeadDetail} cliente={clienti.find(c => c.id === showLeadDetail?.cliente_id)} rate={0.7} onClose={() => setShowLeadDetail(null)} onUpdateSale={updateSale} onConvert={() => setConvertingSale(showLeadDetail)} isAdmin activities={activities.filter(a => a.sale_id === showLeadDetail?.id)} followUps={followUps.filter(f => f.sale_id === showLeadDetail?.id)} onAddActivity={addActivity} onCreateFollowUp={createFollowUp} onCompleteFollowUp={completeFollowUp} onDeleteActivity={deleteActivity} onDeleteFollowUp={deleteFollowUp} userName={user?.nome} />}
         {convertingSale && <ConvertModal sale={convertingSale} onConvert={convertLeadToSale} onCancel={() => setConvertingSale(null)} />}
         {showClienteModal && <ClienteModal cliente={showClienteModal.id ? showClienteModal : null} onSave={showClienteModal.id ? (d) => updateCliente(showClienteModal.id, d) : createCliente} onClose={() => setShowClienteModal(null)} />}
         {showTaskModal && <TaskModal task={showTaskModal.id ? showTaskModal : null} clienti={clienti} users={users} onSave={showTaskModal.id ? (d) => updateTask(showTaskModal.id, d) : createTask} onClose={() => setShowTaskModal(null)} />}
@@ -4856,16 +4856,48 @@ function LoginForm({ onLogin, loading }) {
 }
 
 // Lead Detail Sheet
-function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert, isAdmin }) {
+function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert, isAdmin, activities = [], followUps = [], onAddActivity, onCreateFollowUp, onCompleteFollowUp, onDeleteActivity, onDeleteFollowUp, userName }) {
   const mc = (sale?.stato === 'venduto' || sale?.stato === 'incassato') ? Number(sale.valore) * (sale.commission_pct || 5) / 100 * rate : 0;
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeDetailTab, setActiveDetailTab] = useState('info'); // 'info', 'activities', 'followups'
+  const [showActivityForm, setShowActivityForm] = useState(false);
+  const [showFollowUpForm, setShowFollowUpForm] = useState(false);
+  const [activityForm, setActivityForm] = useState({ tipo: 'call', contenuto: '' });
+  const [followUpForm, setFollowUpForm] = useState({ tipo: 'call', data_reminder: '', ora_reminder: '', nota: '' });
   const [editForm, setEditForm] = useState({
     progetto: sale?.progetto || '',
     developer: sale?.developer || '',
     zona: sale?.zona || '',
     valore: sale?.valore || ''
   });
+  
+  const activityTypes = [
+    { id: 'call', label: 'Chiamata', icon: '📞', color: 'blue' },
+    { id: 'email', label: 'Email', icon: '📧', color: 'purple' },
+    { id: 'whatsapp', label: 'WhatsApp', icon: '💬', color: 'green' },
+    { id: 'meeting', label: 'Incontro', icon: '🤝', color: 'orange' },
+    { id: 'viewing', label: 'Visita', icon: '🏠', color: 'pink' },
+    { id: 'note', label: 'Nota', icon: '📝', color: 'zinc' }
+  ];
+  
+  const handleAddActivity = async () => {
+    if (!activityForm.contenuto.trim()) return;
+    await onAddActivity(sale.id, activityForm.tipo, activityForm.contenuto);
+    setActivityForm({ tipo: 'call', contenuto: '' });
+    setShowActivityForm(false);
+  };
+  
+  const handleAddFollowUp = async () => {
+    if (!followUpForm.data_reminder) return;
+    await onCreateFollowUp({
+      sale_id: sale.id,
+      cliente_id: cliente?.id,
+      ...followUpForm
+    });
+    setFollowUpForm({ tipo: 'call', data_reminder: '', ora_reminder: '', nota: '' });
+    setShowFollowUpForm(false);
+  };
   
   useEffect(() => {
     if (sale) {
@@ -4984,6 +5016,154 @@ function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert
             </div>
             <QuickActions phone={cliente.telefono} whatsapp={cliente.whatsapp || cliente.telefono} email={cliente.email} clienteName={cliente.nome} />
           </Card>
+        )}
+
+        {/* Activities & Follow-ups Tabs */}
+        {!editing && (
+          <div className="border-t border-zinc-800 pt-4">
+            <div className="flex gap-2 mb-4">
+              <button onClick={() => setActiveDetailTab('activities')} className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeDetailTab === 'activities' ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
+                📝 Attività ({activities.length})
+              </button>
+              <button onClick={() => setActiveDetailTab('followups')} className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeDetailTab === 'followups' ? 'bg-purple-500/20 text-purple-400' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
+                ⏰ Follow-up ({followUps.filter(f => !f.completato).length})
+              </button>
+            </div>
+
+            {/* Activities Tab */}
+            {activeDetailTab === 'activities' && (
+              <div className="space-y-3">
+                {/* Add Activity Button */}
+                {!showActivityForm ? (
+                  <button onClick={() => setShowActivityForm(true)} className="w-full py-2 border-2 border-dashed border-zinc-700 rounded-xl text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors flex items-center justify-center gap-2">
+                    <Plus className="w-4 h-4" /> Registra attività
+                  </button>
+                ) : (
+                  <Card className="border-blue-500/20 bg-blue-500/5">
+                    <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
+                      {activityTypes.map(t => (
+                        <button key={t.id} onClick={() => setActivityForm({...activityForm, tipo: t.id})} className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${activityForm.tipo === t.id ? 'bg-blue-500 text-white' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
+                          {t.icon} {t.label}
+                        </button>
+                      ))}
+                    </div>
+                    <textarea value={activityForm.contenuto} onChange={(e) => setActivityForm({...activityForm, contenuto: e.target.value})} placeholder="Descrivi l'attività..." className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm resize-none" rows={3} />
+                    <div className="flex gap-2 mt-3">
+                      <Button variant="secondary" onClick={() => setShowActivityForm(false)} className="flex-1">Annulla</Button>
+                      <Button onClick={handleAddActivity} className="flex-1" disabled={!activityForm.contenuto.trim()}>Salva</Button>
+                    </div>
+                  </Card>
+                )}
+
+                {/* Activities List */}
+                {activities.length > 0 ? (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {activities.map(a => {
+                      const aType = activityTypes.find(t => t.id === a.tipo) || activityTypes[5];
+                      return (
+                        <div key={a.id} className="p-3 bg-zinc-800/50 rounded-xl group">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-2">
+                              <span className="text-lg">{aType.icon}</span>
+                              <div>
+                                <p className="text-white text-sm">{a.contenuto}</p>
+                                <p className="text-zinc-500 text-xs mt-1">{a.created_by} • {new Date(a.created_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                              </div>
+                            </div>
+                            <button onClick={() => onDeleteActivity(a.id)} className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-red-400 transition-all">
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-zinc-500 text-sm text-center py-4">Nessuna attività registrata</p>
+                )}
+              </div>
+            )}
+
+            {/* Follow-ups Tab */}
+            {activeDetailTab === 'followups' && (
+              <div className="space-y-3">
+                {/* Add Follow-up Button */}
+                {!showFollowUpForm ? (
+                  <button onClick={() => setShowFollowUpForm(true)} className="w-full py-2 border-2 border-dashed border-zinc-700 rounded-xl text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors flex items-center justify-center gap-2">
+                    <Plus className="w-4 h-4" /> Programma follow-up
+                  </button>
+                ) : (
+                  <Card className="border-purple-500/20 bg-purple-500/5">
+                    <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
+                      {activityTypes.slice(0, 5).map(t => (
+                        <button key={t.id} onClick={() => setFollowUpForm({...followUpForm, tipo: t.id})} className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${followUpForm.tipo === t.id ? 'bg-purple-500 text-white' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
+                          {t.icon} {t.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label className="text-zinc-500 text-xs">Data</label>
+                        <input type="date" value={followUpForm.data_reminder} onChange={(e) => setFollowUpForm({...followUpForm, data_reminder: e.target.value})} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                      </div>
+                      <div>
+                        <label className="text-zinc-500 text-xs">Ora (opz.)</label>
+                        <input type="time" value={followUpForm.ora_reminder} onChange={(e) => setFollowUpForm({...followUpForm, ora_reminder: e.target.value})} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                      </div>
+                    </div>
+                    <textarea value={followUpForm.nota} onChange={(e) => setFollowUpForm({...followUpForm, nota: e.target.value})} placeholder="Note (opzionale)..." className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm resize-none" rows={2} />
+                    <div className="flex gap-2 mt-3">
+                      <Button variant="secondary" onClick={() => setShowFollowUpForm(false)} className="flex-1">Annulla</Button>
+                      <Button onClick={handleAddFollowUp} className="flex-1 bg-purple-500 hover:bg-purple-600" disabled={!followUpForm.data_reminder}>Salva</Button>
+                    </div>
+                  </Card>
+                )}
+
+                {/* Follow-ups List */}
+                {followUps.length > 0 ? (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {followUps.map(f => {
+                      const fType = activityTypes.find(t => t.id === f.tipo) || activityTypes[0];
+                      const isOverdue = new Date(f.data_reminder) < new Date() && !f.completato;
+                      const isToday = new Date(f.data_reminder).toDateString() === new Date().toDateString();
+                      return (
+                        <div key={f.id} className={`p-3 rounded-xl border transition-all ${f.completato ? 'bg-zinc-800/30 border-zinc-800 opacity-60' : isOverdue ? 'bg-red-500/10 border-red-500/30' : isToday ? 'bg-purple-500/10 border-purple-500/30' : 'bg-zinc-800/50 border-zinc-800'}`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-2">
+                              <span className="text-lg">{fType.icon}</span>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className={`text-sm font-medium ${f.completato ? 'text-zinc-500 line-through' : isOverdue ? 'text-red-400' : 'text-white'}`}>
+                                    {new Date(f.data_reminder).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                                    {f.ora_reminder && ` alle ${f.ora_reminder.slice(0,5)}`}
+                                  </p>
+                                  {isToday && !f.completato && <span className="px-1.5 py-0.5 bg-purple-500 text-white text-[10px] font-bold rounded">OGGI</span>}
+                                  {isOverdue && !f.completato && <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded">SCADUTO</span>}
+                                </div>
+                                {f.nota && <p className="text-zinc-400 text-xs mt-1">{f.nota}</p>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {!f.completato && (
+                                <button onClick={() => onCompleteFollowUp(f.id)} className="p-1.5 text-zinc-500 hover:text-green-400 transition-colors" title="Completato">
+                                  <Check className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button onClick={() => onDeleteFollowUp(f.id)} className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors" title="Elimina">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-zinc-500 text-sm text-center py-4">Nessun follow-up programmato</p>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Status Change */}
