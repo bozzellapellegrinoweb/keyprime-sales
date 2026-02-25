@@ -3434,7 +3434,8 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
           full_name: p.location_full 
         },
         developer: { 
-          name: p.developer_name 
+          name: p.developer_name,
+          logo: p.raw_data?.developer?.logo
         },
         price_from: p.price_from,
         bedrooms: p.bedrooms,
@@ -3443,7 +3444,8 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         hotness_level: p.hotness_level,
         images: p.images || [],
         payment_plans: p.payment_plans,
-        url: p.url
+        url: p.url,
+        brochure_url: p.raw_data?.brochure?.url || p.raw_data?.brochure
       }));
       
       // Additional client-side filter for 5+ bedrooms
@@ -4505,7 +4507,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
 
           
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-zinc-800">
+          <div className="flex flex-wrap gap-3 pt-4 border-t border-zinc-800">
             <Button className="flex-1 py-3 bg-orange-500 hover:bg-orange-600" onClick={onCreateLead}>
               <Plus className="w-5 h-5 mr-2" /> Crea Lead
             </Button>
@@ -4519,6 +4521,16 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
             }}>
               <MessageCircle className="w-5 h-5 mr-2" /> WhatsApp
             </Button>
+            {listing.brochure_url && (
+              <a href={listing.brochure_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-3 px-4 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-xl transition-colors" title="Scarica Brochure">
+                <FileText className="w-5 h-5" /> Brochure
+              </a>
+            )}
+            {listing.url && (
+              <a href={listing.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-3 px-4 bg-zinc-700/50 hover:bg-zinc-700 text-zinc-300 rounded-xl transition-colors" title="Vedi su PropertyFinder">
+                <ExternalLink className="w-5 h-5" />
+              </a>
+            )}
             <Button variant="ghost" className="py-3" onClick={downloadProjectPDF} disabled={generatingPdf} title="Scarica scheda PDF">
               {generatingPdf ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
             </Button>
