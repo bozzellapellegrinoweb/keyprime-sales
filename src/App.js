@@ -3959,22 +3959,29 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
   const [showFullGallery, setShowFullGallery] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [brochureUrl, setBrochureUrl] = useState(null);
-  const [brochureLoading, setBrochureLoading] = useState(false);
+  const [videoUrl, setVideoUrl] = useState(null);
+  const [videoType, setVideoType] = useState(null);
+  const [mediaLoading, setMediaLoading] = useState(false);
   const [showBrochureViewer, setShowBrochureViewer] = useState(false);
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
 
-  // Fetch brochure URL on mount
+  // Fetch brochure and video URLs on mount
   useEffect(() => {
     if (listing?.url) {
-      setBrochureLoading(true);
+      setMediaLoading(true);
       fetch(`/api/get-brochure?url=${encodeURIComponent(listing.url)}`)
         .then(res => res.json())
         .then(data => {
-          if (data.success && data.brochure_url) {
-            setBrochureUrl(data.brochure_url);
+          if (data.success) {
+            if (data.brochure_url) setBrochureUrl(data.brochure_url);
+            if (data.video_url) {
+              setVideoUrl(data.video_url);
+              setVideoType(data.video_type);
+            }
           }
         })
         .catch(() => {})
-        .finally(() => setBrochureLoading(false));
+        .finally(() => setMediaLoading(false));
     }
   }, [listing?.url]);
 
@@ -4542,12 +4549,22 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
             }}>
               <MessageCircle className="w-5 h-5 mr-2" /> WhatsApp
             </Button>
-            {/* Brochure button - uses scraped URL */}
-            {brochureLoading ? (
-              <div className="flex items-center justify-center gap-2 py-3 px-4 bg-blue-500/10 text-blue-400/50 rounded-xl">
-                <RefreshCw className="w-5 h-5 animate-spin" /> Brochure
+            {/* Video button */}
+            {mediaLoading ? (
+              <div className="flex items-center justify-center gap-2 py-3 px-4 bg-purple-500/10 text-purple-400/50 rounded-xl">
+                <RefreshCw className="w-5 h-5 animate-spin" />
               </div>
-            ) : brochureUrl ? (
+            ) : videoUrl ? (
+              <button 
+                onClick={() => setShowVideoPlayer(true)} 
+                className="flex items-center justify-center gap-2 py-3 px-4 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-xl transition-colors" 
+                title="Guarda Video"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Video
+              </button>
+            ) : null}
+            {/* Brochure button */}
+            {mediaLoading ? null : brochureUrl ? (
               <button 
                 onClick={() => setShowBrochureViewer(true)} 
                 className="flex items-center justify-center gap-2 py-3 px-4 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-xl transition-colors" 
@@ -4603,6 +4620,48 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                 className="w-full h-full"
                 title="Brochure PDF"
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Player Modal */}
+      {showVideoPlayer && videoUrl && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/95">
+          <div className="relative w-full h-full max-w-5xl max-h-[90vh] bg-zinc-900 rounded-2xl overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+              <div className="flex items-center gap-3">
+                <svg className="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <span className="text-white font-medium">Video - {listing.title}</span>
+              </div>
+              <button 
+                onClick={() => setShowVideoPlayer(false)} 
+                className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {/* Video Player */}
+            <div className="flex-1 bg-black flex items-center justify-center">
+              {videoType === 'youtube' || videoType === 'vimeo' ? (
+                <iframe 
+                  src={videoUrl + (videoUrl.includes('?') ? '&' : '?') + 'autoplay=1'}
+                  className="w-full h-full"
+                  title="Project Video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video 
+                  src={videoUrl} 
+                  controls 
+                  autoPlay 
+                  className="w-full h-full object-contain"
+                >
+                  Il tuo browser non supporta il video.
+                </video>
+              )}
             </div>
           </div>
         </div>
