@@ -1475,12 +1475,14 @@ export default function App() {
 
     const tabs = [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', accent: theme.sections.dashboard.accent },
+      { id: 'commissioni', icon: Award, label: 'Commissioni', accent: '#10B981' },
       { id: 'vendite', icon: DollarSign, label: 'Vendite', accent: theme.sections.vendite.accent },
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.pipeline.accent },
       { id: 'crm', icon: Users, label: 'CRM', accent: theme.sections.crm.accent },
       { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent, isNew: true },
       { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent, isNew: true },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: pendingTasks.length },
+      { id: 'followups', icon: Clock, label: 'Follow-up', accent: '#A855F7', badge: todayFollowUps.length + overdueFollowUps.length },
       { id: 'utenti', icon: Settings, label: 'Team', accent: theme.sections.utenti.accent }
     ];
 
@@ -1553,6 +1555,8 @@ export default function App() {
                   {activeTab === 'offplan' && `Progetti Off-Plan • ${savedListings.length} salvati`}
                   {activeTab === 'calculator' && 'Calcola rendimenti immobiliari UAE'}
                   {activeTab === 'tasks' && `${pendingTasks.length} task da completare`}
+                  {activeTab === 'followups' && `${todayFollowUps.length + overdueFollowUps.length} follow-up da gestire`}
+                  {activeTab === 'commissioni' && `${fmt(totals.comm)} AED commissioni totali`}
                   {activeTab === 'utenti' && `${users.length} membri del team`}
                 </p>
               </div>
@@ -1728,6 +1732,244 @@ export default function App() {
 
             {/* TASKS */}
             {activeTab === 'tasks' && <AdminTasksTab tasks={tasks} clienti={clienti} users={users} onComplete={completeTask} onDelete={deleteTask} onEdit={setShowTaskModal} onCreate={() => setShowTaskModal({})} />}
+
+            {/* FOLLOW-UPS */}
+            {activeTab === 'followups' && (
+              <div className="space-y-6">
+                {/* Stats */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="border-red-500/20">
+                    <p className="text-zinc-500 text-sm">Scaduti</p>
+                    <p className="text-2xl font-semibold text-red-400 mt-1">{overdueFollowUps.length}</p>
+                  </Card>
+                  <Card className="border-purple-500/20">
+                    <p className="text-zinc-500 text-sm">Oggi</p>
+                    <p className="text-2xl font-semibold text-purple-400 mt-1">{todayFollowUps.length}</p>
+                  </Card>
+                  <Card>
+                    <p className="text-zinc-500 text-sm">Prossimi 7 giorni</p>
+                    <p className="text-2xl font-semibold text-white mt-1">{myFollowUps.filter(f => { const d = new Date(f.data_reminder); const today = new Date(); const week = new Date(); week.setDate(today.getDate() + 7); return d >= today && d <= week; }).length}</p>
+                  </Card>
+                  <Card>
+                    <p className="text-zinc-500 text-sm">Totale Attivi</p>
+                    <p className="text-2xl font-semibold text-white mt-1">{myFollowUps.length}</p>
+                  </Card>
+                </div>
+
+                {/* Follow-ups List */}
+                <Card>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-white font-semibold">Follow-up Programmati</h3>
+                  </div>
+                  {myFollowUps.length > 0 ? (
+                    <div className="space-y-2">
+                      {myFollowUps.map(f => {
+                        const sale = sales.find(s => s.id === f.sale_id);
+                        const cliente = clienti.find(c => c.id === f.cliente_id);
+                        const isOverdueF = new Date(f.data_reminder) < new Date();
+                        const isTodayF = new Date(f.data_reminder).toDateString() === new Date().toDateString();
+                        return (
+                          <div key={f.id} className={`p-4 rounded-xl border ${isOverdueF ? 'bg-red-500/10 border-red-500/30' : isTodayF ? 'bg-purple-500/10 border-purple-500/30' : 'bg-zinc-800/50 border-zinc-800'}`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isOverdueF ? 'bg-red-500/20' : isTodayF ? 'bg-purple-500/20' : 'bg-zinc-700'}`}>
+                                  {f.tipo === 'call' && '📞'}
+                                  {f.tipo === 'email' && '📧'}
+                                  {f.tipo === 'whatsapp' && '💬'}
+                                  {f.tipo === 'meeting' && '🤝'}
+                                  {f.tipo === 'viewing' && '🏠'}
+                                  {!f.tipo && '⏰'}
+                                </div>
+                                <div>
+                                  <p className="text-white font-medium">{cliente ? `${cliente.nome} ${cliente.cognome}` : 'Cliente'}</p>
+                                  <p className="text-zinc-400 text-sm">{sale?.progetto || 'Lead'}</p>
+                                  {f.nota && <p className="text-zinc-500 text-xs mt-1">{f.nota}</p>}
+                                </div>
+                              </div>
+                              <div className="text-right flex items-center gap-3">
+                                <div>
+                                  <p className={`font-medium ${isOverdueF ? 'text-red-400' : isTodayF ? 'text-purple-400' : 'text-white'}`}>
+                                    {new Date(f.data_reminder).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                                  </p>
+                                  {f.ora_reminder && <p className="text-zinc-500 text-xs">{f.ora_reminder.slice(0,5)}</p>}
+                                  {isOverdueF && <span className="text-red-400 text-xs font-medium">SCADUTO</span>}
+                                  {isTodayF && !isOverdueF && <span className="text-purple-400 text-xs font-medium">OGGI</span>}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <button onClick={() => completeFollowUp(f.id)} className="p-2 text-zinc-500 hover:text-green-400 transition-colors" title="Completa">
+                                    <Check className="w-4 h-4" />
+                                  </button>
+                                  <button onClick={() => deleteFollowUp(f.id)} className="p-2 text-zinc-500 hover:text-red-400 transition-colors" title="Elimina">
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-zinc-500 text-center py-8">Nessun follow-up programmato</p>
+                  )}
+                </Card>
+              </div>
+            )}
+
+            {/* COMMISSIONI */}
+            {activeTab === 'commissioni' && (
+              <div className="space-y-6">
+                {/* Period Filter */}
+                <div className="flex gap-2">
+                  {[
+                    { id: 'all', label: 'Tutto' },
+                    { id: '30', label: '30 giorni' },
+                    { id: '90', label: '90 giorni' },
+                    { id: '365', label: 'Anno' }
+                  ].map(p => (
+                    <button key={p.id} onClick={() => setPeriodFilter(p.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${periodFilter === p.id ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Main Stats */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="border-emerald-500/20 bg-emerald-500/5">
+                    <p className="text-zinc-400 text-sm">Commissioni Totali</p>
+                    <p className="text-3xl font-bold text-emerald-400 mt-2">{fmt(totals.comm)}</p>
+                    <p className="text-zinc-500 text-xs mt-1">AED</p>
+                  </Card>
+                  <Card className="border-green-500/20">
+                    <p className="text-zinc-400 text-sm">💰 Pellegrino</p>
+                    <p className="text-2xl font-bold text-green-400 mt-2">{fmt(totals.pell)}</p>
+                    <p className="text-zinc-500 text-xs mt-1">Quota netta</p>
+                  </Card>
+                  <Card className="border-orange-500/20">
+                    <p className="text-zinc-400 text-sm">💰 Giovanni</p>
+                    <p className="text-2xl font-bold text-orange-400 mt-2">{fmt(totals.giov)}</p>
+                    <p className="text-zinc-500 text-xs mt-1">Quota netta</p>
+                  </Card>
+                  <Card>
+                    <p className="text-zinc-400 text-sm">Agenti (70%)</p>
+                    <p className="text-2xl font-bold text-blue-400 mt-2">{fmt(totals.ag)}</p>
+                    <p className="text-zinc-500 text-xs mt-1">Da pagare</p>
+                  </Card>
+                </div>
+
+                {/* Maturate vs Pagate */}
+                {(() => {
+                  const venduteSales = periodSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
+                  const maturate = venduteSales.reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100), 0);
+                  const pagate = venduteSales.filter(s => s.pagato).reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100), 0);
+                  const daPagare = maturate - pagate;
+                  const percentPaid = maturate > 0 ? (pagate / maturate * 100) : 0;
+                  
+                  return (
+                    <Card>
+                      <h3 className="text-white font-semibold mb-4">Stato Pagamenti</h3>
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="text-center p-4 bg-emerald-500/10 rounded-xl">
+                          <p className="text-emerald-400 text-2xl font-bold">{fmt(maturate)}</p>
+                          <p className="text-zinc-500 text-xs mt-1">Maturate</p>
+                        </div>
+                        <div className="text-center p-4 bg-green-500/10 rounded-xl">
+                          <p className="text-green-400 text-2xl font-bold">{fmt(pagate)}</p>
+                          <p className="text-zinc-500 text-xs mt-1">Pagate ✓</p>
+                        </div>
+                        <div className="text-center p-4 bg-amber-500/10 rounded-xl">
+                          <p className="text-amber-400 text-2xl font-bold">{fmt(daPagare)}</p>
+                          <p className="text-zinc-500 text-xs mt-1">Da Pagare</p>
+                        </div>
+                      </div>
+                      {/* Progress bar */}
+                      <div className="relative h-4 bg-zinc-700/50 rounded-full overflow-hidden">
+                        <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-500" style={{ width: `${percentPaid}%` }} />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-xs font-medium text-white drop-shadow">{percentPaid.toFixed(0)}% pagato</span>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })()}
+
+                {/* Per Agente */}
+                <Card>
+                  <h3 className="text-white font-semibold mb-4">Commissioni per Agente</h3>
+                  <div className="space-y-3">
+                    {Object.entries(
+                      periodSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato').reduce((acc, s) => {
+                        const agente = s.agente || 'Non assegnato';
+                        if (!acc[agente]) acc[agente] = { totale: 0, pagate: 0, count: 0 };
+                        const comm = Number(s.valore) * (s.commission_pct || 5) / 100 * 0.7;
+                        acc[agente].totale += comm;
+                        if (s.pagato) acc[agente].pagate += comm;
+                        acc[agente].count++;
+                        return acc;
+                      }, {})
+                    ).sort((a, b) => b[1].totale - a[1].totale).map(([agente, data]) => (
+                      <div key={agente} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <Avatar nome={agente} size="sm" />
+                          <div>
+                            <p className="text-white font-medium">{agente}</p>
+                            <p className="text-zinc-500 text-xs">{data.count} vendite</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-blue-400 font-semibold">{fmt(data.totale)} AED</p>
+                          <p className="text-zinc-500 text-xs">
+                            {data.pagate > 0 && <span className="text-green-400">{fmt(data.pagate)} pagati</span>}
+                            {data.totale - data.pagate > 0 && <span className="text-amber-400 ml-2">{fmt(data.totale - data.pagate)} pending</span>}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                {/* Vendite con Commissioni */}
+                <Card>
+                  <h3 className="text-white font-semibold mb-4">Dettaglio Vendite</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="text-left text-zinc-500 text-xs border-b border-zinc-800">
+                          <th className="pb-3">Progetto</th>
+                          <th className="pb-3">Agente</th>
+                          <th className="pb-3 text-right">Valore</th>
+                          <th className="pb-3 text-right">Comm.</th>
+                          <th className="pb-3 text-center">Stato</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800">
+                        {periodSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato').slice(0, 20).map(s => {
+                          const comm = Number(s.valore) * (s.commission_pct || 5) / 100;
+                          return (
+                            <tr key={s.id} className="text-sm">
+                              <td className="py-3">
+                                <p className="text-white">{s.progetto}</p>
+                                <p className="text-zinc-500 text-xs">{s.zona}</p>
+                              </td>
+                              <td className="py-3 text-zinc-300">{s.agente || '-'}</td>
+                              <td className="py-3 text-right text-white">{fmt(s.valore)}</td>
+                              <td className="py-3 text-right text-emerald-400">{fmt(comm)}</td>
+                              <td className="py-3 text-center">
+                                {s.pagato ? (
+                                  <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">Pagata ✓</span>
+                                ) : (
+                                  <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-full">Pending</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+            )}
 
             {/* TEAM */}
             {activeTab === 'utenti' && <TeamTab users={users} onCreate={() => setShowUserModal({})} onEdit={setShowUserModal} onDelete={deleteUser} />}
