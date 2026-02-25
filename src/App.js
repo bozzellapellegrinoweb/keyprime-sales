@@ -3958,10 +3958,30 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showFullGallery, setShowFullGallery] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [brochureUrl, setBrochureUrl] = useState(null);
+  const [brochureLoading, setBrochureLoading] = useState(false);
+  const [showBrochureViewer, setShowBrochureViewer] = useState(false);
+
+  // Fetch brochure URL on mount
+  useEffect(() => {
+    if (listing?.url) {
+      setBrochureLoading(true);
+      fetch(`/api/get-brochure?url=${encodeURIComponent(listing.url)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.brochure_url) {
+            setBrochureUrl(data.brochure_url);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setBrochureLoading(false));
+    }
+  }, [listing?.url]);
 
   const formatPrice = (price) => {
     if (!price || price === 0) return 'Su richiesta';
     return parseFloat(price).toLocaleString();
+  };
   };
   
   const formatBedrooms = (bedrooms) => {
@@ -4523,12 +4543,20 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
             }}>
               <MessageCircle className="w-5 h-5 mr-2" /> WhatsApp
             </Button>
-            {/* Brochure - use direct URL if available from raw_data, otherwise link to PF */}
-            {(listing.brochure_url || listing.url) && (
-              <a href={listing.brochure_url || (listing.url + '#downloads')} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-3 px-4 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-xl transition-colors" title={listing.brochure_url ? "Scarica Brochure PDF" : "Vedi Brochure su PropertyFinder"}>
+            {/* Brochure button - uses scraped URL */}
+            {brochureLoading ? (
+              <div className="flex items-center justify-center gap-2 py-3 px-4 bg-blue-500/10 text-blue-400/50 rounded-xl">
+                <RefreshCw className="w-5 h-5 animate-spin" /> Brochure
+              </div>
+            ) : brochureUrl ? (
+              <button 
+                onClick={() => setShowBrochureViewer(true)} 
+                className="flex items-center justify-center gap-2 py-3 px-4 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-xl transition-colors" 
+                title="Visualizza Brochure PDF"
+              >
                 <FileText className="w-5 h-5" /> Brochure
-              </a>
-            )}
+              </button>
+            ) : null}
             {listing.url && (
               <a href={listing.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-3 px-4 bg-zinc-700/50 hover:bg-zinc-700 text-zinc-300 rounded-xl transition-colors" title="Vedi su PropertyFinder">
                 <ExternalLink className="w-5 h-5" />
@@ -4540,6 +4568,46 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           </div>
         </div>
       </div>
+
+      {/* Brochure Viewer Modal */}
+      {showBrochureViewer && brochureUrl && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/90">
+          <div className="relative w-full h-full max-w-5xl max-h-[90vh] bg-zinc-900 rounded-2xl overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-blue-400" />
+                <span className="text-white font-medium">Brochure - {listing.title}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <a 
+                  href={brochureUrl} 
+                  download 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                >
+                  <Download className="w-4 h-4" /> Scarica PDF
+                </a>
+                <button 
+                  onClick={() => setShowBrochureViewer(false)} 
+                  className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            {/* PDF Viewer */}
+            <div className="flex-1 bg-zinc-800">
+              <iframe 
+                src={brochureUrl + '#toolbar=1&navpanes=0'}
+                className="w-full h-full"
+                title="Brochure PDF"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
