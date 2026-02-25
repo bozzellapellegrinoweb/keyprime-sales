@@ -3445,7 +3445,9 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         images: p.images || [],
         payment_plans: p.payment_plans,
         url: p.url,
-        brochure_url: p.brochure_url || p.raw_data?.brochure?.url || p.raw_data?.brochure || p.raw_data?.documents?.brochure?.url || p.raw_data?.documents?.brochure || p.raw_data?.media?.brochure?.url || p.raw_data?.media?.brochure || p.raw_data?.brochure_url
+        // Try to get brochure from data, or construct from project_id if it's a UUID
+        brochure_url: p.brochure_url || p.raw_data?.brochure?.url || p.raw_data?.brochure || 
+          (p.project_id && p.project_id.includes('-') ? `https://new-projects-media.propertyfinder.com/project/${p.project_id}/brochure/application/original.pdf` : null)
       }));
       
       // Additional client-side filter for 5+ bedrooms
@@ -4521,8 +4523,9 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
             }}>
               <MessageCircle className="w-5 h-5 mr-2" /> WhatsApp
             </Button>
-            {listing.brochure_url && (
-              <a href={listing.brochure_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-3 px-4 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-xl transition-colors" title="Scarica Brochure">
+            {/* Brochure - use direct URL if available from raw_data, otherwise link to PF */}
+            {(listing.brochure_url || listing.url) && (
+              <a href={listing.brochure_url || (listing.url + '#downloads')} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-3 px-4 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-xl transition-colors" title={listing.brochure_url ? "Scarica Brochure PDF" : "Vedi Brochure su PropertyFinder"}>
                 <FileText className="w-5 h-5" /> Brochure
               </a>
             )}
