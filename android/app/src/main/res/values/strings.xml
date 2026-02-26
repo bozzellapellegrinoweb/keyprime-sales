@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KeyPrime</string>
+    <string name="title_activity_main">KeyPrime</string>
+    <string name="package_name">com.keyprime.sales</string>
+    <string name="custom_url_scheme">com.keyprime.sales</string>
+</resources>
