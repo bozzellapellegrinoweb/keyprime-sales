@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m2
     
     environment:
-      node: 18
+      node: 22
       xcode: latest
       cocoapods: default
       vars:
