@@ -30,12 +30,60 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
-      @media all and (display-mode: standalone) {
-        body { padding-top: env(safe-area-inset-top); }
+      /* Safe area for iOS notch */
+      :root {
+        --sat: env(safe-area-inset-top);
+        --sab: env(safe-area-inset-bottom);
+        --sal: env(safe-area-inset-left);
+        --sar: env(safe-area-inset-right);
       }
+      
+      @media all and (display-mode: standalone) {
+        body { 
+          padding-top: env(safe-area-inset-top); 
+          padding-bottom: env(safe-area-inset-bottom);
+          padding-left: env(safe-area-inset-left);
+          padding-right: env(safe-area-inset-right);
+        }
+      }
+      
+      /* Capacitor native app styles */
+      .capacitor-ios body {
+        padding-top: env(safe-area-inset-top);
+      }
+      
+      .capacitor-android body {
+        padding-top: 0;
+      }
+      
+      /* Keyboard open state */
+      body.keyboard-open {
+        height: auto !important;
+      }
+      
+      body.keyboard-open .fixed.bottom-0 {
+        position: absolute;
+      }
+      
+      /* Prevent overscroll bounce */
+      html, body {
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      
       html { scroll-behavior: smooth; }
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      
+      /* Scrollbar hide for horizontal carousels */
+      .scrollbar-hide::-webkit-scrollbar { display: none; }
+      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      
+      /* Touch feedback */
+      .active\:scale-95:active { transform: scale(0.95); }
+      
+      /* Disable text selection on buttons */
+      button, a { -webkit-user-select: none; user-select: none; }
     </style>
   </head>
   <body class="bg-slate-900">

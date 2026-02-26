@@ -2,6 +2,42 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List, ExternalLink, Calculator } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Keyboard } from '@capacitor/keyboard';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+
+// Initialize native plugins
+const initNativePlugins = async () => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      // Status bar dark with app background
+      await StatusBar.setStyle({ style: Style.Dark });
+      await StatusBar.setBackgroundColor({ color: '#0f172a' });
+      
+      // Keyboard listeners for better UX
+      Keyboard.addListener('keyboardWillShow', () => {
+        document.body.classList.add('keyboard-open');
+      });
+      Keyboard.addListener('keyboardWillHide', () => {
+        document.body.classList.remove('keyboard-open');
+      });
+    } catch (e) {
+      console.log('Native plugin init error:', e);
+    }
+  }
+};
+
+// Haptic feedback helper
+const hapticFeedback = async (style = 'light') => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await Haptics.impact({ style: style === 'heavy' ? ImpactStyle.Heavy : ImpactStyle.Light });
+    } catch (e) {}
+  }
+};
+
+initNativePlugins();
 
 const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NjkyNjAsImV4cCI6MjA4NzI0NTI2MH0.oXUs9ITNi6lEFat_5FH0x-Exw5MDgRhwx6T0yL3xiWQ');
 
