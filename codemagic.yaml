@@ -1,0 +1,61 @@
+workflows:
+  keyprime-ios-android:
+    name: KeyPrime iOS & Android
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    
+    environment:
+      node: 18
+      xcode: latest
+      cocoapods: default
+      vars:
+        APP_NAME: "KeyPrime"
+    
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install
+      
+      - name: Build web app
+        script: |
+          npm run build
+      
+      - name: Sync Capacitor
+        script: |
+          npx cap sync
+      
+      # iOS Build
+      - name: Install CocoaPods
+        script: |
+          cd ios/App && pod install
+      
+      - name: Build iOS
+        script: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            archive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      
+      # Android Build
+      - name: Build Android
+        script: |
+          cd android
+          ./gradlew assembleRelease
+    
+    artifacts:
+      - ios/App/build/**/*.xcarchive
+      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab
+    
+    publishing:
+      email:
+        recipients:
+          - pellegrino@indubai.it
+        notify:
+          success: true
+          failure: true
