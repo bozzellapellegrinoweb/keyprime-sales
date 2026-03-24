@@ -198,17 +198,33 @@ const notifyNewTaskToAgent = async (task, agentEmail, agentUsername = null) => {
   if (!agentEmail) return;
   await sendEmail(agentEmail, `📋 Nuovo Task: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#a78bfa">📋 Nuovo Task Assegnato</h2><p style="font-size:18px;margin:16px 0"><strong>${task.titolo}</strong></p><p style="color:#94a3b8">Priorità: ${task.priorita || 'normale'}</p><p style="color:#94a3b8">Scadenza: ${task.scadenza ? new Date(task.scadenza).toLocaleDateString('it-IT') : 'Nessuna'}</p>${task.descrizione ? `<p style="margin-top:16px;padding:12px;background:#1e293b;border-radius:8px">${task.descrizione}</p>` : ''}<a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#8b5cf6;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
 };
-const notifyNewSaleToAdmin = async (sale, agentName) => {
+const notifyNewSaleToAdmin = async (sale, agentName, userRole = 'agente') => {
+  const roleLabel = userRole === 'segnalatore' ? 'Segnalatore' : 'Agente';
   await sendPushNotification(`🎉 Vendita chiusa: ${sale.progetto}`, `${sale.valore ? sale.valore.toLocaleString() : 0} AED — ${agentName}`, APP_URL, { type: 'admin' });
-  await sendEmail(ADMIN_EMAIL, `🎉 Nuova Vendita: ${sale.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#10b981">🎉 Nuova Vendita Chiusa!</h2><p style="font-size:24px;margin:16px 0"><strong>${sale.progetto}</strong></p><p style="font-size:20px;color:#10b981">${sale.valore ? sale.valore.toLocaleString() : 0} AED</p><p style="color:#94a3b8">Agente: ${agentName}</p><p style="color:#94a3b8">Developer: ${sale.developer || 'N/A'}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#10b981;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+  await sendEmail(ADMIN_EMAIL, `🎉 Nuova Vendita: ${sale.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#10b981">🎉 Nuova Vendita Chiusa!</h2><p style="font-size:24px;margin:16px 0"><strong>${sale.progetto}</strong></p><p style="font-size:20px;color:#10b981">${sale.valore ? sale.valore.toLocaleString() : 0} AED</p><p style="color:#94a3b8">${roleLabel}: ${agentName}</p><p style="color:#94a3b8">Developer: ${sale.developer || 'N/A'}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#10b981;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
 };
-const notifyNewLeadToAdmin = async (lead, agentName) => {
+const notifyNewLeadToAdmin = async (lead, agentName, userRole = 'agente') => {
+  const roleLabel = userRole === 'segnalatore' ? 'Segnalatore' : 'Agente';
   await sendPushNotification(`🎯 Nuovo Lead: ${lead.progetto}`, `Zona: ${lead.zona || 'N/A'} — ${agentName}`, APP_URL, { type: 'admin' });
-  await sendEmail(ADMIN_EMAIL, `🎯 Nuovo Lead: ${lead.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#3b82f6">🎯 Nuovo Lead</h2><p style="font-size:18px;margin:16px 0"><strong>${lead.progetto}</strong></p><p style="color:#94a3b8">Zona: ${lead.zona || 'N/A'}</p><p style="color:#94a3b8">Agente: ${agentName}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#3b82f6;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+  await sendEmail(ADMIN_EMAIL, `🎯 Nuovo Lead: ${lead.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#3b82f6">🎯 Nuovo Lead</h2><p style="font-size:18px;margin:16px 0"><strong>${lead.progetto}</strong></p><p style="color:#94a3b8">Zona: ${lead.zona || 'N/A'}</p><p style="color:#94a3b8">${roleLabel}: ${agentName}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#3b82f6;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
 };
-const notifyNewClienteToAdmin = async (cliente, agentName) => {
-  await sendPushNotification(`👤 Nuovo contatto: ${cliente.nome} ${cliente.cognome || ''}`.trim(), `Agente: ${agentName} | ${cliente.telefono || cliente.email || ''}`, APP_URL, { type: 'admin' });
-  await sendEmail(ADMIN_EMAIL, `👤 Nuovo Contatto: ${cliente.nome} ${cliente.cognome || ''}`.trim(), `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#f59e0b">👤 Nuovo Contatto</h2><p style="font-size:18px;margin:16px 0"><strong>${cliente.nome} ${cliente.cognome || ''}</strong></p><p style="color:#94a3b8">Telefono: ${cliente.telefono || 'N/A'}</p><p style="color:#94a3b8">Email: ${cliente.email || 'N/A'}</p><p style="color:#94a3b8">Agente: ${agentName}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#f59e0b;color:black;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+const notifyNewClienteToAdmin = async (cliente, agentName, userRole = 'agente') => {
+  const roleLabel = userRole === 'segnalatore' ? 'Segnalatore' : 'Agente';
+  await sendPushNotification(`👤 Nuovo contatto: ${cliente.nome} ${cliente.cognome || ''}`.trim(), `${roleLabel}: ${agentName} | ${cliente.telefono || cliente.email || ''}`, APP_URL, { type: 'admin' });
+  await sendEmail(ADMIN_EMAIL, `👤 Nuovo Contatto: ${cliente.nome} ${cliente.cognome || ''}`.trim(), `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#f59e0b">👤 Nuovo Contatto</h2><p style="font-size:18px;margin:16px 0"><strong>${cliente.nome} ${cliente.cognome || ''}</strong></p><p style="color:#94a3b8">Telefono: ${cliente.telefono || 'N/A'}</p><p style="color:#94a3b8">Email: ${cliente.email || 'N/A'}</p><p style="color:#94a3b8">${roleLabel}: ${agentName}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#f59e0b;color:black;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+};
+const notifySegnalatoreConfermaInserimento = async (email, username, tipo, nome) => {
+  const isLead = tipo === 'Lead';
+  const color = isLead ? '#3b82f6' : '#f59e0b';
+  const icon = isLead ? '🎯' : '👤';
+  if (username) await sendPushNotification(`${icon} ${tipo} inserito`, `${nome} è stato registrato correttamente`, APP_URL, { type: 'user', username });
+  if (!email) return;
+  await sendEmail(email, `${icon} ${tipo} inserito: ${nome}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:${color}">${icon} ${tipo} Inserito</h2><p style="font-size:18px;margin:16px 0"><strong>${nome}</strong></p><p style="color:#94a3b8">Il tuo inserimento è stato ricevuto e sarà gestito dal team KeyPrime.</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:${color};color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+};
+const notifySegnalatoreLeadVenduto = async (sale, segnalatoreUsername = null, segnalatoreEmail = null) => {
+  if (segnalatoreUsername) await sendPushNotification(`🎉 Tuo lead venduto!`, `${sale.progetto}: ${sale.valore ? sale.valore.toLocaleString() : 'N/A'} AED`, APP_URL, { type: 'user', username: segnalatoreUsername });
+  if (!segnalatoreEmail) return;
+  await sendEmail(segnalatoreEmail, `🎉 Lead Convertito in Vendita: ${sale.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#10b981">🎉 Il tuo lead è diventato una vendita!</h2><p style="font-size:24px;margin:16px 0"><strong>${sale.progetto}</strong></p><p style="font-size:20px;color:#10b981">${sale.valore ? sale.valore.toLocaleString() : 'N/A'} AED</p><p style="color:#94a3b8">La tua commissione sarà calcolata e pagata a breve.</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#10b981;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
 };
 
 // PDF Generator
@@ -870,7 +886,8 @@ export default function App() {
     
     // Notifica email per nuovo lead (solo se non è admin a creare)
     if (user?.ruolo !== 'admin') {
-      await notifyNewLeadToAdmin({ progetto: leadData.progetto, zona: leadData.zona }, user?.nome);
+      await notifyNewLeadToAdmin({ progetto: leadData.progetto, zona: leadData.zona }, user?.nome, user?.ruolo);
+      if (user?.ruolo === 'segnalatore') await notifySegnalatoreConfermaInserimento(user?.email, user?.username, 'Lead', leadData.progetto);
     }
     
     loadSales();
@@ -899,6 +916,10 @@ export default function App() {
         inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: ld.stato || 'lead', cliente_id
       }]);
       if (error) { console.error('Insert error:', error); showToast('Errore: ' + error.message); setSubmitting(false); return; }
+      if (user?.ruolo !== 'admin') {
+        await notifyNewLeadToAdmin({ progetto: ld.progetto, zona: ld.zona }, user?.nome, user?.ruolo);
+        if (user?.ruolo === 'segnalatore') await notifySegnalatoreConfermaInserimento(user?.email, user?.username, 'Lead', ld.progetto);
+      }
       showToast('Lead aggiunto'); setShowForm(null); loadSales(); loadClienti();
     } catch (err) { console.error('addLead error:', err); showToast('Errore salvataggio'); }
     setSubmitting(false);
@@ -934,6 +955,12 @@ export default function App() {
     const sale = sales.find(s => s.id === id);
     if (sale?.cliente_id) await supabase.from('clienti').update({ stato: 'acquistato' }).eq('id', sale.cliente_id);
     await supabase.from('sales').update({ stato: 'venduto', valore: v }).eq('id', id);
+    const updatedSale = { ...sale, valore: v, stato: 'venduto' };
+    await notifyNewSaleToAdmin(updatedSale, sale?.agente || sale?.segnalatore || 'N/A', sale?.segnalatore && !sale?.agente ? 'segnalatore' : 'agente');
+    if (sale?.segnalatore) {
+      const { data: sg } = await supabase.from('user_credentials').select('email, username').eq('nome', sale.segnalatore).single();
+      if (sg) await notifySegnalatoreLeadVenduto(updatedSale, sg.username, sg.email);
+    }
     setConvertingSale(null); setShowLeadDetail(null); showToast('Vendita confermata!'); loadSales(); loadClienti();
   };
 
@@ -942,7 +969,11 @@ export default function App() {
     
     // Notifica email per vendita chiusa
     if (u.stato === 'vinto' && s?.stato !== 'vinto') {
-      await notifyNewSaleToAdmin(s, s.agente || s.segnalatore || 'N/A');
+      await notifyNewSaleToAdmin(s, s.agente || s.segnalatore || 'N/A', s?.segnalatore && !s?.agente ? 'segnalatore' : 'agente');
+      if (s?.segnalatore) {
+        const { data: sg } = await supabase.from('user_credentials').select('email, username').eq('nome', s.segnalatore).single();
+        if (sg) await notifySegnalatoreLeadVenduto(s, sg.username, sg.email);
+      }
     }
     
     // Notifica push + email per lead incassato
@@ -981,7 +1012,10 @@ export default function App() {
   // Cliente Handlers
   const createCliente = async (d) => {
     await supabase.from('clienti').insert([{ ...d, created_by: user?.nome, referente: user?.referente }]);
-    if (user?.ruolo !== 'admin') await notifyNewClienteToAdmin(d, user?.nome);
+    if (user?.ruolo !== 'admin') {
+      await notifyNewClienteToAdmin(d, user?.nome, user?.ruolo);
+      if (user?.ruolo === 'segnalatore') await notifySegnalatoreConfermaInserimento(user?.email, user?.username, 'Contatto', `${d.nome} ${d.cognome || ''}`.trim());
+    }
     loadClienti(); setShowClienteModal(null); showToast('Cliente creato');
   };
   const updateCliente = async (id, d) => { 
