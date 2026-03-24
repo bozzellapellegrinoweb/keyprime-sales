@@ -41,10 +41,18 @@ initNativePlugins();
 
 const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NjkyNjAsImV4cCI6MjA4NzI0NTI2MH0.oXUs9ITNi6lEFat_5FH0x-Exw5MDgRhwx6T0yL3xiWQ');
 
-// Send Push Notification - disabled (OneSignal API requires paid plan)
-const sendPushNotification = async (title, message, url = null) => {
-  // Push notifications disabled - using email notifications instead
-  console.log('Push disabled:', title, message);
+// Send Push Notification via OneSignal REST API (serverless /api/send-push)
+// target: { type: 'admin' | 'user' | 'all', username?: string }
+const sendPushNotification = async (title, message, url = null, target = { type: 'admin' }) => {
+  try {
+    await fetch('/api/send-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, message, url: url || 'https://portal.keyprimere.com', target })
+    });
+  } catch (e) {
+    console.log('Push error:', e);
+  }
 };
 
 // Config
@@ -176,11 +184,32 @@ const sendEmail = async (to, subject, html) => {
     return false; 
   } 
 };
-const notifyTaskCompleted = async (task, agentName) => { await sendEmail(ADMIN_EMAIL, `✅ Task completato: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px"><h2>Task Completato</h2><p><strong>${task.titolo}</strong></p><p>Completato da: ${agentName}</p></div>`); };
-const notifyTaskNote = async (task, agentName, note) => { await sendEmail(ADMIN_EMAIL, `💬 Nota: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px"><h2>Nuova Nota</h2><p><strong>${task.titolo}</strong></p><p>Da: ${agentName}</p><p>Nota: ${note}</p></div>`); };
-const notifyNewTaskToAgent = async (task, agentEmail) => { if (!agentEmail) return; await sendEmail(agentEmail, `📋 Nuovo Task: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#a78bfa">📋 Nuovo Task Assegnato</h2><p style="font-size:18px;margin:16px 0"><strong>${task.titolo}</strong></p><p style="color:#94a3b8">Priorità: ${task.priorita || 'normale'}</p><p style="color:#94a3b8">Scadenza: ${task.scadenza ? new Date(task.scadenza).toLocaleDateString('it-IT') : 'Nessuna'}</p>${task.descrizione ? `<p style="margin-top:16px;padding:12px;background:#1e293b;border-radius:8px">${task.descrizione}</p>` : ''}<a href="https://keyprime-sales-1npw.vercel.app" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#8b5cf6;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`); };
-const notifyNewSaleToAdmin = async (sale, agentName) => { await sendEmail(ADMIN_EMAIL, `🎉 Nuova Vendita: ${sale.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#10b981">🎉 Nuova Vendita Chiusa!</h2><p style="font-size:24px;margin:16px 0"><strong>${sale.progetto}</strong></p><p style="font-size:20px;color:#10b981">${sale.valore ? sale.valore.toLocaleString() : 0} AED</p><p style="color:#94a3b8">Agente: ${agentName}</p><p style="color:#94a3b8">Developer: ${sale.developer || 'N/A'}</p><a href="https://keyprime-sales-1npw.vercel.app" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#10b981;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`); };
-const notifyNewLeadToAdmin = async (lead, agentName) => { await sendEmail(ADMIN_EMAIL, `🎯 Nuovo Lead: ${lead.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#3b82f6">🎯 Nuovo Lead</h2><p style="font-size:18px;margin:16px 0"><strong>${lead.progetto}</strong></p><p style="color:#94a3b8">Zona: ${lead.zona || 'N/A'}</p><p style="color:#94a3b8">Agente: ${agentName}</p><a href="https://keyprime-sales-1npw.vercel.app" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#3b82f6;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`); };
+const APP_URL = 'https://portal.keyprimere.com';
+const notifyTaskCompleted = async (task, agentName) => {
+  await sendPushNotification(`✅ Task completato: ${task.titolo}`, `Completato da: ${agentName}`, APP_URL, { type: 'admin' });
+  await sendEmail(ADMIN_EMAIL, `✅ Task completato: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#10b981">✅ Task Completato</h2><p style="font-size:18px;margin:16px 0"><strong>${task.titolo}</strong></p><p style="color:#94a3b8">Completato da: ${agentName}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#10b981;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+};
+const notifyTaskNote = async (task, agentName, note) => {
+  await sendPushNotification(`💬 Nota su: ${task.titolo}`, `${agentName}: ${note}`, APP_URL, { type: 'admin' });
+  await sendEmail(ADMIN_EMAIL, `💬 Nota: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#a78bfa">💬 Nuova Nota</h2><p style="font-size:18px;margin:16px 0"><strong>${task.titolo}</strong></p><p style="color:#94a3b8">Da: ${agentName}</p><p style="margin-top:12px;padding:12px;background:#1e293b;border-radius:8px">${note}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#a78bfa;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+};
+const notifyNewTaskToAgent = async (task, agentEmail, agentUsername = null) => {
+  if (agentUsername) await sendPushNotification(`📋 Nuovo Task: ${task.titolo}`, `Priorità: ${task.priorita || 'normale'} | Scadenza: ${task.scadenza ? new Date(task.scadenza).toLocaleDateString('it-IT') : 'Nessuna'}`, APP_URL, { type: 'user', username: agentUsername });
+  if (!agentEmail) return;
+  await sendEmail(agentEmail, `📋 Nuovo Task: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#a78bfa">📋 Nuovo Task Assegnato</h2><p style="font-size:18px;margin:16px 0"><strong>${task.titolo}</strong></p><p style="color:#94a3b8">Priorità: ${task.priorita || 'normale'}</p><p style="color:#94a3b8">Scadenza: ${task.scadenza ? new Date(task.scadenza).toLocaleDateString('it-IT') : 'Nessuna'}</p>${task.descrizione ? `<p style="margin-top:16px;padding:12px;background:#1e293b;border-radius:8px">${task.descrizione}</p>` : ''}<a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#8b5cf6;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+};
+const notifyNewSaleToAdmin = async (sale, agentName) => {
+  await sendPushNotification(`🎉 Vendita chiusa: ${sale.progetto}`, `${sale.valore ? sale.valore.toLocaleString() : 0} AED — ${agentName}`, APP_URL, { type: 'admin' });
+  await sendEmail(ADMIN_EMAIL, `🎉 Nuova Vendita: ${sale.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#10b981">🎉 Nuova Vendita Chiusa!</h2><p style="font-size:24px;margin:16px 0"><strong>${sale.progetto}</strong></p><p style="font-size:20px;color:#10b981">${sale.valore ? sale.valore.toLocaleString() : 0} AED</p><p style="color:#94a3b8">Agente: ${agentName}</p><p style="color:#94a3b8">Developer: ${sale.developer || 'N/A'}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#10b981;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+};
+const notifyNewLeadToAdmin = async (lead, agentName) => {
+  await sendPushNotification(`🎯 Nuovo Lead: ${lead.progetto}`, `Zona: ${lead.zona || 'N/A'} — ${agentName}`, APP_URL, { type: 'admin' });
+  await sendEmail(ADMIN_EMAIL, `🎯 Nuovo Lead: ${lead.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#3b82f6">🎯 Nuovo Lead</h2><p style="font-size:18px;margin:16px 0"><strong>${lead.progetto}</strong></p><p style="color:#94a3b8">Zona: ${lead.zona || 'N/A'}</p><p style="color:#94a3b8">Agente: ${agentName}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#3b82f6;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+};
+const notifyNewClienteToAdmin = async (cliente, agentName) => {
+  await sendPushNotification(`👤 Nuovo contatto: ${cliente.nome} ${cliente.cognome || ''}`.trim(), `Agente: ${agentName} | ${cliente.telefono || cliente.email || ''}`, APP_URL, { type: 'admin' });
+  await sendEmail(ADMIN_EMAIL, `👤 Nuovo Contatto: ${cliente.nome} ${cliente.cognome || ''}`.trim(), `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#f59e0b">👤 Nuovo Contatto</h2><p style="font-size:18px;margin:16px 0"><strong>${cliente.nome} ${cliente.cognome || ''}</strong></p><p style="color:#94a3b8">Telefono: ${cliente.telefono || 'N/A'}</p><p style="color:#94a3b8">Email: ${cliente.email || 'N/A'}</p><p style="color:#94a3b8">Agente: ${agentName}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#f59e0b;color:black;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+};
 
 // PDF Generator
 const generateClientePDF = (cliente, sales, tasks) => { const tv = sales.filter(s => s.stato === 'venduto' || s.stato === 'incassato').reduce((sum, s) => sum + Number(s.valore || 0), 0); const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${cliente.nome}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:40px;max-width:800px;margin:0 auto;color:#1a1a1a}h1{font-size:28px;font-weight:600;margin-bottom:8px}h2{font-size:14px;font-weight:600;color:#666;margin:24px 0 12px;text-transform:uppercase;letter-spacing:0.5px}.stats{display:flex;gap:16px;margin:24px 0}.stat{flex:1;background:#f5f5f7;padding:16px;border-radius:12px;text-align:center}.stat-val{font-size:24px;font-weight:600}.stat-label{font-size:12px;color:#666;margin-top:4px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.item{background:#f5f5f7;padding:12px 16px;border-radius:8px}.item-label{font-size:11px;color:#666;margin-bottom:2px}.item-value{font-size:14px;font-weight:500}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{padding:10px 12px;text-align:left;font-size:13px}th{background:#f5f5f7;font-weight:500}tr:not(:last-child) td{border-bottom:1px solid #e5e5e5}</style></head><body><h1>${cliente.nome} ${cliente.cognome||''}</h1><p style="color:#666">${cliente.telefono||''} ${cliente.email?'• '+cliente.email:''}</p><div class="stats"><div class="stat"><div class="stat-val">${sales.length}</div><div class="stat-label">Lead</div></div><div class="stat"><div class="stat-val">${fmt(tv)}</div><div class="stat-label">Valore AED</div></div><div class="stat"><div class="stat-val">${cliente.stato}</div><div class="stat-label">Stato</div></div></div><h2>Informazioni</h2><div class="grid"><div class="item"><div class="item-label">Budget</div><div class="item-value">${cliente.budget_max?fmt(cliente.budget_max)+' AED':'N/A'}</div></div><div class="item"><div class="item-label">Agente</div><div class="item-value">${cliente.agente_riferimento||'N/A'}</div></div></div>${sales.length>0?'<h2>Storico Lead</h2><table><tr><th>Data</th><th>Progetto</th><th>Valore</th><th>Stato</th></tr>'+sales.map(s=>'<tr><td>'+fmtShort(s.data)+'</td><td>'+s.progetto+'</td><td>'+(s.valore>0?fmt(s.valore):'TBD')+'</td><td>'+s.stato+'</td></tr>').join('')+'</table>':''}</body></html>`; const w = window.open('','_blank'); w.document.write(html); w.document.close(); setTimeout(()=>w.print(),500); };
@@ -744,6 +773,17 @@ export default function App() {
     // agente_admin usa la stessa view di agente
     const viewRole = data.ruolo === 'admin' ? 'admin' : (data.ruolo === 'agente_admin' ? 'agente' : data.ruolo);
     setView(viewRole); setLoading(false);
+    // Registra utente su OneSignal con external_id e tag ruolo
+    if (window.OneSignalDeferred) {
+      window.OneSignalDeferred.push(async function(OneSignal) {
+        try {
+          await OneSignal.login(data.username);
+          await OneSignal.User.addTag('ruolo', data.ruolo);
+          await OneSignal.User.addTag('username', data.username);
+          if (data.email) await OneSignal.User.addTag('email', data.email);
+        } catch(e) { console.log('OneSignal login error:', e); }
+      });
+    }
   };
   
   const handleLogout = () => { setUser(null); localStorage.removeItem('keyprime_user'); setView('login'); setMobileMenuOpen(false); };
@@ -905,18 +945,20 @@ export default function App() {
       await notifyNewSaleToAdmin(s, s.agente || s.segnalatore || 'N/A');
     }
     
-    // Notifica email per lead incassato
+    // Notifica push + email per lead incassato
     if (u.stato === 'incassato' && s?.stato !== 'incassato') {
-      await sendEmail(ADMIN_EMAIL, `💰 Incasso: ${s.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#10b981">💰 Incasso Registrato!</h2><p style="font-size:24px;margin:16px 0"><strong>${s.progetto}</strong></p><p style="font-size:20px;color:#10b981">${fmt(s.valore)} AED</p></div>`);
+      await sendPushNotification(`💰 Incasso: ${s.progetto}`, `${fmt(s.valore)} AED registrato`, APP_URL, { type: 'admin' });
+      await sendEmail(ADMIN_EMAIL, `💰 Incasso: ${s.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#10b981">💰 Incasso Registrato!</h2><p style="font-size:24px;margin:16px 0"><strong>${s.progetto}</strong></p><p style="font-size:20px;color:#10b981">${fmt(s.valore)} AED</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#10b981;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
     }
-    
+
     if (u.pagato === true && !s?.pagato) {
       const tn = s.agente || s.segnalatore;
       if (tn) {
         const { data: tu } = await supabase.from('user_credentials').select('*').eq('nome', tn).single();
-        if (tu?.email) {
+        if (tu) {
           const ca = Number(s.valore) * (s.commission_pct || 5) / 100 * (s.agente ? 0.7 : 0.3);
-          await sendEmail(tu.email, '💰 Commissione', `<div style="font-family:-apple-system,sans-serif;padding:20px"><h2>Commissione Pagata!</h2><p>${s.progetto}: ${fmt(ca)} AED</p></div>`);
+          await sendPushNotification(`💰 Commissione pagata!`, `${s.progetto}: ${fmt(ca)} AED`, APP_URL, { type: 'user', username: tu.username });
+          if (tu.email) await sendEmail(tu.email, '💰 Commissione Pagata!', `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#f59e0b">💰 Commissione Pagata!</h2><p style="font-size:18px;margin:16px 0"><strong>${s.progetto}</strong></p><p style="font-size:20px;color:#f59e0b">${fmt(ca)} AED</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#f59e0b;color:black;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
         }
       }
     }
@@ -937,7 +979,11 @@ export default function App() {
   const deleteSale = async (id) => { if (!window.confirm('Eliminare questo lead?')) return; await supabase.from('sales').delete().eq('id', id); showToast('Eliminato'); loadSales(); };
 
   // Cliente Handlers
-  const createCliente = async (d) => { await supabase.from('clienti').insert([{ ...d, created_by: user?.nome, referente: user?.referente }]); loadClienti(); setShowClienteModal(null); showToast('Cliente creato'); };
+  const createCliente = async (d) => {
+    await supabase.from('clienti').insert([{ ...d, created_by: user?.nome, referente: user?.referente }]);
+    if (user?.ruolo !== 'admin') await notifyNewClienteToAdmin(d, user?.nome);
+    loadClienti(); setShowClienteModal(null); showToast('Cliente creato');
+  };
   const updateCliente = async (id, d) => { 
     await supabase.from('clienti').update(d).eq('id', id); 
     
@@ -961,16 +1007,14 @@ export default function App() {
   };
 
   // Task Handlers
-  const createTask = async (d) => { 
-    await supabase.from('tasks').insert([{ ...d, created_by: user?.nome }]); 
-    // Notifica email per nuovo task assegnato
+  const createTask = async (d) => {
+    await supabase.from('tasks').insert([{ ...d, created_by: user?.nome }]);
+    // Notifica push + email per nuovo task assegnato
     if (d.assegnato_a) {
-      const { data: agentData } = await supabase.from('user_credentials').select('email').eq('nome', d.assegnato_a).single();
-      if (agentData?.email) {
-        await notifyNewTaskToAgent(d, agentData.email);
-      }
+      const { data: agentData } = await supabase.from('user_credentials').select('email, username').eq('nome', d.assegnato_a).single();
+      await notifyNewTaskToAgent(d, agentData?.email, agentData?.username);
     }
-    loadTasks(); setShowTaskModal(null); showToast('Task creato'); 
+    loadTasks(); setShowTaskModal(null); showToast('Task creato');
   };
   const updateTask = async (id, d) => { await supabase.from('tasks').update(d).eq('id', id); loadTasks(); setShowTaskModal(null); showToast('Salvato'); };
   const completeTask = async (id) => { 
