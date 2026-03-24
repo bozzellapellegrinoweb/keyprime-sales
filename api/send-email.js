@@ -21,6 +21,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         from: 'KeyPrime <notifiche@keyprimere.com>',
+        reply_to: 'info@keyprimere.com',
         to: Array.isArray(to) ? to : [to],
         subject,
         html
