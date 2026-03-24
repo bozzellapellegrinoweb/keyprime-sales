@@ -185,33 +185,64 @@ const sendEmail = async (to, subject, html) => {
   } 
 };
 const APP_URL = 'https://portal.keyprimere.com';
+// ── Email template helpers ──────────────────────────────────────────────────
+const kpEmail = (accentColor, badge, title, rows, url = APP_URL) =>
+  `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px"><tr><td align="center"><table cellpadding="0" cellspacing="0" style="max-width:560px;width:100%"><tr><td style="background:#1e293b;border-radius:12px 12px 0 0;padding:20px 32px;text-align:center"><span style="font-size:20px;font-weight:800;color:white;letter-spacing:-0.5px;font-family:Georgia,serif">KEY<span style="color:#f59e0b">PRIME</span></span></td></tr><tr><td style="background:${accentColor};height:4px;font-size:1px;line-height:4px">&nbsp;</td></tr><tr><td style="background:white;padding:32px 32px 28px;border-radius:0 0 12px 12px"><p style="margin:0 0 6px;font-size:11px;font-weight:700;color:${accentColor};text-transform:uppercase;letter-spacing:1.5px">${badge}</p><h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#0f172a;line-height:1.3">${title}</h1><table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #f1f5f9">${rows}</table><a href="${url}" style="display:inline-block;margin-top:28px;padding:13px 28px;background:#1e293b;color:white;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;letter-spacing:0.2px">Apri KeyPrime &rarr;</a></td></tr><tr><td style="padding:18px;text-align:center"><p style="margin:0;font-size:11px;color:#94a3b8">KeyPrime Sales &middot; <a href="mailto:info@keyprimere.com" style="color:#94a3b8;text-decoration:none">info@keyprimere.com</a></p></td></tr></table></td></tr></table></body></html>`;
+const kpRow = (label, value) =>
+  `<tr><td style="padding:11px 0;border-bottom:1px solid #f1f5f9"><span style="display:block;font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">${label}</span><span style="display:block;margin-top:3px;font-size:15px;color:#0f172a;font-weight:500">${value}</span></td></tr>`;
+const kpBig = (value, color) =>
+  `<tr><td style="padding:14px 0 10px;border-bottom:1px solid #f1f5f9"><span style="font-size:30px;font-weight:800;color:${color}">${value}</span></td></tr>`;
+const kpNote = (text) =>
+  `<tr><td style="padding:14px 16px;background:#f8fafc;border-radius:8px;margin-top:8px;border-left:3px solid #e2e8f0"><span style="font-size:14px;color:#334155;line-height:1.5">${text}</span></td></tr>`;
+// ─────────────────────────────────────────────────────────────────────────────
+
 const notifyTaskCompleted = async (task, agentName) => {
   await sendPushNotification(`✅ Task completato: ${task.titolo}`, `Completato da: ${agentName}`, APP_URL, { type: 'admin' });
-  await sendEmail(ADMIN_EMAIL, `✅ Task completato: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#10b981">✅ Task Completato</h2><p style="font-size:18px;margin:16px 0"><strong>${task.titolo}</strong></p><p style="color:#94a3b8">Completato da: ${agentName}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#10b981;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+  await sendEmail(ADMIN_EMAIL, `✅ Task completato: ${task.titolo}`,
+    kpEmail('#10b981', 'Task', `✅ ${task.titolo}`,
+      kpRow('Completato da', agentName)));
 };
 const notifyTaskNote = async (task, agentName, note) => {
   await sendPushNotification(`💬 Nota su: ${task.titolo}`, `${agentName}: ${note}`, APP_URL, { type: 'admin' });
-  await sendEmail(ADMIN_EMAIL, `💬 Nota: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#a78bfa">💬 Nuova Nota</h2><p style="font-size:18px;margin:16px 0"><strong>${task.titolo}</strong></p><p style="color:#94a3b8">Da: ${agentName}</p><p style="margin-top:12px;padding:12px;background:#1e293b;border-radius:8px">${note}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#a78bfa;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+  await sendEmail(ADMIN_EMAIL, `💬 Nota: ${task.titolo}`,
+    kpEmail('#8b5cf6', 'Nota su task', task.titolo,
+      kpRow('Da', agentName) + kpNote(note)));
 };
 const notifyNewTaskToAgent = async (task, agentEmail, agentUsername = null) => {
   if (agentUsername) await sendPushNotification(`📋 Nuovo Task: ${task.titolo}`, `Priorità: ${task.priorita || 'normale'} | Scadenza: ${task.scadenza ? new Date(task.scadenza).toLocaleDateString('it-IT') : 'Nessuna'}`, APP_URL, { type: 'user', username: agentUsername });
   if (!agentEmail) return;
-  await sendEmail(agentEmail, `📋 Nuovo Task: ${task.titolo}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#a78bfa">📋 Nuovo Task Assegnato</h2><p style="font-size:18px;margin:16px 0"><strong>${task.titolo}</strong></p><p style="color:#94a3b8">Priorità: ${task.priorita || 'normale'}</p><p style="color:#94a3b8">Scadenza: ${task.scadenza ? new Date(task.scadenza).toLocaleDateString('it-IT') : 'Nessuna'}</p>${task.descrizione ? `<p style="margin-top:16px;padding:12px;background:#1e293b;border-radius:8px">${task.descrizione}</p>` : ''}<a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#8b5cf6;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+  await sendEmail(agentEmail, `📋 Nuovo Task: ${task.titolo}`,
+    kpEmail('#8b5cf6', 'Nuovo Task Assegnato', task.titolo,
+      kpRow('Priorità', task.priorita || 'Normale') +
+      kpRow('Scadenza', task.scadenza ? new Date(task.scadenza).toLocaleDateString('it-IT') : 'Nessuna') +
+      (task.descrizione ? kpNote(task.descrizione) : '')));
 };
 const notifyNewSaleToAdmin = async (sale, agentName, userRole = 'agente') => {
   const roleLabel = userRole === 'segnalatore' ? 'Segnalatore' : 'Agente';
   await sendPushNotification(`🎉 Vendita chiusa: ${sale.progetto}`, `${sale.valore ? sale.valore.toLocaleString() : 0} AED — ${agentName}`, APP_URL, { type: 'admin' });
-  await sendEmail(ADMIN_EMAIL, `🎉 Nuova Vendita: ${sale.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#10b981">🎉 Nuova Vendita Chiusa!</h2><p style="font-size:24px;margin:16px 0"><strong>${sale.progetto}</strong></p><p style="font-size:20px;color:#10b981">${sale.valore ? sale.valore.toLocaleString() : 0} AED</p><p style="color:#94a3b8">${roleLabel}: ${agentName}</p><p style="color:#94a3b8">Developer: ${sale.developer || 'N/A'}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#10b981;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+  await sendEmail(ADMIN_EMAIL, `🎉 Nuova Vendita: ${sale.progetto}`,
+    kpEmail('#10b981', 'Nuova Vendita Chiusa', sale.progetto,
+      kpBig(`${sale.valore ? Number(sale.valore).toLocaleString('it-IT') : 0} AED`, '#10b981') +
+      kpRow(roleLabel, agentName) +
+      kpRow('Developer', sale.developer || 'N/A')));
 };
 const notifyNewLeadToAdmin = async (lead, agentName, userRole = 'agente') => {
   const roleLabel = userRole === 'segnalatore' ? 'Segnalatore' : 'Agente';
   await sendPushNotification(`🎯 Nuovo Lead: ${lead.progetto}`, `Zona: ${lead.zona || 'N/A'} — ${agentName}`, APP_URL, { type: 'admin' });
-  await sendEmail(ADMIN_EMAIL, `🎯 Nuovo Lead: ${lead.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#3b82f6">🎯 Nuovo Lead</h2><p style="font-size:18px;margin:16px 0"><strong>${lead.progetto}</strong></p><p style="color:#94a3b8">Zona: ${lead.zona || 'N/A'}</p><p style="color:#94a3b8">${roleLabel}: ${agentName}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#3b82f6;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+  await sendEmail(ADMIN_EMAIL, `🎯 Nuovo Lead: ${lead.progetto}`,
+    kpEmail('#3b82f6', 'Nuovo Lead', lead.progetto,
+      kpRow('Zona', lead.zona || 'N/A') +
+      kpRow(roleLabel, agentName)));
 };
 const notifyNewClienteToAdmin = async (cliente, agentName, userRole = 'agente') => {
   const roleLabel = userRole === 'segnalatore' ? 'Segnalatore' : 'Agente';
-  await sendPushNotification(`👤 Nuovo contatto: ${cliente.nome} ${cliente.cognome || ''}`.trim(), `${roleLabel}: ${agentName} | ${cliente.telefono || cliente.email || ''}`, APP_URL, { type: 'admin' });
-  await sendEmail(ADMIN_EMAIL, `👤 Nuovo Contatto: ${cliente.nome} ${cliente.cognome || ''}`.trim(), `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#f59e0b">👤 Nuovo Contatto</h2><p style="font-size:18px;margin:16px 0"><strong>${cliente.nome} ${cliente.cognome || ''}</strong></p><p style="color:#94a3b8">Telefono: ${cliente.telefono || 'N/A'}</p><p style="color:#94a3b8">Email: ${cliente.email || 'N/A'}</p><p style="color:#94a3b8">${roleLabel}: ${agentName}</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#f59e0b;color:black;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+  const nomeCompleto = `${cliente.nome} ${cliente.cognome || ''}`.trim();
+  await sendPushNotification(`👤 Nuovo contatto: ${nomeCompleto}`, `${roleLabel}: ${agentName} | ${cliente.telefono || cliente.email || ''}`, APP_URL, { type: 'admin' });
+  await sendEmail(ADMIN_EMAIL, `👤 Nuovo Contatto: ${nomeCompleto}`,
+    kpEmail('#f59e0b', 'Nuovo Contatto', nomeCompleto,
+      kpRow('Telefono', cliente.telefono || 'N/A') +
+      kpRow('Email', cliente.email || 'N/A') +
+      kpRow(roleLabel, agentName)));
 };
 const notifySegnalatoreConfermaInserimento = async (email, username, tipo, nome) => {
   const isLead = tipo === 'Lead';
@@ -219,12 +250,17 @@ const notifySegnalatoreConfermaInserimento = async (email, username, tipo, nome)
   const icon = isLead ? '🎯' : '👤';
   if (username) await sendPushNotification(`${icon} ${tipo} inserito`, `${nome} è stato registrato correttamente`, APP_URL, { type: 'user', username });
   if (!email) return;
-  await sendEmail(email, `${icon} ${tipo} inserito: ${nome}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:${color}">${icon} ${tipo} Inserito</h2><p style="font-size:18px;margin:16px 0"><strong>${nome}</strong></p><p style="color:#94a3b8">Il tuo inserimento è stato ricevuto e sarà gestito dal team KeyPrime.</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:${color};color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+  await sendEmail(email, `${icon} ${tipo} inserito: ${nome}`,
+    kpEmail(color, `${tipo} Inserito`, nome,
+      kpNote('Il tuo inserimento è stato ricevuto e sarà gestito dal team KeyPrime.')));
 };
 const notifySegnalatoreLeadVenduto = async (sale, segnalatoreUsername = null, segnalatoreEmail = null) => {
   if (segnalatoreUsername) await sendPushNotification(`🎉 Tuo lead venduto!`, `${sale.progetto}: ${sale.valore ? sale.valore.toLocaleString() : 'N/A'} AED`, APP_URL, { type: 'user', username: segnalatoreUsername });
   if (!segnalatoreEmail) return;
-  await sendEmail(segnalatoreEmail, `🎉 Lead Convertito in Vendita: ${sale.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#10b981">🎉 Il tuo lead è diventato una vendita!</h2><p style="font-size:24px;margin:16px 0"><strong>${sale.progetto}</strong></p><p style="font-size:20px;color:#10b981">${sale.valore ? sale.valore.toLocaleString() : 'N/A'} AED</p><p style="color:#94a3b8">La tua commissione sarà calcolata e pagata a breve.</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#10b981;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+  await sendEmail(segnalatoreEmail, `🎉 Lead Convertito in Vendita: ${sale.progetto}`,
+    kpEmail('#10b981', 'Il tuo lead è una vendita!', sale.progetto,
+      kpBig(`${sale.valore ? Number(sale.valore).toLocaleString('it-IT') : 'N/A'} AED`, '#10b981') +
+      kpNote('La tua commissione sarà calcolata e pagata a breve.')));
 };
 
 // PDF Generator
@@ -979,7 +1015,10 @@ export default function App() {
     // Notifica push + email per lead incassato
     if (u.stato === 'incassato' && s?.stato !== 'incassato') {
       await sendPushNotification(`💰 Incasso: ${s.progetto}`, `${fmt(s.valore)} AED registrato`, APP_URL, { type: 'admin' });
-      await sendEmail(ADMIN_EMAIL, `💰 Incasso: ${s.progetto}`, `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#10b981">💰 Incasso Registrato!</h2><p style="font-size:24px;margin:16px 0"><strong>${s.progetto}</strong></p><p style="font-size:20px;color:#10b981">${fmt(s.valore)} AED</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#10b981;color:white;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+      await sendEmail(ADMIN_EMAIL, `💰 Incasso: ${s.progetto}`,
+        kpEmail('#10b981', 'Incasso Registrato', s.progetto,
+          kpBig(`${fmt(s.valore)} AED`, '#10b981') +
+          kpRow('Agente', s.agente || s.segnalatore || 'N/A')));
     }
 
     if (u.pagato === true && !s?.pagato) {
@@ -989,7 +1028,10 @@ export default function App() {
         if (tu) {
           const ca = Number(s.valore) * (s.commission_pct || 5) / 100 * (s.agente ? 0.7 : 0.3);
           await sendPushNotification(`💰 Commissione pagata!`, `${s.progetto}: ${fmt(ca)} AED`, APP_URL, { type: 'user', username: tu.username });
-          if (tu.email) await sendEmail(tu.email, '💰 Commissione Pagata!', `<div style="font-family:-apple-system,sans-serif;padding:20px;background:#0f172a;color:white;border-radius:12px"><h2 style="color:#f59e0b">💰 Commissione Pagata!</h2><p style="font-size:18px;margin:16px 0"><strong>${s.progetto}</strong></p><p style="font-size:20px;color:#f59e0b">${fmt(ca)} AED</p><a href="${APP_URL}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#f59e0b;color:black;text-decoration:none;border-radius:8px">Apri KeyPrime</a></div>`);
+          if (tu.email) await sendEmail(tu.email, '💰 Commissione Pagata!',
+            kpEmail('#f59e0b', 'Commissione Pagata', s.progetto,
+              kpBig(`${fmt(ca)} AED`, '#f59e0b') +
+              kpNote('Il pagamento è stato registrato. Grazie per il tuo lavoro!')));
         }
       }
     }
