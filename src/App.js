@@ -632,7 +632,7 @@ const generateDashboardPDF = (totals, sales, vendite, byAgente, byZona) => {
   <div class="stats">
     <div class="stat">
       <div class="stat-value purple">${fmt(totals.valore)}</div>
-      <div class="stat-label">Volume Totale AED</div>
+      <div class="stat-label">Volume Potenziale AED</div>
     </div>
     <div class="stat">
       <div class="stat-value blue">${sales.length}</div>
@@ -1626,6 +1626,7 @@ export default function App() {
       return { valore: a.valore + Number(s.valore), comm: a.comm + c, ag: a.ag + ag, sg: a.sg + (s.segnalatore && !isAgenteAdmin ? c * 0.3 : 0), netto: a.netto + n, pell: a.pell + p, giov: a.giov + g };
     }, { valore: 0, comm: 0, ag: 0, sg: 0, netto: 0, pell: 0, giov: 0 });
     
+    const volTrattativa = periodSales.filter(s => s.stato === 'trattativa').reduce((sum, s) => sum + Number(s.valore || 0), 0);
     const byStato = pipelineStati.reduce((a, st) => { a[st] = periodSales.filter(s => (s.stato || 'lead') === st); return a; }, {});
     const byMonth = periodSales.reduce((a, s) => { const m = s.data?.substring(0, 7) || 'N/A'; a[m] = (a[m] || 0) + Number(s.valore); return a; }, {});
     const byAgente = periodSales.reduce((a, s) => { if (s.agente) a[s.agente] = (a[s.agente] || 0) + Number(s.valore); return a; }, {});
@@ -1777,14 +1778,15 @@ export default function App() {
 
                 {/* Main Stats */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <MetricCard label="Volume Totale" value={totals.valore} subValue="AED" icon={DollarSign} color="#A78BFA" onClick={() => setActiveTab('vendite')} />
+                  <MetricCard label="Volume Potenziale" value={totals.valore} subValue="AED" icon={DollarSign} color="#A78BFA" onClick={() => setActiveTab('vendite')} />
                   <MetricCard label="Lead Totali" value={sales.length} icon={Target} color="#60A5FA" onClick={() => setActiveTab('pipeline')} />
+                  <MetricCard label="Volume Trattativa" value={volTrattativa} subValue="AED" icon={TrendingUp} color="#60A5FA" onClick={() => setActiveTab('pipeline')} />
                   <MetricCard label="Vendite Chiuse" value={vendite.length} icon={TrendingUp} color="#34D399" onClick={() => setActiveTab('vendite')} />
-                  <MetricCard label="Netto KeyPrime" value={totals.netto} subValue="AED" icon={Sparkles} color="#FBBF24" />
                 </div>
 
                 {/* Commission Split */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                  <Card><p className="text-zinc-500 text-sm">Netto KeyPrime</p><p className="text-xl font-semibold text-amber-400 mt-1">{fmt(totals.netto)}</p></Card>
                   <Card><p className="text-zinc-500 text-sm">Commissioni Tot</p><p className="text-xl font-semibold text-emerald-400 mt-1">{fmt(totals.comm)}</p></Card>
                   <Card><p className="text-zinc-500 text-sm">Agenti 70%</p><p className="text-xl font-semibold text-blue-400 mt-1">{fmt(totals.ag)}</p></Card>
                   <Card className="border-green-500/20"><p className="text-zinc-500 text-sm">Pellegrino</p><p className="text-xl font-semibold text-green-400 mt-1">{fmt(totals.pell)}</p></Card>
