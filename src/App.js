@@ -712,124 +712,119 @@ const generateOffertaPDF = (offerta) => {
   const props = offerta.proprieta || [];
   const n = props.length || 1;
 
+  /* ── Strip markdown **bold** ── */
+  const stripMd = t => (t || '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/__(.*?)__/g, '$1');
+
   /* ── LEFT: elenco proprietà ── */
-  const leftProps = props.map(p => {
+  const leftProps = props.map((p, i) => {
     const specs = (p.specs || '').split(/[;\n]/).map(s => s.trim()).filter(Boolean);
-    return `
-    <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.08);">
-      <div style="font-size:8px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;font-weight:600;margin-bottom:3px;">${(p.zona||'').toUpperCase()}</div>
-      <div style="font-size:13px;font-weight:700;color:#fff;line-height:1.25;margin-bottom:4px;">${p.nome||''}</div>
-      ${p.prezzo ? `<div style="font-size:11px;font-weight:600;color:#c9a84c;margin-bottom:5px;">${p.prezzo}</div>` : ''}
-      <div style="display:flex;flex-direction:column;gap:2px;">
-        ${specs.map(s=>`<div style="font-size:9px;color:#94a8c4;line-height:1.4;">&#x2014; ${s}</div>`).join('')}
+    return `<div style="margin-bottom:10px;padding-bottom:10px;${i < props.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.07);' : ''}">
+      <div style="font-size:7px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;font-weight:600;margin-bottom:2px;">${(p.zona||'').toUpperCase()}</div>
+      <div style="font-size:12px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:3px;">${p.nome||''}</div>
+      ${p.prezzo ? `<div style="font-size:10px;font-weight:600;color:#c9a84c;margin-bottom:4px;">${p.prezzo}</div>` : ''}
+      <div style="display:flex;flex-direction:column;gap:1px;">
+        ${specs.slice(0, 5).map(s => `<div style="font-size:7.5px;color:#7a95b0;line-height:1.4;">— ${s}</div>`).join('')}
       </div>
     </div>`;
   }).join('');
 
-  /* ── RIGHT: schede con foto ── */
-  // Altezza immagini ottimizzata per riempire lo spazio
-  const totalH = 168; // mm disponibili nel right panel (210 - title - padding)
-  const imgH_mm = n === 1 ? 52 : n === 2 ? 48 : 40;
-  const imgH = `${imgH_mm}mm`;
-  const colW = n === 1 ? '92%' : n === 2 ? '47%' : '31%';
-
+  /* ── RIGHT: cards con foto a piena altezza (flex:1 su ogni foto) ── */
   const rightCards = props.map(p => {
     const fotos = (p.foto_urls || []).filter(Boolean).slice(0, 3);
-    const imgs = fotos.length
-      ? fotos.map(url => `<div style="overflow:hidden;border-radius:6px;margin-bottom:6px;flex-shrink:0;">
-          <img src="${url}" style="width:100%;height:${imgH};object-fit:cover;display:block;" onerror="this.parentElement.style.display='none'" />
-        </div>`).join('')
-      : `<div style="height:${imgH};background:linear-gradient(135deg,#e2e8f0,#cbd5e1);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px;margin-bottom:6px;">Nessuna foto</div>`;
-    return `
-    <div style="width:${colW};flex-shrink:0;display:flex;flex-direction:column;">
-      <div style="background:#0f1c35;color:#fff;padding:10px 12px;border-radius:8px 8px 0 0;text-align:center;">
-        <div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#c9a84c;margin-bottom:2px;">${(p.zona||'').toUpperCase()}</div>
-        <div style="font-size:11px;font-weight:700;letter-spacing:0.5px;">${(p.nome||'').toUpperCase()}</div>
-        ${p.prezzo ? `<div style="font-size:10px;color:#c9a84c;margin-top:2px;font-weight:600;">${p.prezzo}</div>` : ''}
+    const photosHtml = fotos.length
+      ? fotos.map((url, fi) => `<div style="flex:1;overflow:hidden;min-height:0;">
+          <img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block;"
+               onerror="this.parentElement.style.display='none'" />
+        </div>`).join(`<div style="height:3px;background:#f7f8fa;flex-shrink:0;"></div>`)
+      : `<div style="flex:1;background:linear-gradient(135deg,#e2e8f0,#cbd5e1);display:flex;align-items:center;justify-content:center;">
+           <span style="color:#94a3b8;font-size:10px;">Nessuna foto</span>
+         </div>`;
+    return `<div style="flex:1;min-width:0;display:flex;flex-direction:column;border-radius:8px;overflow:hidden;box-shadow:0 4px 16px rgba(15,28,53,0.18);">
+      <div style="background:#0f1c35;padding:10px 14px;text-align:center;flex-shrink:0;">
+        <div style="font-size:7px;letter-spacing:2.5px;text-transform:uppercase;color:#c9a84c;margin-bottom:3px;">${(p.zona||'').toUpperCase()}</div>
+        <div style="font-size:12px;font-weight:800;color:#fff;letter-spacing:0.5px;line-height:1.2;">${(p.nome||'').toUpperCase()}</div>
+        ${p.prezzo ? `<div style="font-size:9.5px;color:#c9a84c;margin-top:3px;font-weight:600;">${p.prezzo}</div>` : ''}
       </div>
-      <div style="flex:1;padding:8px 0 0;">${imgs}</div>
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0;">${photosHtml}</div>
     </div>`;
   }).join('');
 
-  /* ── Zona descrizione formattata ── */
-  const descLines = (offerta.zona_descrizione || '').split(/\n|•/).map(s => s.trim()).filter(Boolean);
-  const descHtml = descLines.map(l => `<div style="display:flex;gap:6px;margin-bottom:5px;"><span style="color:#c9a84c;flex-shrink:0;">&#x2022;</span><span>${l}</span></div>`).join('');
-
-  /* ── Pagine brochure extra ── */
-  const brochureUrls = props.map(p => p.brochure_url).filter(Boolean);
-  const brochurePages = brochureUrls.map(url => `
-    <div style="page-break-before:always;width:297mm;height:210mm;overflow:hidden;">
-      <iframe src="${url}" style="width:100%;height:100%;border:none;" allowfullscreen></iframe>
-    </div>`).join('');
+  /* ── Descrizione zona (strip markdown, split bullets) ── */
+  const rawDesc = stripMd(offerta.zona_descrizione || '');
+  const descLines = rawDesc.split(/\n|•/).map(s => s.trim().replace(/^[-•]\s*/, '')).filter(Boolean);
+  const descHtml = descLines.map(l =>
+    `<div style="display:flex;gap:5px;margin-bottom:4px;">
+       <span style="color:#c9a84c;flex-shrink:0;line-height:1.5;">•</span>
+       <span style="font-size:7.5px;color:#8aaccc;line-height:1.5;">${l}</span>
+     </div>`
+  ).join('');
 
   const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;}
   @page{size:A4 landscape;margin:0;}
-  html,body{width:297mm;height:210mm;}
-  body{font-family:'Inter',sans-serif;display:flex;flex-direction:column;}
-  .page1{display:flex;width:297mm;height:210mm;overflow:hidden;}
-  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+  html,body{width:297mm;height:210mm;overflow:hidden;font-family:'Inter',sans-serif;}
+  @media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}}
 </style>
 </head>
 <body>
 
-<div class="page1">
+<!-- ═══ PAGINA UNICA 297×210mm ═══ -->
+<div style="display:flex;width:297mm;height:210mm;overflow:hidden;">
 
-<!-- ═══ LEFT PANEL ═══ -->
-<div style="width:34%;background:#0f1c35;color:#fff;padding:26px 22px 20px;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;">
+  <!-- ════ LEFT PANEL (35%) ════ -->
+  <div style="width:35%;background:#0f1c35;color:#fff;padding:22px 20px 18px;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;">
 
-  <!-- Logo + subtitle -->
-  <img src="${KEYPRIME_LOGO}" style="height:34px;width:auto;display:block;object-fit:contain;object-position:left;" onerror="this.style.display='none'" />
-  <div style="font-size:7px;letter-spacing:3px;color:#5a7ba0;text-transform:uppercase;margin-top:3px;margin-bottom:16px;">Real Estate Brokerage</div>
+    <!-- Logo KeyPrime -->
+    <img src="${KEYPRIME_LOGO}"
+         style="height:28px;width:auto;object-fit:contain;object-position:left;display:block;margin-bottom:3px;"
+         onerror="this.style.display='none'" />
+    <div style="font-size:6px;letter-spacing:3px;color:#3d5a74;text-transform:uppercase;margin-bottom:14px;">Real Estate Brokerage</div>
 
-  <!-- Budget badge -->
-  <div style="background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.35);border-radius:6px;padding:8px 12px;margin-bottom:18px;display:inline-block;">
-    <div style="font-size:8px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;margin-bottom:2px;">Budget Cliente</div>
-    <div style="font-size:14px;font-weight:800;color:#fff;letter-spacing:0.5px;">${offerta.budget || 'N/D'}</div>
+    <!-- Budget badge -->
+    <div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.28);border-radius:6px;padding:7px 11px;margin-bottom:14px;">
+      <div style="font-size:6.5px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;margin-bottom:2px;">Budget Cliente</div>
+      <div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:0.5px;">${offerta.budget || 'N/D'}</div>
+    </div>
+
+    <!-- Proprietà list (prende lo spazio disponibile) -->
+    <div style="overflow:hidden;margin-bottom:12px;">${leftProps}</div>
+
+    <!-- Zona descrizione -->
+    ${offerta.zona_nome && descLines.length ? `
+    <div style="padding:9px 11px;background:rgba(255,255,255,0.04);border-radius:6px;border-left:2px solid #c9a84c;margin-bottom:12px;overflow:hidden;">
+      <div style="font-size:6.5px;font-weight:700;letter-spacing:1.5px;color:#c9a84c;text-transform:uppercase;margin-bottom:5px;">Perché scegliere ${offerta.zona_nome}</div>
+      ${descHtml}
+    </div>` : ''}
+
+    <!-- Agente footer -->
+    <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);">
+      ${offerta.agente_nome ? `<div style="font-size:10px;font-weight:700;color:#fff;margin-bottom:3px;">${offerta.agente_nome}</div>` : ''}
+      ${offerta.agente_email ? `<div style="font-size:7.5px;color:#6a8aaa;margin-bottom:2px;">✉ ${offerta.agente_email}</div>` : ''}
+      ${offerta.agente_telefono ? `<div style="font-size:7.5px;color:#6a8aaa;">✆ ${offerta.agente_telefono}</div>` : ''}
+    </div>
+
   </div>
 
-  <!-- Proprietà list -->
-  <div style="flex:1;overflow:hidden;">${leftProps}</div>
+  <!-- ════ RIGHT PANEL (65%) ════ -->
+  <div style="flex:1;background:#f4f5f7;padding:22px 20px 18px;display:flex;flex-direction:column;min-width:0;overflow:hidden;">
 
-  <!-- Zona description -->
-  ${offerta.zona_nome && offerta.zona_descrizione ? `
-  <div style="margin-top:10px;padding:10px 12px;background:rgba(255,255,255,0.04);border-radius:6px;border-left:2px solid #c9a84c;">
-    <div style="font-size:8px;font-weight:700;letter-spacing:1.5px;color:#c9a84c;text-transform:uppercase;margin-bottom:6px;">Perch&eacute; scegliere ${offerta.zona_nome}</div>
-    <div style="font-size:8.5px;color:#94a8c4;line-height:1.5;">${descHtml}</div>
-  </div>` : ''}
+    <!-- Titolo OPZIONI -->
+    <div style="margin-bottom:14px;flex-shrink:0;">
+      <div style="font-size:42px;font-weight:900;color:#0f1c35;letter-spacing:6px;line-height:1;">OPZIONI</div>
+      <div style="width:64px;height:3px;background:#c9a84c;border-radius:2px;margin-top:5px;"></div>
+    </div>
 
-  <!-- Agent footer -->
-  <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);">
-    ${offerta.agente_nome ? `<div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:4px;">${offerta.agente_nome}</div>` : ''}
-    ${offerta.agente_email ? `<div style="font-size:9px;color:#94a8c4;margin-bottom:2px;">&#9993;&nbsp; ${offerta.agente_email}</div>` : ''}
-    ${offerta.agente_telefono ? `<div style="font-size:9px;color:#94a8c4;">&#9742;&nbsp; ${offerta.agente_telefono}</div>` : ''}
+    <!-- Property cards — flex:1 e min-height:0 per riempire tutto lo spazio -->
+    <div style="display:flex;gap:10px;flex:1;min-height:0;overflow:hidden;">${rightCards}</div>
+
   </div>
 
 </div>
-
-<!-- ═══ RIGHT PANEL ═══ -->
-<div style="flex:1;background:#f7f8fa;padding:26px 24px 20px;display:flex;flex-direction:column;min-width:0;overflow:hidden;">
-
-  <!-- Title -->
-  <div style="margin-bottom:18px;">
-    <div style="font-size:48px;font-weight:900;color:#0f1c35;letter-spacing:4px;text-transform:uppercase;line-height:1;margin-bottom:6px;">OPZIONI</div>
-    <div style="width:80px;height:3px;background:#c9a84c;border-radius:2px;"></div>
-  </div>
-
-  <!-- Cards row -->
-  <div style="display:flex;gap:14px;flex:1;align-items:stretch;overflow:hidden;">${rightCards}</div>
-
-</div>
-
-</div>
-
-${brochurePages}
 
 </body>
 </html>`;
@@ -838,8 +833,14 @@ ${brochurePages}
   if (!w) { alert('Abilita i popup per generare il PDF'); return; }
   w.document.write(html);
   w.document.close();
-  w.onload = () => setTimeout(() => w.print(), 500);
-  setTimeout(() => w.print(), 2500);
+
+  /* Brochure: iframes in print windows non funzionano — apri in tab separati */
+  props.forEach(p => {
+    if (p.brochure_url) setTimeout(() => window.open(p.brochure_url, '_blank'), 1200);
+  });
+
+  /* Stampa dopo caricamento font + immagini */
+  setTimeout(() => { try { w.print(); } catch(e) {} }, 2200);
 };
 
 // ==================== OFFERTA TAB ====================
