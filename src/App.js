@@ -986,6 +986,122 @@ const generateOffertaPDF = async (offerta) => {
   }
 };
 
+// ==================== PUSH TAB (admin only) ====================
+function PushTab({ users }) {
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [target, setTarget] = useState('all');
+  const [targetUser, setTargetUser] = useState('');
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null); // { ok, text }
+
+  const send = async () => {
+    if (!title.trim() || !message.trim()) return;
+    if (target === 'user' && !targetUser) return;
+    setSending(true);
+    setResult(null);
+    try {
+      const t = target === 'user'
+        ? { type: 'user', username: targetUser }
+        : target === 'admin'
+        ? { type: 'admin' }
+        : { type: 'all' };
+      const res = await fetch('/api/send-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), message: message.trim(), target: t })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResult({ ok: true, text: `Inviata a ${data.recipients ?? '—'} destinatari` });
+        setTitle(''); setMessage('');
+      } else {
+        setResult({ ok: false, text: JSON.stringify(data.error || data) });
+      }
+    } catch (e) {
+      setResult({ ok: false, text: e.message });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const inputCls = 'w-full bg-[#1e293b] border border-[#334155] rounded-lg px-3 py-2.5 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-colors';
+  const activeUsers = users.filter(u => u.ruolo !== 'admin');
+
+  return (
+    <div className="max-w-lg space-y-6">
+      <div>
+        <h2 className="text-xl font-bold text-white mb-1">Invia Notifica Push</h2>
+        <p className="text-sm text-zinc-500">Manda una notifica direttamente agli utenti dell'app.</p>
+      </div>
+
+      <Card>
+        <div className="space-y-4">
+          {/* Titolo */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Titolo</label>
+            <input className={inputCls} value={title} onChange={e => setTitle(e.target.value)} placeholder="Es. Nuova proprietà disponibile" maxLength={100} />
+          </div>
+
+          {/* Messaggio */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Messaggio</label>
+            <textarea className={`${inputCls} resize-none`} rows={3} value={message} onChange={e => setMessage(e.target.value)} placeholder="Testo della notifica…" maxLength={250} />
+            <div className="text-right text-xs text-zinc-600 mt-1">{message.length}/250</div>
+          </div>
+
+          {/* Destinatari */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Destinatari</label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { v: 'all', label: '🌐 Tutti' },
+                { v: 'admin', label: '👑 Solo Admin' },
+                { v: 'user', label: '👤 Utente' },
+              ].map(opt => (
+                <button key={opt.v} onClick={() => setTarget(opt.v)}
+                  className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${target === opt.v ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'bg-[#1e293b] border-[#334155] text-zinc-400 hover:border-zinc-500'}`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Selezione utente specifico */}
+          {target === 'user' && (
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Seleziona utente</label>
+              <select className={inputCls} value={targetUser} onChange={e => setTargetUser(e.target.value)}>
+                <option value="">— Scegli utente —</option>
+                {activeUsers.map(u => (
+                  <option key={u.username} value={u.username}>{u.nome} ({u.ruolo})</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Feedback */}
+          {result && (
+            <div className={`rounded-lg px-4 py-3 text-sm ${result.ok ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
+              {result.ok ? '✓ ' : '✗ '}{result.text}
+            </div>
+          )}
+
+          {/* Bottone */}
+          <button onClick={send} disabled={sending || !title.trim() || !message.trim() || (target === 'user' && !targetUser)}
+            className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-semibold py-2.5 rounded-lg transition-colors">
+            {sending ? (
+              <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg>Invio…</>
+            ) : (
+              <><Send className="w-4 h-4" />Invia Notifica</>
+            )}
+          </button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 // ==================== OFFERTA TAB ====================
 function OffertaTab({ offerte, user, onCrea, onEdit, onDelete, onGeneraPDF }) {
   const myOfferte = user?.ruolo === 'admin'
@@ -2387,6 +2503,7 @@ export default function App() {
       { id: 'offerte', icon: FileText, label: 'Offerte', accent: '#06b6d4' },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: pendingTasks.length },
       { id: 'followups', icon: Clock, label: 'Follow-up', accent: '#A855F7', badge: todayFollowUps.length + overdueFollowUps.length },
+      { id: 'push', icon: Bell, label: 'Notifiche', accent: '#f59e0b' },
       { id: 'utenti', icon: Settings, label: 'Team', accent: theme.sections.utenti.accent }
     ];
 
@@ -2637,6 +2754,9 @@ export default function App() {
 
             {/* OFFERTE */}
             {activeTab === 'offerte' && <OffertaTab offerte={offerte} user={user} onCrea={() => setShowOffertaModal({})} onEdit={setShowOffertaModal} onDelete={deleteOfferta} onGeneraPDF={generateOffertaPDF} />}
+
+            {/* PUSH */}
+            {activeTab === 'push' && <PushTab users={users} />}
 
             {/* TASKS */}
             {activeTab === 'tasks' && <AdminTasksTab tasks={tasks} clienti={clienti} users={users} onComplete={completeTask} onDelete={deleteTask} onEdit={setShowTaskModal} onCreate={() => setShowTaskModal({})} />}
