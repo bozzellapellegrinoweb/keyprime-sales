@@ -949,28 +949,61 @@ ${propPages}
   setProgress(10, 'Rendering pagine (0/' + totalPages + ')…');
   const PW = 1240, PH = 1754; // A4 portrait 150dpi
 
+  /* Fase 1: renderizza tutte le pagine come immagini */
+  const rendered = [];
   for (const pdf of pdfDocs) {
     if (!pdf) continue;
     for (let n = 1; n <= pdf.numPages; n++) {
       try {
         const page = await pdf.getPage(n);
         const vp0 = page.getViewport({ scale: 1 });
-        const scale = Math.min(PW / vp0.width, PH / vp0.height);
+        const isLandscape = vp0.width > vp0.height;
+        /* Scala per riempire la larghezza A4 esatta */
+        const scale = PW / vp0.width;
         const viewport = page.getViewport({ scale });
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        const img = document.createElement('img');
-        img.src = canvas.toDataURL('image/jpeg', 0.9);
-        const wrap = document.createElement('div');
-        wrap.className = 'brochure-page';
-        wrap.appendChild(img);
-        container.appendChild(wrap);
+        rendered.push({ src: canvas.toDataURL('image/jpeg', 0.9), isLandscape, h: viewport.height });
         renderedPages++;
-        setProgress(10 + Math.round(renderedPages / totalPages * 88), 'Rendering (' + renderedPages + '/' + totalPages + ')…');
+        setProgress(10 + Math.round(renderedPages / totalPages * 78), 'Rendering (' + renderedPages + '/' + totalPages + ')…');
       } catch(e) {}
     }
+  }
+
+  /* Fase 2: composizione pagine A4
+     - 2 pagine landscape consecutive → stessa A4 portrait (se ci stanno)
+     - pagine portrait → 1 per A4                                          */
+  setProgress(90, 'Composizione pagine…');
+  let i = 0;
+  while (i < rendered.length) {
+    const cur = rendered[i];
+    const next = rendered[i + 1];
+    const wrap = document.createElement('div');
+    wrap.className = 'brochure-page';
+
+    if (cur.isLandscape && next && next.isLandscape && cur.h + next.h <= PH) {
+      /* Abbina due pagine landscape verticalmente */
+      wrap.style.flexDirection = 'column';
+      wrap.style.justifyContent = 'flex-start';
+      wrap.style.alignItems = 'stretch';
+      [cur, next].forEach(p => {
+        const img = document.createElement('img');
+        img.src = p.src;
+        img.style.cssText = 'width:100%;display:block;';
+        wrap.appendChild(img);
+      });
+      i += 2;
+    } else {
+      /* Pagina singola centrata */
+      const img = document.createElement('img');
+      img.src = cur.src;
+      img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;';
+      wrap.appendChild(img);
+      i++;
+    }
+    container.appendChild(wrap);
   }
 
   setProgress(100, 'Pronto — apertura stampa…');
