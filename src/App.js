@@ -706,27 +706,37 @@ const generateDashboardPDF = (totals, sales, vendite, byAgente, byZona) => {
 };
 
 // ==================== OFFERTA PDF ====================
+const KEYPRIME_LOGO = 'https://assets.cdn.filesafe.space/Yjm3Uvb0rc8mRuraj7ad/media/69c3d8f7a5f60947f53a1b8f.png';
+
 const generateOffertaPDF = (offerta) => {
-  const agente = offerta.agente_nome || '';
   const props = offerta.proprieta || [];
-  const colW = props.length === 1 ? '90%' : props.length === 2 ? '46%' : '30%';
+  const nProps = props.length || 1;
+  const colFlex = nProps === 1 ? '1' : nProps === 2 ? '0 0 47%' : '0 0 30%';
 
   const leftList = props.map(p => `
     <div class="prop-item">
-      <div class="prop-zona">${p.zona || ''}</div>
+      <div class="prop-zona">${(p.zona || '').toUpperCase()}</div>
       <div class="prop-nome">${p.nome || ''}</div>
-      <div class="prop-specs">${(p.specs || '').split(/[;\n]/).filter(Boolean).map(s => `<span>-${s.trim()}</span>`).join('')}</div>
+      <div class="prop-price">${p.prezzo || ''}</div>
+      <div class="prop-specs">${(p.specs || '').split(/[;\n]/).filter(s => s.trim()).map(s => `<span>-${s.trim()}</span>`).join('')}</div>
     </div>`).join('');
 
   const rightCards = props.map(p => {
     const fotos = (p.foto_urls || []).filter(Boolean).slice(0, 4);
-    const imgs = fotos.map(url => `<img src="${url}" onerror="this.style.display='none'" />`).join('');
+    const imgH = nProps === 1 ? '140px' : nProps === 2 ? '110px' : '80px';
+    const imgs = fotos.map(url => `<img src="${url}" style="width:100%;height:${imgH};object-fit:cover;border-radius:4px;display:block;" onerror="this.style.display='none'" />`).join('');
     return `
-      <div class="prop-col">
-        <div class="prop-col-title">${p.nome || ''}</div>
-        <div class="prop-col-imgs">${imgs || '<div class="no-img">Nessuna foto</div>'}</div>
+      <div style="flex:${colFlex};display:flex;flex-direction:column;gap:8px;min-width:0;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#12203a;text-align:center;padding-bottom:6px;border-bottom:2px solid #c9a84c;">${p.nome || ''}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">${imgs || '<div style="height:80px;background:#dde3ed;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#8a9bbf;">Nessuna foto</div>'}</div>
       </div>`;
   }).join('');
+
+  const consultanteFooter = [
+    offerta.agente_nome ? `<strong style="color:#fff;font-size:10px;">${offerta.agente_nome}</strong>` : '',
+    offerta.agente_email ? `<div style="display:flex;align-items:center;gap:4px;margin-top:3px;">&#9993; ${offerta.agente_email}</div>` : '',
+    offerta.agente_telefono ? `<div style="display:flex;align-items:center;gap:4px;margin-top:2px;">&#9742; ${offerta.agente_telefono}</div>` : '',
+  ].filter(Boolean).join('');
 
   const html = `<!DOCTYPE html>
 <html>
@@ -735,61 +745,41 @@ const generateOffertaPDF = (offerta) => {
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   @page { size: A4 landscape; margin:0; }
-  body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; width:297mm; height:210mm; overflow:hidden; display:flex; }
-  .left { width:32%; background:#12203a; color:#fff; padding:24px 20px; display:flex; flex-direction:column; justify-content:space-between; }
-  .right { width:68%; background:#f0f2f5; padding:20px 24px; display:flex; flex-direction:column; }
-  .logo { font-size:11px; font-weight:700; letter-spacing:3px; color:#c9a84c; text-transform:uppercase; margin-bottom:6px; }
-  .logo-sub { font-size:8px; letter-spacing:2px; color:#8a9bbf; text-transform:uppercase; margin-bottom:14px; }
-  .budget { font-size:10px; color:#8a9bbf; text-transform:uppercase; letter-spacing:1px; margin-bottom:16px; }
-  .budget span { color:#fff; font-weight:700; }
-  .prop-item { margin-bottom:12px; }
-  .prop-zona { font-size:8px; color:#8a9bbf; text-transform:uppercase; letter-spacing:1px; }
-  .prop-nome { font-size:10px; font-weight:700; color:#c9a84c; text-decoration:underline; margin-bottom:2px; }
-  .prop-specs { display:flex; flex-direction:column; gap:1px; }
-  .prop-specs span { font-size:8px; color:#ccd6ea; }
-  .zona-title { font-size:10px; font-weight:700; color:#c9a84c; text-decoration:underline; margin-bottom:6px; margin-top:8px; }
-  .zona-desc { font-size:8px; color:#aab8d0; line-height:1.5; }
-  .zona-desc ul { padding-left:12px; margin:4px 0; }
-  .zona-desc li { margin-bottom:2px; }
-  .footer-agent { font-size:8px; color:#8a9bbf; }
-  .footer-agent strong { color:#fff; }
-  .right-title { font-size:36px; font-weight:900; color:#12203a; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; }
-  .cards-row { display:flex; gap:14px; flex:1; align-items:flex-start; }
-  .prop-col { width:${colW}; display:flex; flex-direction:column; gap:6px; }
-  .prop-col-title { font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#12203a; text-align:center; padding-bottom:4px; border-bottom:2px solid #c9a84c; margin-bottom:2px; }
-  .prop-col-imgs { display:flex; flex-direction:column; gap:5px; }
-  .prop-col-imgs img { width:100%; height:80px; object-fit:cover; border-radius:3px; display:block; }
-  .no-img { height:60px; background:#dde3ed; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:9px; color:#8a9bbf; }
+  html, body { width:297mm; height:210mm; overflow:hidden; }
+  body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; display:flex; }
   @media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
 </style>
 </head>
 <body>
-<div class="left">
+<!-- LEFT PANEL -->
+<div style="width:31%;background:#12203a;color:#fff;padding:22px 18px 18px;display:flex;flex-direction:column;justify-content:space-between;flex-shrink:0;">
   <div>
-    <div class="logo">Keyprime Real Estate</div>
-    <div class="logo-sub">Real Estate Brokerage</div>
-    <div class="budget">Budget: <span>${offerta.budget || 'N/D'}</span></div>
+    <img src="${KEYPRIME_LOGO}" style="height:28px;width:auto;display:block;margin-bottom:4px;" onerror="this.style.display='none'" />
+    <div style="font-size:7px;letter-spacing:2px;color:#8a9bbf;text-transform:uppercase;margin-bottom:14px;">Real Estate Brokerage</div>
+    <div style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">Budget: <strong style="color:#fff;">${offerta.budget || 'N/D'}</strong></div>
     ${leftList}
-    ${offerta.zona_nome ? `<div class="zona-title">Perché scegliere ${offerta.zona_nome}:</div>` : ''}
-    ${offerta.zona_descrizione ? `<div class="zona-desc">${offerta.zona_descrizione.replace(/\n/g,'<br>')}</div>` : ''}
+    ${offerta.zona_nome ? `<div style="font-size:11px;font-weight:700;color:#c9a84c;text-decoration:underline;margin-bottom:5px;margin-top:12px;">Perch&eacute; scegliere ${offerta.zona_nome}:</div>` : ''}
+    ${offerta.zona_descrizione ? `<div style="font-size:9px;color:#aab8d0;line-height:1.6;">${offerta.zona_descrizione.replace(/\n/g,'<br>').replace(/•/g,'&#8226;')}</div>` : ''}
   </div>
-  <div class="footer-agent">
-    ${offerta.agente_email ? `<div>&#9993; <strong>${offerta.agente_email}</strong></div>` : ''}
-    ${offerta.agente_telefono ? `<div>&#9742; <strong>${offerta.agente_telefono}</strong></div>` : ''}
-    ${!offerta.agente_email && !offerta.agente_telefono ? `<div><strong>${agente}</strong></div>` : ''}
+  <div style="font-size:9px;color:#8a9bbf;border-top:1px solid rgba(255,255,255,0.1);padding-top:10px;">
+    ${consultanteFooter || `<strong style="color:#fff;">${offerta.agente_nome || ''}</strong>`}
   </div>
 </div>
-<div class="right">
-  <div class="right-title">Opzioni</div>
-  <div class="cards-row">${rightCards}</div>
+<!-- RIGHT PANEL -->
+<div style="flex:1;background:#f0f2f5;padding:20px 22px;display:flex;flex-direction:column;min-width:0;">
+  <div style="font-size:42px;font-weight:900;color:#12203a;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;line-height:1;">OPZIONI</div>
+  <div style="display:flex;gap:14px;flex:1;align-items:flex-start;overflow:hidden;">${rightCards}</div>
 </div>
 </body>
 </html>`;
 
   const w = window.open('', '_blank');
+  if (!w) { alert('Abilita i popup per generare il PDF'); return; }
   w.document.write(html);
   w.document.close();
-  setTimeout(() => w.print(), 600);
+  // Attendi caricamento immagini poi stampa
+  w.onload = () => setTimeout(() => w.print(), 300);
+  setTimeout(() => w.print(), 1800);
 };
 
 // ==================== OFFERTA TAB ====================
@@ -805,15 +795,10 @@ function OffertaTab({ offerte, user, onCrea, onEdit, onDelete, onGeneraPDF }) {
           <h2 className="text-white font-semibold text-lg">Offerte</h2>
           <p className="text-zinc-500 text-sm">{myOfferte.length} prospetti salvati</p>
         </div>
-        <button
-          onClick={onCrea}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white"
-          style={{ background: '#06b6d4' }}
-        >
+        <button onClick={onCrea} className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white" style={{ background: '#06b6d4' }}>
           <Plus className="w-4 h-4" /> Nuova Offerta
         </button>
       </div>
-
       {myOfferte.length === 0 ? (
         <div className="text-center py-16 text-zinc-500">
           <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -831,21 +816,19 @@ function OffertaTab({ offerte, user, onCrea, onEdit, onDelete, onGeneraPDF }) {
                 </div>
                 <div className="flex items-center gap-3 text-xs text-zinc-500">
                   <span>{new Date(o.created_at).toLocaleDateString('it-IT')}</span>
-                  <span>·</span>
-                  <span>{o.agente_nome}</span>
+                  <span>·</span><span>{o.agente_nome}</span>
                   {o.zona_nome && <><span>·</span><span>{o.zona_nome}</span></>}
-                  <span>·</span>
-                  <span>{(o.proprieta || []).length} propr.</span>
+                  <span>·</span><span>{(o.proprieta || []).length} propr.</span>
                 </div>
               </div>
               <div className="flex items-center gap-2 ml-4 shrink-0">
                 <button onClick={() => onGeneraPDF(o)} className="text-xs px-3 py-1.5 rounded-lg font-medium text-white flex items-center gap-1" style={{ background: '#06b6d4' }}>
                   <Printer className="w-3 h-3" /> PDF
                 </button>
-                <button onClick={() => onEdit(o)} className="text-xs px-3 py-1.5 rounded-lg font-medium text-zinc-300 bg-zinc-700/50">
+                <button onClick={() => onEdit(o)} className="text-xs px-3 py-1.5 rounded-lg font-medium text-zinc-300 bg-zinc-700/50 flex items-center">
                   <Edit2 className="w-3 h-3" />
                 </button>
-                <button onClick={() => onDelete(o.id)} className="text-xs px-3 py-1.5 rounded-lg font-medium text-red-400 bg-red-500/10">
+                <button onClick={() => onDelete(o.id)} className="text-xs px-3 py-1.5 rounded-lg font-medium text-red-400 bg-red-500/10 flex items-center">
                   <Trash2 className="w-3 h-3" />
                 </button>
               </div>
@@ -863,6 +846,8 @@ const EMPTY_PROP = { nome: '', zona: '', prezzo: '', specs: '', foto_urls: ['', 
 function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+  const [uploading, setUploading] = useState({});
   const [catalogSearch, setCatalogSearch] = useState('');
   const [catalogResults, setCatalogResults] = useState([]);
   const [activePropIdx, setActivePropIdx] = useState(null);
@@ -873,64 +858,103 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
     budget: offerta?.budget || '',
     zona_nome: offerta?.zona_nome || '',
     zona_descrizione: offerta?.zona_descrizione || '',
-    agente_email: offerta?.agente_email || '',
+    agente_email: offerta?.agente_email ?? (user?.email || ''),
     agente_telefono: offerta?.agente_telefono || '',
     note: offerta?.note || '',
-    proprieta: offerta?.proprieta?.length ? offerta.proprieta.map(p => ({ ...EMPTY_PROP, ...p, foto_urls: [...(p.foto_urls || ['', '', ''])] })) : [{ ...EMPTY_PROP, foto_urls: ['', '', ''] }],
+    proprieta: offerta?.proprieta?.length
+      ? offerta.proprieta.map(p => ({ ...EMPTY_PROP, ...p, foto_urls: [...(p.foto_urls?.length ? p.foto_urls : ['', '', ''])] }))
+      : [{ ...EMPTY_PROP, foto_urls: ['', '', ''] }],
   });
 
+  // Fix catalog search: use correct column names
   const searchCatalog = async (q) => {
     if (!q || q.length < 2) { setCatalogResults([]); return; }
-    const { data } = await supabase.from('pf_projects').select('id,title,location_name,price_from,images,developer').ilike('title', `%${q}%`).limit(8);
+    const { data } = await supabase
+      .from('pf_projects')
+      .select('id,title,location_name,location_full,price_from,images,developer_name')
+      .or(`title.ilike.%${q}%,location_full.ilike.%${q}%,developer_name.ilike.%${q}%`)
+      .limit(10);
     setCatalogResults(data || []);
   };
 
   const pickFromCatalog = (listing, idx) => {
-    const imgs = (listing.images || []).slice(0, 3).map(i => i.medium_image_url || '');
+    const imgs = (listing.images || []).slice(0, 3).map(i => i.medium_image_url || '').filter(Boolean);
     while (imgs.length < 3) imgs.push('');
-    const updated = form.proprieta.map((p, i) => i === idx ? {
-      ...p,
-      nome: listing.title || '',
-      zona: listing.location_name || '',
-      prezzo: listing.price_from ? `${Number(listing.price_from).toLocaleString()} AED` : '',
-      foto_urls: imgs,
-      listing_id: listing.id,
-    } : p);
-    setForm(f => ({ ...f, proprieta: updated }));
-    setCatalogResults([]);
-    setCatalogSearch('');
-    setActivePropIdx(null);
+    setForm(f => ({
+      ...f,
+      proprieta: f.proprieta.map((p, i) => i !== idx ? p : {
+        ...p,
+        nome: listing.title || '',
+        zona: listing.location_name || listing.location_full || '',
+        prezzo: listing.price_from ? `${Number(listing.price_from).toLocaleString()} AED` : '',
+        foto_urls: imgs,
+        listing_id: listing.id,
+      })
+    }));
+    setCatalogResults([]); setCatalogSearch(''); setActivePropIdx(null);
   };
 
-  const updateProp = (idx, field, val) => {
-    setForm(f => ({ ...f, proprieta: f.proprieta.map((p, i) => i === idx ? { ...p, [field]: val } : p) }));
+  // Upload immagine a Supabase Storage
+  const uploadImage = async (file, propIdx, fotoIdx) => {
+    const key = `${propIdx}_${fotoIdx}`;
+    setUploading(u => ({ ...u, [key]: true }));
+    try {
+      const ext = file.name.split('.').pop().toLowerCase();
+      const filename = `${Date.now()}_${propIdx}_${fotoIdx}.${ext}`;
+      const { error } = await supabase.storage.from('offerte-images').upload(filename, file, { contentType: file.type, upsert: true });
+      if (!error) {
+        const { data: urlData } = supabase.storage.from('offerte-images').getPublicUrl(filename);
+        updateFoto(propIdx, fotoIdx, urlData.publicUrl);
+      }
+    } finally {
+      setUploading(u => ({ ...u, [key]: false }));
+    }
   };
-  const updateFoto = (propIdx, fotoIdx, val) => {
+
+  const generaDescrizione = async () => {
+    if (!form.zona_nome) return;
+    setGeneratingDesc(true);
+    try {
+      const res = await fetch('/api/genera-descrizione', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zona: form.zona_nome }),
+      });
+      const { descrizione } = await res.json();
+      if (descrizione) setForm(f => ({ ...f, zona_descrizione: descrizione }));
+    } catch (e) {}
+    setGeneratingDesc(false);
+  };
+
+  const updateProp = (idx, field, val) =>
+    setForm(f => ({ ...f, proprieta: f.proprieta.map((p, i) => i === idx ? { ...p, [field]: val } : p) }));
+
+  const updateFoto = (propIdx, fotoIdx, val) =>
     setForm(f => ({
       ...f,
       proprieta: f.proprieta.map((p, i) => {
         if (i !== propIdx) return p;
-        const urls = [...p.foto_urls];
-        urls[fotoIdx] = val;
-        return { ...p, foto_urls: urls };
+        const urls = [...p.foto_urls]; urls[fotoIdx] = val; return { ...p, foto_urls: urls };
       })
     }));
-  };
+
   const addProp = () => { if (form.proprieta.length < 3) setForm(f => ({ ...f, proprieta: [...f.proprieta, { ...EMPTY_PROP, foto_urls: ['', '', ''] }] })); };
   const removeProp = (idx) => { if (form.proprieta.length > 1) setForm(f => ({ ...f, proprieta: f.proprieta.filter((_, i) => i !== idx) })); };
 
   const handleSave = async () => {
     setSaving(true);
-    const payload = {
-      ...form,
-      proprieta: form.proprieta.map(p => ({ ...p, foto_urls: p.foto_urls.filter(Boolean) })),
-      agente_nome: offerta?.agente_nome || user?.nome,
-      referente: offerta?.referente || user?.referente,
-    };
-    if (offerta?.id) payload.id = offerta.id;
-    await onSave(payload);
-    setSaving(false);
-    onClose();
+    try {
+      const payload = {
+        ...(offerta?.id ? { id: offerta.id } : {}),
+        ...form,
+        proprieta: form.proprieta.map(p => ({ ...p, foto_urls: p.foto_urls.filter(Boolean) })),
+        agente_nome: offerta?.agente_nome || user?.nome,
+        referente: offerta?.referente || user?.referente,
+      };
+      await onSave(payload);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   const inputCls = "w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500";
@@ -938,9 +962,9 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-      <div className="w-full max-w-2xl rounded-2xl overflow-hidden" style={{ background: '#1a1f2e', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '90vh' }}>
+      <div className="w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col" style={{ background: '#1a1f2e', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '92vh' }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 shrink-0">
           <div>
             <h2 className="text-white font-semibold">{offerta?.id ? 'Modifica Offerta' : 'Nuova Offerta'}</h2>
             <p className="text-xs text-zinc-500 mt-0.5">Step {step} di 3</p>
@@ -948,31 +972,28 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
           <button onClick={onClose} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
 
-        {/* Step indicator */}
-        <div className="flex px-6 pt-4 gap-2">
+        {/* Step bar */}
+        <div className="flex px-6 pt-3 gap-2 shrink-0">
           {[1,2,3].map(s => (
-            <div key={s} className="flex-1 h-1 rounded-full" style={{ background: s <= step ? '#06b6d4' : 'rgba(255,255,255,0.1)' }} />
+            <button key={s} onClick={() => s < step && setStep(s)}
+              className="flex-1 h-1 rounded-full transition-all"
+              style={{ background: s <= step ? '#06b6d4' : 'rgba(255,255,255,0.1)', cursor: s < step ? 'pointer' : 'default' }} />
           ))}
         </div>
 
-        <div className="px-6 py-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 180px)' }}>
+        <div className="px-6 py-4 overflow-y-auto flex-1">
 
-          {/* STEP 1 */}
+          {/* STEP 1 — Info */}
           {step === 1 && (
             <div className="space-y-4">
-              <h3 className="text-white font-medium text-sm">Cliente & Budget</h3>
+              <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Cliente & Dettagli</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Cliente</label>
-                  <input list="clienti-list" className={inputCls} value={form.cliente_nome}
-                    onChange={e => {
-                      const c = clienti.find(cl => `${cl.nome} ${cl.cognome || ''}`.trim() === e.target.value);
-                      setForm(f => ({ ...f, cliente_nome: e.target.value, cliente_id: c?.id || null }));
-                    }}
+                  <input list="clienti-offerta" className={inputCls} value={form.cliente_nome}
+                    onChange={e => { const c = clienti.find(cl => `${cl.nome} ${cl.cognome||''}`.trim() === e.target.value); setForm(f => ({ ...f, cliente_nome: e.target.value, cliente_id: c?.id||null })); }}
                     placeholder="Nome cliente..." />
-                  <datalist id="clienti-list">
-                    {clienti.map(c => <option key={c.id} value={`${c.nome} ${c.cognome || ''}`.trim()} />)}
-                  </datalist>
+                  <datalist id="clienti-offerta">{clienti.map(c => <option key={c.id} value={`${c.nome} ${c.cognome||''}`.trim()} />)}</datalist>
                 </div>
                 <div>
                   <label className={labelCls}>Budget</label>
@@ -981,46 +1002,55 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelCls}>Zona / Area</label>
-                  <input className={inputCls} value={form.zona_nome} onChange={e => setForm(f => ({ ...f, zona_nome: e.target.value }))} placeholder="es. JVC, Business Bay..." />
+                  <label className={labelCls}>Nome (agente)</label>
+                  <input className={inputCls} value={form.agente_nome_display || user?.nome || ''} disabled style={{ opacity: 0.6 }} />
                 </div>
                 <div>
-                  <label className={labelCls}>Email agente (per PDF)</label>
+                  <label className={labelCls}>Email agente</label>
                   <input className={inputCls} value={form.agente_email} onChange={e => setForm(f => ({ ...f, agente_email: e.target.value }))} placeholder="nome@keyprimere.com" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Telefono agente (per PDF)</label>
-                  <input className={inputCls} value={form.agente_telefono} onChange={e => setForm(f => ({ ...f, agente_telefono: e.target.value }))} placeholder="+971 50..." />
-                </div>
+              <div>
+                <label className={labelCls}>Telefono agente</label>
+                <input className={inputCls} value={form.agente_telefono} onChange={e => setForm(f => ({ ...f, agente_telefono: e.target.value }))} placeholder="+971 50 340 8622" />
               </div>
               <div>
-                <label className={labelCls}>Descrizione zona (opzionale — "Perché scegliere {form.zona_nome || 'X'}")</label>
-                <textarea className={inputCls} rows={4} value={form.zona_descrizione} onChange={e => setForm(f => ({ ...f, zona_descrizione: e.target.value }))}
+                <label className={labelCls}>Zona / Area (es. JVC, Business Bay)</label>
+                <input className={inputCls} value={form.zona_nome} onChange={e => setForm(f => ({ ...f, zona_nome: e.target.value }))} placeholder="es. JVC" />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className={labelCls} style={{ margin: 0 }}>Descrizione zona — "Perché scegliere {form.zona_nome || 'X'}"</label>
+                  <button onClick={generaDescrizione} disabled={!form.zona_nome || generatingDesc}
+                    className="text-xs text-cyan-400 px-2 py-1 rounded-lg border border-cyan-500/30 hover:border-cyan-500/60 disabled:opacity-40 flex items-center gap-1">
+                    {generatingDesc ? '...' : '✨ Genera con AI'}
+                  </button>
+                </div>
+                <textarea className={inputCls} rows={5} value={form.zona_descrizione}
+                  onChange={e => setForm(f => ({ ...f, zona_descrizione: e.target.value }))}
                   placeholder="Prezzi competitivi, rendimenti 6-8%, community family-friendly..." />
               </div>
             </div>
           )}
 
-          {/* STEP 2 */}
+          {/* STEP 2 — Proprietà */}
           {step === 2 && (
             <div className="space-y-5">
               <div className="flex items-center justify-between">
-                <h3 className="text-white font-medium text-sm">Proprietà ({form.proprieta.length}/3)</h3>
+                <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Proprietà ({form.proprieta.length}/3)</p>
                 {form.proprieta.length < 3 && (
                   <button onClick={addProp} className="text-xs text-cyan-400 flex items-center gap-1 hover:text-cyan-300">
-                    <Plus className="w-3 h-3" /> Aggiungi proprietà
+                    <Plus className="w-3 h-3" /> Aggiungi
                   </button>
                 )}
               </div>
-
               {form.proprieta.map((prop, idx) => (
                 <div key={idx} className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Proprietà {idx + 1}</span>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setActivePropIdx(activePropIdx === idx ? null : idx)} className="text-xs text-cyan-400 flex items-center gap-1 px-2 py-1 rounded-lg border border-cyan-500/30 hover:border-cyan-500/60">
+                      <button onClick={() => setActivePropIdx(activePropIdx === idx ? null : idx)}
+                        className="text-xs text-cyan-400 flex items-center gap-1 px-2 py-1 rounded-lg border border-cyan-500/30 hover:border-cyan-500/60">
                         <Search className="w-3 h-3" /> Cerca nel catalogo
                       </button>
                       {form.proprieta.length > 1 && (
@@ -1029,23 +1059,27 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
                     </div>
                   </div>
 
-                  {/* Catalog search */}
                   {activePropIdx === idx && (
                     <div className="space-y-2">
-                      <input className={inputCls} value={catalogSearch}
+                      <input className={inputCls} value={catalogSearch} autoFocus
                         onChange={e => { setCatalogSearch(e.target.value); searchCatalog(e.target.value); }}
-                        placeholder="Cerca progetto nel catalogo Off-Plan..." autoFocus />
+                        placeholder="Cerca per nome, zona, developer..." />
                       {catalogResults.length > 0 && (
-                        <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div className="rounded-lg overflow-hidden max-h-48 overflow-y-auto" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
                           {catalogResults.map(l => (
                             <button key={l.id} onClick={() => pickFromCatalog(l, idx)}
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 border-b border-zinc-800 last:border-0">
-                              <span className="text-white">{l.title}</span>
-                              <span className="text-zinc-500 ml-2 text-xs">{l.location_name}</span>
-                              {l.price_from && <span className="text-cyan-400 ml-2 text-xs">{Number(l.price_from).toLocaleString()} AED</span>}
+                              className="w-full text-left px-3 py-2.5 text-sm hover:bg-zinc-700/80 border-b border-zinc-800/50 last:border-0 flex items-center gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-white font-medium truncate">{l.title}</div>
+                                <div className="text-zinc-500 text-xs">{l.location_name || l.location_full} · {l.developer_name}</div>
+                              </div>
+                              {l.price_from && <span className="text-cyan-400 text-xs shrink-0">{Number(l.price_from).toLocaleString()} AED</span>}
                             </button>
                           ))}
                         </div>
+                      )}
+                      {catalogSearch.length >= 2 && catalogResults.length === 0 && (
+                        <p className="text-xs text-zinc-500 px-1">Nessun risultato — inserisci manualmente</p>
                       )}
                     </div>
                   )}
@@ -1070,11 +1104,24 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
                       placeholder="STUDIO 304 SQFT; ARREDATO; GYM; PISCINA; VISTA BURJ KHALIFA; PIANO 24; HANDOVER 2026" />
                   </div>
                   <div>
-                    <label className={labelCls}>URL foto (max 3)</label>
+                    <label className={labelCls}>Foto (carica o inserisci URL — max 3)</label>
                     <div className="space-y-2">
-                      {[0,1,2].map(fi => (
-                        <input key={fi} className={inputCls} value={prop.foto_urls[fi] || ''} onChange={e => updateFoto(idx, fi, e.target.value)} placeholder={`Foto ${fi+1} — https://...`} />
-                      ))}
+                      {[0,1,2].map(fi => {
+                        const uploadKey = `${idx}_${fi}`;
+                        return (
+                          <div key={fi} className="flex gap-2 items-center">
+                            <input className={`${inputCls} flex-1`} value={prop.foto_urls[fi] || ''}
+                              onChange={e => updateFoto(idx, fi, e.target.value)}
+                              placeholder={`Foto ${fi+1} — URL o carica ↓`} />
+                            <label className="shrink-0 cursor-pointer px-3 py-2 rounded-lg text-xs font-medium text-zinc-300 bg-zinc-700/50 hover:bg-zinc-600/50 relative">
+                              {uploading[uploadKey] ? '...' : '📁'}
+                              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                                onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0], idx, fi)} />
+                            </label>
+                            {prop.foto_urls[fi] && <img src={prop.foto_urls[fi]} className="w-8 h-8 object-cover rounded shrink-0" alt="" />}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -1082,37 +1129,39 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
             </div>
           )}
 
-          {/* STEP 3 */}
+          {/* STEP 3 — Riepilogo */}
           {step === 3 && (
             <div className="space-y-4">
-              <h3 className="text-white font-medium text-sm">Riepilogo</h3>
+              <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Riepilogo</p>
               <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                  <div><span className="text-zinc-500">Cliente:</span> <span className="text-white">{form.cliente_nome || '—'}</span></div>
-                  <div><span className="text-zinc-500">Budget:</span> <span className="text-white">{form.budget || '—'}</span></div>
-                  <div><span className="text-zinc-500">Zona:</span> <span className="text-white">{form.zona_nome || '—'}</span></div>
-                  <div><span className="text-zinc-500">Agente:</span> <span className="text-white">{form.agente_email || user?.nome}</span></div>
+                  <div><span className="text-zinc-500">Cliente:</span> <span className="text-white ml-1">{form.cliente_nome || '—'}</span></div>
+                  <div><span className="text-zinc-500">Budget:</span> <span className="text-white ml-1">{form.budget || '—'}</span></div>
+                  <div><span className="text-zinc-500">Zona:</span> <span className="text-white ml-1">{form.zona_nome || '—'}</span></div>
+                  <div><span className="text-zinc-500">Consulente:</span> <span className="text-white ml-1">{user?.nome}</span></div>
+                  <div><span className="text-zinc-500">Email:</span> <span className="text-white ml-1">{form.agente_email || '—'}</span></div>
+                  <div><span className="text-zinc-500">Tel:</span> <span className="text-white ml-1">{form.agente_telefono || '—'}</span></div>
                 </div>
                 <div className="pt-2 border-t border-zinc-800">
-                  <p className="text-xs text-zinc-500 mb-2">Proprietà incluse:</p>
+                  <p className="text-xs text-zinc-500 mb-2">Proprietà:</p>
                   {form.proprieta.map((p, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm py-1">
-                      <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center font-bold">{i+1}</span>
-                      <span className="text-white font-medium">{p.nome || 'N/D'}</span>
-                      <span className="text-zinc-500">{p.zona}</span>
-                      <span className="text-cyan-400">{p.prezzo}</span>
-                      <span className="text-zinc-600 text-xs">{p.foto_urls.filter(Boolean).length} foto</span>
+                      <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
+                      <span className="text-white font-medium truncate">{p.nome || 'N/D'}</span>
+                      <span className="text-zinc-500 truncate">{p.zona}</span>
+                      <span className="text-cyan-400 shrink-0">{p.prezzo}</span>
+                      <span className="text-zinc-600 text-xs shrink-0">{p.foto_urls.filter(Boolean).length} foto</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <p className="text-xs text-zinc-500">Il PDF verrà aperto in una nuova finestra in formato A4 landscape. Usa "Salva come PDF" nel dialogo di stampa.</p>
+              <p className="text-xs text-zinc-500">Salva e apri la finestra di stampa (A4 landscape). Usa "Salva come PDF".</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-800">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-800 shrink-0">
           <button onClick={step > 1 ? () => setStep(s => s-1) : onClose} className="text-sm text-zinc-400 hover:text-white px-4 py-2">
             {step > 1 ? '← Indietro' : 'Annulla'}
           </button>
@@ -1124,7 +1173,7 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
             )}
             {step === 3 && (
               <button onClick={handleSave} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50" style={{ background: '#06b6d4' }}>
-                {saving ? 'Salvataggio...' : 'Salva e Genera PDF'}
+                {saving ? 'Salvataggio...' : '💾 Salva e Genera PDF'}
               </button>
             )}
           </div>
