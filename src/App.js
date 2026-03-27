@@ -710,32 +710,41 @@ const KEYPRIME_LOGO = 'https://assets.cdn.filesafe.space/Yjm3Uvb0rc8mRuraj7ad/me
 
 const generateOffertaPDF = async (offerta) => {
   const props = offerta.proprieta || [];
+  const NAVY = '#0f1c35', GOLD = '#c9a84c';
 
-  /* ── Utility ── */
   const stripMd = t => (t || '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/__(.*?)__/g, '$1');
   const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-  /* ── Precarica immagini come dataURL (evita CORS con html2canvas) ── */
+  /* ── Precarica immagini: prova diretta, fallback via proxy API ── */
   const toDataUrl = async (url) => {
     if (!url) return null;
-    try {
-      const res = await fetch(url, { mode: 'cors' });
-      const blob = await res.blob();
-      return new Promise((resolve) => {
-        const r = new FileReader();
-        r.onload = () => resolve(r.result);
-        r.onerror = () => resolve(url);
-        r.readAsDataURL(blob);
-      });
-    } catch { return url; }
+    if (url.startsWith('data:')) return url;
+    const tryFetch = async (u) => {
+      try {
+        const res = await fetch(u);
+        if (!res.ok) return null;
+        const blob = await res.blob();
+        return await new Promise((resolve) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = () => resolve(null);
+          r.readAsDataURL(blob);
+        });
+      } catch { return null; }
+    };
+    const direct = await tryFetch(url);
+    if (direct) return direct;
+    // Proxy server-side per URL con CORS bloccato
+    const proxied = await tryFetch(`/api/proxy-image?url=${encodeURIComponent(url)}`);
+    return proxied || url;
   };
 
-  /* ── Overlay loading nella pagina principale ── */
+  /* ── Loading overlay ── */
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,28,53,0.96);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;';
   overlay.innerHTML = `
     <img src="${KEYPRIME_LOGO}" style="height:36px;margin-bottom:20px;opacity:0.85;" />
-    <div style="font-size:14px;color:#fff;font-weight:600;" id="_pdfStatus">Caricamento librerie…</div>
+    <div style="font-size:14px;color:#fff;font-weight:600;" id="_pdfStatus">Caricamento…</div>
     <div style="font-size:12px;color:#4a6a8a;margin-top:6px;" id="_pdfSub"></div>
     <div style="width:260px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:16px;">
       <div id="_pdfBar" style="height:4px;background:#c9a84c;border-radius:2px;width:0%;transition:width 0.35s;"></div>
@@ -751,25 +760,21 @@ const generateOffertaPDF = async (offerta) => {
   };
 
   try {
-    /* ── Carica librerie via import() dinamico ── */
     setStatus('Caricamento librerie…', '', 5);
     const [{ default: html2canvas }, { PDFDocument }] = await Promise.all([
       import('html2canvas'),
       import('pdf-lib'),
     ]);
 
-    /* ── Assicura font Inter nel documento principale ── */
     if (!document.getElementById('_kpInterFont')) {
       const lnk = document.createElement('link');
-      lnk.id = '_kpInterFont';
-      lnk.rel = 'stylesheet';
+      lnk.id = '_kpInterFont'; lnk.rel = 'stylesheet';
       lnk.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap';
       document.head.appendChild(lnk);
     }
     await document.fonts.ready;
     await new Promise(r => setTimeout(r, 600));
 
-    /* ── Precarica tutte le immagini ── */
     setStatus('Caricamento immagini…', '', 12);
     const logoUrl = await toDataUrl(KEYPRIME_LOGO);
     const propImgUrls = await Promise.all(
@@ -778,12 +783,8 @@ const generateOffertaPDF = async (offerta) => {
       ))
     );
 
-    /* ── Dati testo ── */
-    const rawDesc = stripMd(offerta.zona_descrizione || '');
-    const descLines = rawDesc.split(/\n|•/).map(s => s.trim().replace(/^[-•]\s*/, '')).filter(Boolean);
-
-    /* ── Container off-screen per html2canvas ── */
-    const A4W = 794, A4H = 1123; // 210mm × 297mm @96dpi
+    /* ── A4 Landscape: 297×210mm @96dpi = 1123×794px ── */
+    const A4W = 1123, A4H = 794;
     const frame = document.createElement('div');
     frame.style.cssText = `position:fixed;left:-${A4W + 50}px;top:0;width:${A4W}px;height:${A4H}px;overflow:hidden;font-family:'Inter',system-ui,sans-serif;box-sizing:border-box;`;
     document.body.appendChild(frame);
@@ -792,17 +793,16 @@ const generateOffertaPDF = async (offerta) => {
       frame.innerHTML = html;
       frame.style.background = bg;
       await document.fonts.ready;
-      await new Promise(r => setTimeout(r, 250));
+      await new Promise(r => setTimeout(r, 300));
       return html2canvas(frame, {
         scale: 2, useCORS: true, allowTaint: false,
         backgroundColor: bg, width: A4W, height: A4H, logging: false,
       });
     };
 
-    /* ── Crea documento PDF ── */
     const pdfDoc = await PDFDocument.create();
-    const PW = 595.28, PH = 841.89; // A4 portrait in punti @72dpi
-
+    // A4 landscape in pdf-lib points: 841.89 × 595.28
+    const PW = 841.89, PH = 595.28;
     const addPage = async (canvas) => {
       const b64 = canvas.toDataURL('image/jpeg', 0.93).split(',')[1];
       const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
@@ -811,59 +811,86 @@ const generateOffertaPDF = async (offerta) => {
       pg.drawImage(img, { x: 0, y: 0, width: PW, height: PH });
     };
 
-    /* ══════════ COVER PAGE ══════════ */
-    setStatus('Generazione PDF', 'Pagina copertina…', 20);
+    const rawDesc = stripMd(offerta.zona_descrizione || '');
+    const descLines = rawDesc.split(/\n|•/).map(s => s.trim().replace(/^[-•]\s*/, '')).filter(Boolean);
+    const LEFT_COVER = Math.round(A4W * 0.40);
+    const LEFT_PROP  = Math.round(A4W * 0.37);
+
+    /* ══════════ COVER (landscape 2-col) ══════════ */
+    setStatus('Generazione PDF', 'Copertina…', 20);
+    const allPhotos = propImgUrls.flat().filter(Boolean).slice(0, 4);
+    let coverPhotosHtml = '';
+    if (!allPhotos.length) {
+      coverPhotosHtml = `<div style="width:100%;height:100%;background:#1a2a42;display:flex;align-items:center;justify-content:center;"><span style="color:#2a4a64;font-size:18px;letter-spacing:4px;text-transform:uppercase;">KeyPrime</span></div>`;
+    } else if (allPhotos.length === 1) {
+      coverPhotosHtml = `<img src="${allPhotos[0]}" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
+    } else if (allPhotos.length === 2) {
+      coverPhotosHtml = `<div style="display:flex;height:100%;">
+        ${allPhotos.map(u => `<div style="flex:1;overflow:hidden;"><img src="${u}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>`).join('')}
+      </div>`;
+    } else {
+      coverPhotosHtml = `<div style="display:flex;flex-direction:column;height:100%;gap:3px;">
+        <div style="flex:2;overflow:hidden;"><img src="${allPhotos[0]}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>
+        <div style="flex:1;display:flex;gap:3px;">
+          ${allPhotos.slice(1,4).map(u => `<div style="flex:1;overflow:hidden;"><img src="${u}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>`).join('')}
+        </div>
+      </div>`;
+    }
+
     const coverHtml = `
-<div style="width:${A4W}px;height:${A4H}px;background:#0f1c35;color:#fff;padding:36px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;">
-  <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
-    ${logoUrl ? `<img src="${logoUrl}" style="height:38px;width:auto;object-fit:contain;" />` : ''}
-    <div>
-      <div style="font-size:9px;letter-spacing:4px;color:#c9a84c;text-transform:uppercase;font-weight:600;">Real Estate Brokerage</div>
-      <div style="font-size:8px;letter-spacing:2px;color:#4a6a8a;text-transform:uppercase;margin-top:2px;">Dubai — UAE</div>
+<div style="width:${A4W}px;height:${A4H}px;display:flex;overflow:hidden;box-sizing:border-box;">
+  <div style="width:${LEFT_COVER}px;flex-shrink:0;background:${NAVY};color:#fff;padding:30px 26px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      ${logoUrl ? `<img src="${logoUrl}" style="height:30px;width:auto;object-fit:contain;" />` : ''}
+      <div>
+        <div style="font-size:7px;letter-spacing:3px;color:${GOLD};text-transform:uppercase;font-weight:600;">Real Estate Brokerage</div>
+        <div style="font-size:6px;letter-spacing:2px;color:#4a6a8a;text-transform:uppercase;margin-top:1px;">Dubai — UAE</div>
+      </div>
+    </div>
+    <div style="height:1px;background:linear-gradient(90deg,${GOLD},transparent);margin-bottom:20px;"></div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:8px;letter-spacing:3px;color:${GOLD};text-transform:uppercase;font-weight:600;margin-bottom:8px;">Selezione Immobili</div>
+      ${offerta.cliente_nome ? `<div style="font-size:24px;font-weight:800;color:#fff;line-height:1.1;margin-bottom:4px;">Per: ${esc(offerta.cliente_nome)}</div>` : ''}
+      ${offerta.zona_nome ? `<div style="font-size:13px;color:#5a8aaa;letter-spacing:0.5px;">${esc(offerta.zona_nome)} — Dubai</div>` : ''}
+    </div>
+    ${offerta.budget ? `
+    <div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:6px;padding:10px 14px;margin-bottom:16px;">
+      <div style="font-size:7px;letter-spacing:2px;color:${GOLD};text-transform:uppercase;margin-bottom:2px;">Budget Cliente</div>
+      <div style="font-size:20px;font-weight:800;color:#fff;">${esc(offerta.budget)}</div>
+    </div>` : ''}
+    <div style="margin-bottom:14px;">
+      <div style="font-size:7px;letter-spacing:2px;color:#4a6a8a;text-transform:uppercase;margin-bottom:8px;">Opzioni presentate</div>
+      ${props.map((p, i) => `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="width:20px;height:20px;border-radius:50%;background:${GOLD};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:800;color:${NAVY};">${i+1}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.nome||'')}</div>
+          ${p.zona ? `<div style="font-size:9px;color:#5a8aaa;">${esc(p.zona)}</div>` : ''}
+        </div>
+        ${p.prezzo ? `<div style="font-size:10px;font-weight:700;color:${GOLD};white-space:nowrap;flex-shrink:0;">${esc(p.prezzo)}</div>` : ''}
+      </div>`).join('')}
+    </div>
+    ${descLines.length ? `
+    <div style="background:rgba(255,255,255,0.04);border-left:2px solid ${GOLD};padding:10px 12px;flex:1;overflow:hidden;border-radius:0 4px 4px 0;">
+      <div style="font-size:7px;font-weight:700;letter-spacing:2px;color:${GOLD};text-transform:uppercase;margin-bottom:8px;">Perché ${esc(offerta.zona_nome||'questa zona')}</div>
+      ${descLines.slice(0,5).map(l => `
+      <div style="display:flex;gap:6px;margin-bottom:5px;">
+        <span style="color:${GOLD};font-size:10px;line-height:1.4;flex-shrink:0;">•</span>
+        <span style="font-size:10px;color:#a8c4dc;line-height:1.4;">${esc(l)}</span>
+      </div>`).join('')}
+    </div>` : '<div style="flex:1;"></div>'}
+    <div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);">
+      ${offerta.agente_nome ? `<div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:2px;">${esc(offerta.agente_nome)}</div>` : ''}
+      ${offerta.agente_email ? `<div style="font-size:9px;color:#5a8aaa;margin-bottom:1px;">✉ ${esc(offerta.agente_email)}</div>` : ''}
+      ${offerta.agente_telefono ? `<div style="font-size:9px;color:#5a8aaa;">✆ ${esc(offerta.agente_telefono)}</div>` : ''}
+      <div style="font-size:8px;color:#2a4a64;margin-top:4px;">${new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})}</div>
     </div>
   </div>
-  <div style="height:1px;background:linear-gradient(90deg,#c9a84c,transparent);margin-bottom:28px;"></div>
-  <div style="margin-bottom:24px;">
-    <div style="font-size:10px;letter-spacing:4px;color:#c9a84c;text-transform:uppercase;font-weight:600;margin-bottom:10px;">Selezione Immobili</div>
-    ${offerta.cliente_nome ? `<div style="font-size:30px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:6px;">Per: ${esc(offerta.cliente_nome)}</div>` : ''}
-    ${offerta.zona_nome ? `<div style="font-size:16px;color:#5a8aaa;letter-spacing:1px;">${esc(offerta.zona_nome)} — Dubai</div>` : ''}
-  </div>
-  ${offerta.budget ? `
-  <div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.35);border-radius:8px;padding:14px 20px;margin-bottom:28px;display:inline-block;">
-    <div style="font-size:8px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;margin-bottom:3px;">Budget Cliente</div>
-    <div style="font-size:24px;font-weight:800;color:#fff;">${esc(offerta.budget)}</div>
-  </div>` : ''}
-  <div style="margin-bottom:22px;">
-    <div style="font-size:8px;letter-spacing:3px;color:#4a6a8a;text-transform:uppercase;margin-bottom:12px;">Opzioni presentate</div>
-    ${props.map((p, i) => `
-    <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-      <div style="width:26px;height:26px;border-radius:50%;background:#c9a84c;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:800;color:#0f1c35;">${i+1}</div>
-      <div style="flex:1;">
-        <div style="font-size:14px;font-weight:700;color:#fff;">${esc(p.nome||'')}</div>
-        ${p.zona ? `<div style="font-size:11px;color:#5a8aaa;">${esc(p.zona)}</div>` : ''}
-      </div>
-      ${p.prezzo ? `<div style="font-size:13px;font-weight:700;color:#c9a84c;">${esc(p.prezzo)}</div>` : ''}
-    </div>`).join('')}
-  </div>
-  ${descLines.length ? `
-  <div style="background:rgba(255,255,255,0.04);border-radius:8px;border-left:3px solid #c9a84c;padding:14px 16px;flex:1;overflow:hidden;">
-    <div style="font-size:8px;font-weight:700;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;margin-bottom:10px;">Perché scegliere ${esc(offerta.zona_nome||'questa zona')}</div>
-    ${descLines.map(l => `
-    <div style="display:flex;gap:8px;margin-bottom:6px;">
-      <span style="color:#c9a84c;font-size:13px;line-height:1.4;flex-shrink:0;">•</span>
-      <span style="font-size:12px;color:#a8c4dc;line-height:1.5;">${esc(l)}</span>
-    </div>`).join('')}
-  </div>` : '<div style="flex:1;"></div>'}
-  <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);">
-    ${offerta.agente_nome ? `<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;">${esc(offerta.agente_nome)}</div>` : ''}
-    ${offerta.agente_email ? `<div style="font-size:11px;color:#5a8aaa;margin-bottom:3px;">✉ ${esc(offerta.agente_email)}</div>` : ''}
-    ${offerta.agente_telefono ? `<div style="font-size:11px;color:#5a8aaa;">✆ ${esc(offerta.agente_telefono)}</div>` : ''}
-    <div style="font-size:10px;color:#2a4a64;margin-top:8px;">${new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})}</div>
-  </div>
+  <div style="flex:1;overflow:hidden;">${coverPhotosHtml}</div>
 </div>`;
-    await addPage(await capture(coverHtml, '#0f1c35'));
+    await addPage(await capture(coverHtml, NAVY));
 
-    /* ══════════ PROPERTY PAGES ══════════ */
+    /* ══════════ PROPERTY PAGES (landscape 2-col) ══════════ */
     for (let idx = 0; idx < props.length; idx++) {
       const p = props[idx];
       setStatus('Generazione PDF', `Proprietà ${idx+1} di ${props.length}…`, 25 + idx * Math.floor(40 / Math.max(props.length, 1)));
@@ -872,71 +899,71 @@ const generateOffertaPDF = async (offerta) => {
 
       let fotosHtml = '';
       if (!fotos.length) {
-        fotosHtml = `<div style="flex:1;background:#e8edf2;display:flex;align-items:center;justify-content:center;"><span style="color:#94a3b8;font-size:14px;">Nessuna foto</span></div>`;
+        fotosHtml = `<div style="width:100%;height:100%;background:#e8edf2;display:flex;align-items:center;justify-content:center;"><span style="color:#94a3b8;font-size:14px;">Nessuna foto</span></div>`;
       } else if (fotos.length === 1) {
-        fotosHtml = `<div style="flex:1;overflow:hidden;"><img src="${fotos[0]}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>`;
+        fotosHtml = `<img src="${fotos[0]}" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
       } else if (fotos.length === 2) {
-        fotosHtml = `<div style="display:flex;gap:3px;flex:1;overflow:hidden;">${fotos.map(u => `<div style="flex:1;overflow:hidden;"><img src="${u}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>`).join('')}</div>`;
+        fotosHtml = `<div style="display:flex;height:100%;gap:3px;">
+          ${fotos.map(u => `<div style="flex:1;overflow:hidden;"><img src="${u}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>`).join('')}
+        </div>`;
       } else {
-        fotosHtml = `<div style="display:flex;gap:3px;flex:1;overflow:hidden;">
+        fotosHtml = `<div style="display:flex;height:100%;gap:3px;">
           <div style="flex:2;overflow:hidden;"><img src="${fotos[0]}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>
           <div style="flex:1;display:flex;flex-direction:column;gap:3px;">
             <div style="flex:1;overflow:hidden;"><img src="${fotos[1]}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>
             <div style="flex:1;overflow:hidden;"><img src="${fotos[2]}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>
-          </div></div>`;
+          </div>
+        </div>`;
       }
 
+      const nameFontSize = (p.nome||'').length > 22 ? 18 : (p.nome||'').length > 14 ? 22 : 26;
       const propHtml = `
-<div style="width:${A4W}px;height:${A4H}px;background:#fff;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;">
-  <div style="background:#0f1c35;padding:20px 26px;flex-shrink:0;">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
-      <div>
-        <div style="font-size:9px;letter-spacing:3px;color:#c9a84c;text-transform:uppercase;font-weight:600;margin-bottom:5px;">${esc((p.zona||'').toUpperCase())}</div>
-        <div style="font-size:24px;font-weight:900;color:#fff;line-height:1.1;">${esc(p.nome||'')}</div>
-      </div>
-      ${p.prezzo ? `<div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:8px;letter-spacing:2px;color:#5a8aaa;text-transform:uppercase;margin-bottom:3px;">Prezzo</div>
-        <div style="font-size:20px;font-weight:800;color:#c9a84c;">${esc(p.prezzo)}</div>
-      </div>` : ''}
-    </div>
-    <div style="font-size:9px;color:#2a4a64;margin-top:8px;">Opzione ${idx+1} di ${props.length}</div>
-  </div>
-  <div style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;">${fotosHtml}</div>
-  ${specs.length ? `
-  <div style="background:#f4f5f7;padding:12px 26px;border-top:3px solid #c9a84c;flex-shrink:0;">
-    <div style="display:flex;flex-wrap:wrap;gap:5px 14px;">
-      ${specs.map(s => `<div style="display:flex;align-items:center;gap:5px;">
-        <span style="width:5px;height:5px;border-radius:50%;background:#c9a84c;flex-shrink:0;display:inline-block;"></span>
-        <span style="font-size:11px;color:#334155;font-weight:500;">${esc(s)}</span>
+<div style="width:${A4W}px;height:${A4H}px;display:flex;overflow:hidden;box-sizing:border-box;">
+  <div style="width:${LEFT_PROP}px;flex-shrink:0;background:${NAVY};color:#fff;padding:30px 24px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;">
+    <div style="font-size:8px;letter-spacing:3px;color:${GOLD};text-transform:uppercase;font-weight:600;margin-bottom:10px;">${esc((p.zona||'').toUpperCase())}</div>
+    <div style="font-size:${nameFontSize}px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:18px;">${esc(p.nome||'')}</div>
+    ${p.prezzo ? `
+    <div style="background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.3);border-radius:6px;padding:10px 14px;margin-bottom:20px;">
+      <div style="font-size:7px;letter-spacing:2px;color:${GOLD};text-transform:uppercase;margin-bottom:2px;">Prezzo</div>
+      <div style="font-size:20px;font-weight:800;color:${GOLD};">${esc(p.prezzo)}</div>
+    </div>` : ''}
+    <div style="height:1px;background:rgba(255,255,255,0.08);margin-bottom:16px;"></div>
+    ${specs.length ? `
+    <div style="flex:1;overflow:hidden;">
+      <div style="font-size:7px;letter-spacing:2px;color:#4a6a8a;text-transform:uppercase;margin-bottom:10px;">Caratteristiche</div>
+      ${specs.map(s => `
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;">
+        <span style="width:5px;height:5px;border-radius:50%;background:${GOLD};flex-shrink:0;margin-top:5px;display:inline-block;"></span>
+        <span style="font-size:11px;color:#c8d8e8;line-height:1.4;">${esc(s)}</span>
       </div>`).join('')}
+    </div>` : '<div style="flex:1;"></div>'}
+    <div style="padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        ${logoUrl ? `<img src="${logoUrl}" style="height:14px;width:auto;object-fit:contain;" />` : '<span></span>'}
+        <div style="font-size:8px;color:#2a4a64;">Opzione ${idx+1} di ${props.length}</div>
+      </div>
+      ${offerta.agente_nome ? `<div style="font-size:9px;color:#3a5a74;">${esc(offerta.agente_nome)}${offerta.agente_telefono ? ' · '+esc(offerta.agente_telefono) : ''}</div>` : ''}
     </div>
-  </div>` : ''}
-  <div style="background:#0f1c35;padding:8px 26px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-    ${logoUrl ? `<img src="${logoUrl}" style="height:15px;width:auto;object-fit:contain;" />` : '<span></span>'}
-    <div style="font-size:9px;color:#3a5a74;">${esc(offerta.agente_nome||'')}${offerta.agente_telefono ? ' | '+esc(offerta.agente_telefono) : ''}</div>
   </div>
+  <div style="flex:1;overflow:hidden;">${fotosHtml}</div>
 </div>`;
-      await addPage(await capture(propHtml, '#fff'));
+      await addPage(await capture(propHtml, NAVY));
     }
 
     document.body.removeChild(frame);
 
-    /* ══════════ BROCHURE — copia pagine vettoriali con pdf-lib ══════════ */
+    /* ══════════ BROCHURE — copia pagine vettoriali ══════════ */
     const brochureUrls = props.map(p => p.brochure_url).filter(Boolean);
     for (let bi = 0; bi < brochureUrls.length; bi++) {
-      setStatus('Allegando brochure', `${bi+1} di ${brochureUrls.length} — download in corso…`, 70 + bi * Math.floor(20 / Math.max(brochureUrls.length, 1)));
+      setStatus('Allegando brochure', `${bi+1} di ${brochureUrls.length}…`, 70 + bi * Math.floor(20 / Math.max(brochureUrls.length, 1)));
       try {
         const bytes = await fetch(brochureUrls[bi]).then(r => r.arrayBuffer());
         const srcPdf = await PDFDocument.load(bytes, { ignoreEncryption: true });
         const copied = await pdfDoc.copyPages(srcPdf, srcPdf.getPageIndices());
         copied.forEach(pg => pdfDoc.addPage(pg));
-        setStatus('Allegando brochure', `${bi+1} di ${brochureUrls.length} — ${srcPdf.getPageCount()} pagine allegate`, 70 + (bi+1) * Math.floor(20 / Math.max(brochureUrls.length, 1)));
-      } catch(e) {
-        console.error('Brochure merge error:', e);
-      }
+      } catch(e) { console.error('Brochure merge error:', e); }
     }
 
-    /* ══════════ SALVA E SCARICA ══════════ */
     setStatus('Finalizzazione…', 'Generazione file…', 92);
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
@@ -957,7 +984,6 @@ const generateOffertaPDF = async (offerta) => {
   } finally {
     if (document.body.contains(overlay)) document.body.removeChild(overlay);
   }
-
 };
 
 // ==================== OFFERTA TAB ====================
