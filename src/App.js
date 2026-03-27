@@ -759,72 +759,166 @@ const generateOffertaPDF = (offerta) => {
      </div>`
   ).join('');
 
+  const brochureUrls = props.map(p => p.brochure_url).filter(Boolean);
+  const brochureUrlsJson = JSON.stringify(brochureUrls);
+
   const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"><\/script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;}
   @page{size:A4 landscape;margin:0;}
-  html,body{width:297mm;height:210mm;overflow:hidden;font-family:'Inter',sans-serif;}
-  @media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}}
+  html,body{width:297mm;font-family:'Inter',sans-serif;background:#fff;}
+  .offerta-page{display:flex;width:297mm;height:210mm;overflow:hidden;page-break-after:always;}
+  .brochure-page{width:297mm;height:210mm;overflow:hidden;page-break-before:always;display:flex;align-items:center;justify-content:center;background:#fff;}
+  .brochure-page img{max-width:100%;max-height:100%;object-fit:contain;}
+  #loading{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;font-family:sans-serif;}
+  #loading-bar-wrap{width:280px;height:6px;background:#e2e8f0;border-radius:3px;margin-top:14px;}
+  #loading-bar{height:6px;background:#c9a84c;border-radius:3px;width:0%;transition:width 0.3s;}
+  @media print{#loading{display:none!important;}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}}
 </style>
 </head>
 <body>
 
-<!-- ═══ PAGINA UNICA 297×210mm ═══ -->
-<div style="display:flex;width:297mm;height:210mm;overflow:hidden;">
+<!-- OVERLAY CARICAMENTO -->
+<div id="loading">
+  <div style="font-size:14px;color:#0f1c35;font-weight:600;">Elaborazione brochure in corso…</div>
+  <div style="font-size:12px;color:#6a8aaa;margin-top:6px;" id="loading-msg">Inizializzazione PDF.js</div>
+  <div id="loading-bar-wrap"><div id="loading-bar"></div></div>
+</div>
 
-  <!-- ════ LEFT PANEL (35%) ════ -->
+<!-- ═══ PAGINA OFFERTA ═══ -->
+<div class="offerta-page">
+
+  <!-- LEFT PANEL -->
   <div style="width:35%;background:#0f1c35;color:#fff;padding:22px 20px 18px;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;">
-
-    <!-- Logo KeyPrime -->
-    <img src="${KEYPRIME_LOGO}"
-         style="height:28px;width:auto;object-fit:contain;object-position:left;display:block;margin-bottom:3px;"
-         onerror="this.style.display='none'" />
+    <img src="${KEYPRIME_LOGO}" style="height:28px;width:auto;object-fit:contain;object-position:left;display:block;margin-bottom:3px;" onerror="this.style.display='none'" />
     <div style="font-size:6px;letter-spacing:3px;color:#3d5a74;text-transform:uppercase;margin-bottom:14px;">Real Estate Brokerage</div>
-
-    <!-- Budget badge -->
     <div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.28);border-radius:6px;padding:7px 11px;margin-bottom:14px;">
       <div style="font-size:6.5px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;margin-bottom:2px;">Budget Cliente</div>
       <div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:0.5px;">${offerta.budget || 'N/D'}</div>
     </div>
-
-    <!-- Proprietà list (prende lo spazio disponibile) -->
     <div style="overflow:hidden;margin-bottom:12px;">${leftProps}</div>
-
-    <!-- Zona descrizione -->
     ${offerta.zona_nome && descLines.length ? `
     <div style="padding:9px 11px;background:rgba(255,255,255,0.04);border-radius:6px;border-left:2px solid #c9a84c;margin-bottom:12px;overflow:hidden;">
-      <div style="font-size:6.5px;font-weight:700;letter-spacing:1.5px;color:#c9a84c;text-transform:uppercase;margin-bottom:5px;">Perché scegliere ${offerta.zona_nome}</div>
+      <div style="font-size:6.5px;font-weight:700;letter-spacing:1.5px;color:#c9a84c;text-transform:uppercase;margin-bottom:5px;">Perch&eacute; scegliere ${offerta.zona_nome}</div>
       ${descHtml}
     </div>` : ''}
-
-    <!-- Agente footer -->
     <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);">
       ${offerta.agente_nome ? `<div style="font-size:10px;font-weight:700;color:#fff;margin-bottom:3px;">${offerta.agente_nome}</div>` : ''}
-      ${offerta.agente_email ? `<div style="font-size:7.5px;color:#6a8aaa;margin-bottom:2px;">✉ ${offerta.agente_email}</div>` : ''}
-      ${offerta.agente_telefono ? `<div style="font-size:7.5px;color:#6a8aaa;">✆ ${offerta.agente_telefono}</div>` : ''}
+      ${offerta.agente_email ? `<div style="font-size:7.5px;color:#6a8aaa;margin-bottom:2px;">&#9993; ${offerta.agente_email}</div>` : ''}
+      ${offerta.agente_telefono ? `<div style="font-size:7.5px;color:#6a8aaa;">&#9742; ${offerta.agente_telefono}</div>` : ''}
     </div>
-
   </div>
 
-  <!-- ════ RIGHT PANEL (65%) ════ -->
+  <!-- RIGHT PANEL -->
   <div style="flex:1;background:#f4f5f7;padding:22px 20px 18px;display:flex;flex-direction:column;min-width:0;overflow:hidden;">
-
-    <!-- Titolo OPZIONI -->
     <div style="margin-bottom:14px;flex-shrink:0;">
       <div style="font-size:42px;font-weight:900;color:#0f1c35;letter-spacing:6px;line-height:1;">OPZIONI</div>
       <div style="width:64px;height:3px;background:#c9a84c;border-radius:2px;margin-top:5px;"></div>
     </div>
-
-    <!-- Property cards — flex:1 e min-height:0 per riempire tutto lo spazio -->
     <div style="display:flex;gap:10px;flex:1;min-height:0;overflow:hidden;">${rightCards}</div>
-
   </div>
 
 </div>
+
+<!-- PAGINE BROCHURE (renderizzate da JS) -->
+<div id="brochure-container"></div>
+
+<script>
+(async function() {
+  const brochureUrls = ${brochureUrlsJson};
+  if (!brochureUrls.length) {
+    document.getElementById('loading').style.display = 'none';
+    setTimeout(() => { try { window.print(); } catch(e){} }, 2000);
+    return;
+  }
+
+  const loadingEl = document.getElementById('loading');
+  const loadingMsg = document.getElementById('loading-msg');
+  const loadingBar = document.getElementById('loading-bar');
+  const container = document.getElementById('brochure-container');
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  // Conta totale pagine per la progress bar
+  let totalPages = 0;
+  let renderedPages = 0;
+
+  function setProgress(pct, msg) {
+    loadingBar.style.width = pct + '%';
+    if (msg) loadingMsg.textContent = msg;
+  }
+
+  // Prima passata: conta pagine
+  setProgress(5, 'Caricamento brochure…');
+  const pdfDocs = [];
+  for (let i = 0; i < brochureUrls.length; i++) {
+    try {
+      const pdf = await pdfjsLib.getDocument({ url: brochureUrls[i], cMapPacked: true }).promise;
+      pdfDocs.push(pdf);
+      totalPages += pdf.numPages;
+    } catch(e) {
+      console.error('Errore caricamento brochure:', e);
+      pdfDocs.push(null);
+    }
+  }
+
+  if (totalPages === 0) {
+    loadingEl.style.display = 'none';
+    setTimeout(() => { try { window.print(); } catch(e){} }, 2000);
+    return;
+  }
+
+  setProgress(10, 'Rendering pagine (0/' + totalPages + ')…');
+
+  // Seconda passata: renderizza ogni pagina come immagine
+  const A4W = 1754; // 297mm a 150 DPI
+  const A4H = 1240; // 210mm a 150 DPI
+
+  for (let di = 0; di < pdfDocs.length; di++) {
+    const pdf = pdfDocs[di];
+    if (!pdf) continue;
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      try {
+        const page = await pdf.getPage(pageNum);
+        const vp0 = page.getViewport({ scale: 1 });
+        const scale = Math.min(A4W / vp0.width, A4H / vp0.height);
+        const viewport = page.getViewport({ scale });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL('image/jpeg', 0.92);
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'brochure-page';
+        wrapper.appendChild(img);
+        container.appendChild(wrapper);
+
+        renderedPages++;
+        const pct = 10 + Math.round((renderedPages / totalPages) * 88);
+        setProgress(pct, 'Rendering pagine (' + renderedPages + '/' + totalPages + ')…');
+      } catch(e) {
+        console.error('Errore pagina', pageNum, e);
+      }
+    }
+  }
+
+  setProgress(100, 'Pronto — apertura stampa…');
+  setTimeout(() => {
+    loadingEl.style.display = 'none';
+    setTimeout(() => { try { window.print(); } catch(e){} }, 300);
+  }, 600);
+})();
+<\/script>
 
 </body>
 </html>`;
@@ -833,14 +927,6 @@ const generateOffertaPDF = (offerta) => {
   if (!w) { alert('Abilita i popup per generare il PDF'); return; }
   w.document.write(html);
   w.document.close();
-
-  /* Brochure: iframes in print windows non funzionano — apri in tab separati */
-  props.forEach(p => {
-    if (p.brochure_url) setTimeout(() => window.open(p.brochure_url, '_blank'), 1200);
-  });
-
-  /* Stampa dopo caricamento font + immagini */
-  setTimeout(() => { try { w.print(); } catch(e) {} }, 2200);
 };
 
 // ==================== OFFERTA TAB ====================
