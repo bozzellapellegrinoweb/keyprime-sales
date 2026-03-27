@@ -705,6 +705,435 @@ const generateDashboardPDF = (totals, sales, vendite, byAgente, byZona) => {
   setTimeout(() => w.print(), 500);
 };
 
+// ==================== OFFERTA PDF ====================
+const generateOffertaPDF = (offerta) => {
+  const agente = offerta.agente_nome || '';
+  const props = offerta.proprieta || [];
+  const colW = props.length === 1 ? '90%' : props.length === 2 ? '46%' : '30%';
+
+  const leftList = props.map(p => `
+    <div class="prop-item">
+      <div class="prop-zona">${p.zona || ''}</div>
+      <div class="prop-nome">${p.nome || ''}</div>
+      <div class="prop-specs">${(p.specs || '').split(/[;\n]/).filter(Boolean).map(s => `<span>-${s.trim()}</span>`).join('')}</div>
+    </div>`).join('');
+
+  const rightCards = props.map(p => {
+    const fotos = (p.foto_urls || []).filter(Boolean).slice(0, 4);
+    const imgs = fotos.map(url => `<img src="${url}" onerror="this.style.display='none'" />`).join('');
+    return `
+      <div class="prop-col">
+        <div class="prop-col-title">${p.nome || ''}</div>
+        <div class="prop-col-imgs">${imgs || '<div class="no-img">Nessuna foto</div>'}</div>
+      </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  @page { size: A4 landscape; margin:0; }
+  body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; width:297mm; height:210mm; overflow:hidden; display:flex; }
+  .left { width:32%; background:#12203a; color:#fff; padding:24px 20px; display:flex; flex-direction:column; justify-content:space-between; }
+  .right { width:68%; background:#f0f2f5; padding:20px 24px; display:flex; flex-direction:column; }
+  .logo { font-size:11px; font-weight:700; letter-spacing:3px; color:#c9a84c; text-transform:uppercase; margin-bottom:6px; }
+  .logo-sub { font-size:8px; letter-spacing:2px; color:#8a9bbf; text-transform:uppercase; margin-bottom:14px; }
+  .budget { font-size:10px; color:#8a9bbf; text-transform:uppercase; letter-spacing:1px; margin-bottom:16px; }
+  .budget span { color:#fff; font-weight:700; }
+  .prop-item { margin-bottom:12px; }
+  .prop-zona { font-size:8px; color:#8a9bbf; text-transform:uppercase; letter-spacing:1px; }
+  .prop-nome { font-size:10px; font-weight:700; color:#c9a84c; text-decoration:underline; margin-bottom:2px; }
+  .prop-specs { display:flex; flex-direction:column; gap:1px; }
+  .prop-specs span { font-size:8px; color:#ccd6ea; }
+  .zona-title { font-size:10px; font-weight:700; color:#c9a84c; text-decoration:underline; margin-bottom:6px; margin-top:8px; }
+  .zona-desc { font-size:8px; color:#aab8d0; line-height:1.5; }
+  .zona-desc ul { padding-left:12px; margin:4px 0; }
+  .zona-desc li { margin-bottom:2px; }
+  .footer-agent { font-size:8px; color:#8a9bbf; }
+  .footer-agent strong { color:#fff; }
+  .right-title { font-size:36px; font-weight:900; color:#12203a; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; }
+  .cards-row { display:flex; gap:14px; flex:1; align-items:flex-start; }
+  .prop-col { width:${colW}; display:flex; flex-direction:column; gap:6px; }
+  .prop-col-title { font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#12203a; text-align:center; padding-bottom:4px; border-bottom:2px solid #c9a84c; margin-bottom:2px; }
+  .prop-col-imgs { display:flex; flex-direction:column; gap:5px; }
+  .prop-col-imgs img { width:100%; height:80px; object-fit:cover; border-radius:3px; display:block; }
+  .no-img { height:60px; background:#dde3ed; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:9px; color:#8a9bbf; }
+  @media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+</style>
+</head>
+<body>
+<div class="left">
+  <div>
+    <div class="logo">Keyprime Real Estate</div>
+    <div class="logo-sub">Real Estate Brokerage</div>
+    <div class="budget">Budget: <span>${offerta.budget || 'N/D'}</span></div>
+    ${leftList}
+    ${offerta.zona_nome ? `<div class="zona-title">Perché scegliere ${offerta.zona_nome}:</div>` : ''}
+    ${offerta.zona_descrizione ? `<div class="zona-desc">${offerta.zona_descrizione.replace(/\n/g,'<br>')}</div>` : ''}
+  </div>
+  <div class="footer-agent">
+    ${offerta.agente_email ? `<div>&#9993; <strong>${offerta.agente_email}</strong></div>` : ''}
+    ${offerta.agente_telefono ? `<div>&#9742; <strong>${offerta.agente_telefono}</strong></div>` : ''}
+    ${!offerta.agente_email && !offerta.agente_telefono ? `<div><strong>${agente}</strong></div>` : ''}
+  </div>
+</div>
+<div class="right">
+  <div class="right-title">Opzioni</div>
+  <div class="cards-row">${rightCards}</div>
+</div>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 600);
+};
+
+// ==================== OFFERTA TAB ====================
+function OffertaTab({ offerte, user, onCrea, onEdit, onDelete, onGeneraPDF }) {
+  const myOfferte = user?.ruolo === 'admin'
+    ? offerte
+    : offerte.filter(o => o.agente_nome === user?.nome);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-white font-semibold text-lg">Offerte</h2>
+          <p className="text-zinc-500 text-sm">{myOfferte.length} prospetti salvati</p>
+        </div>
+        <button
+          onClick={onCrea}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white"
+          style={{ background: '#06b6d4' }}
+        >
+          <Plus className="w-4 h-4" /> Nuova Offerta
+        </button>
+      </div>
+
+      {myOfferte.length === 0 ? (
+        <div className="text-center py-16 text-zinc-500">
+          <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p>Nessuna offerta ancora</p>
+          <p className="text-sm mt-1">Crea il tuo primo prospetto cliente</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {myOfferte.map(o => (
+            <div key={o.id} className="rounded-xl p-4 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-1">
+                  <span className="text-white font-semibold truncate">{o.cliente_nome || 'Cliente n/d'}</span>
+                  {o.budget && <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400">{o.budget}</span>}
+                </div>
+                <div className="flex items-center gap-3 text-xs text-zinc-500">
+                  <span>{new Date(o.created_at).toLocaleDateString('it-IT')}</span>
+                  <span>·</span>
+                  <span>{o.agente_nome}</span>
+                  {o.zona_nome && <><span>·</span><span>{o.zona_nome}</span></>}
+                  <span>·</span>
+                  <span>{(o.proprieta || []).length} propr.</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 ml-4 shrink-0">
+                <button onClick={() => onGeneraPDF(o)} className="text-xs px-3 py-1.5 rounded-lg font-medium text-white flex items-center gap-1" style={{ background: '#06b6d4' }}>
+                  <Printer className="w-3 h-3" /> PDF
+                </button>
+                <button onClick={() => onEdit(o)} className="text-xs px-3 py-1.5 rounded-lg font-medium text-zinc-300 bg-zinc-700/50">
+                  <Edit2 className="w-3 h-3" />
+                </button>
+                <button onClick={() => onDelete(o.id)} className="text-xs px-3 py-1.5 rounded-lg font-medium text-red-400 bg-red-500/10">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==================== OFFERTA MODAL ====================
+const EMPTY_PROP = { nome: '', zona: '', prezzo: '', specs: '', foto_urls: ['', '', ''] };
+
+function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
+  const [step, setStep] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogResults, setCatalogResults] = useState([]);
+  const [activePropIdx, setActivePropIdx] = useState(null);
+
+  const [form, setForm] = useState({
+    cliente_nome: offerta?.cliente_nome || '',
+    cliente_id: offerta?.cliente_id || null,
+    budget: offerta?.budget || '',
+    zona_nome: offerta?.zona_nome || '',
+    zona_descrizione: offerta?.zona_descrizione || '',
+    agente_email: offerta?.agente_email || '',
+    agente_telefono: offerta?.agente_telefono || '',
+    note: offerta?.note || '',
+    proprieta: offerta?.proprieta?.length ? offerta.proprieta.map(p => ({ ...EMPTY_PROP, ...p, foto_urls: [...(p.foto_urls || ['', '', ''])] })) : [{ ...EMPTY_PROP, foto_urls: ['', '', ''] }],
+  });
+
+  const searchCatalog = async (q) => {
+    if (!q || q.length < 2) { setCatalogResults([]); return; }
+    const { data } = await supabase.from('pf_projects').select('id,title,location_name,price_from,images,developer').ilike('title', `%${q}%`).limit(8);
+    setCatalogResults(data || []);
+  };
+
+  const pickFromCatalog = (listing, idx) => {
+    const imgs = (listing.images || []).slice(0, 3).map(i => i.medium_image_url || '');
+    while (imgs.length < 3) imgs.push('');
+    const updated = form.proprieta.map((p, i) => i === idx ? {
+      ...p,
+      nome: listing.title || '',
+      zona: listing.location_name || '',
+      prezzo: listing.price_from ? `${Number(listing.price_from).toLocaleString()} AED` : '',
+      foto_urls: imgs,
+      listing_id: listing.id,
+    } : p);
+    setForm(f => ({ ...f, proprieta: updated }));
+    setCatalogResults([]);
+    setCatalogSearch('');
+    setActivePropIdx(null);
+  };
+
+  const updateProp = (idx, field, val) => {
+    setForm(f => ({ ...f, proprieta: f.proprieta.map((p, i) => i === idx ? { ...p, [field]: val } : p) }));
+  };
+  const updateFoto = (propIdx, fotoIdx, val) => {
+    setForm(f => ({
+      ...f,
+      proprieta: f.proprieta.map((p, i) => {
+        if (i !== propIdx) return p;
+        const urls = [...p.foto_urls];
+        urls[fotoIdx] = val;
+        return { ...p, foto_urls: urls };
+      })
+    }));
+  };
+  const addProp = () => { if (form.proprieta.length < 3) setForm(f => ({ ...f, proprieta: [...f.proprieta, { ...EMPTY_PROP, foto_urls: ['', '', ''] }] })); };
+  const removeProp = (idx) => { if (form.proprieta.length > 1) setForm(f => ({ ...f, proprieta: f.proprieta.filter((_, i) => i !== idx) })); };
+
+  const handleSave = async () => {
+    setSaving(true);
+    const payload = {
+      ...form,
+      proprieta: form.proprieta.map(p => ({ ...p, foto_urls: p.foto_urls.filter(Boolean) })),
+      agente_nome: offerta?.agente_nome || user?.nome,
+      referente: offerta?.referente || user?.referente,
+    };
+    if (offerta?.id) payload.id = offerta.id;
+    await onSave(payload);
+    setSaving(false);
+    onClose();
+  };
+
+  const inputCls = "w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500";
+  const labelCls = "block text-xs text-zinc-400 mb-1 font-medium";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
+      <div className="w-full max-w-2xl rounded-2xl overflow-hidden" style={{ background: '#1a1f2e', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '90vh' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+          <div>
+            <h2 className="text-white font-semibold">{offerta?.id ? 'Modifica Offerta' : 'Nuova Offerta'}</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">Step {step} di 3</p>
+          </div>
+          <button onClick={onClose} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+        </div>
+
+        {/* Step indicator */}
+        <div className="flex px-6 pt-4 gap-2">
+          {[1,2,3].map(s => (
+            <div key={s} className="flex-1 h-1 rounded-full" style={{ background: s <= step ? '#06b6d4' : 'rgba(255,255,255,0.1)' }} />
+          ))}
+        </div>
+
+        <div className="px-6 py-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 180px)' }}>
+
+          {/* STEP 1 */}
+          {step === 1 && (
+            <div className="space-y-4">
+              <h3 className="text-white font-medium text-sm">Cliente & Budget</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Cliente</label>
+                  <input list="clienti-list" className={inputCls} value={form.cliente_nome}
+                    onChange={e => {
+                      const c = clienti.find(cl => `${cl.nome} ${cl.cognome || ''}`.trim() === e.target.value);
+                      setForm(f => ({ ...f, cliente_nome: e.target.value, cliente_id: c?.id || null }));
+                    }}
+                    placeholder="Nome cliente..." />
+                  <datalist id="clienti-list">
+                    {clienti.map(c => <option key={c.id} value={`${c.nome} ${c.cognome || ''}`.trim()} />)}
+                  </datalist>
+                </div>
+                <div>
+                  <label className={labelCls}>Budget</label>
+                  <input className={inputCls} value={form.budget} onChange={e => setForm(f => ({ ...f, budget: e.target.value }))} placeholder="es. MAX 800K AED" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Zona / Area</label>
+                  <input className={inputCls} value={form.zona_nome} onChange={e => setForm(f => ({ ...f, zona_nome: e.target.value }))} placeholder="es. JVC, Business Bay..." />
+                </div>
+                <div>
+                  <label className={labelCls}>Email agente (per PDF)</label>
+                  <input className={inputCls} value={form.agente_email} onChange={e => setForm(f => ({ ...f, agente_email: e.target.value }))} placeholder="nome@keyprimere.com" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Telefono agente (per PDF)</label>
+                  <input className={inputCls} value={form.agente_telefono} onChange={e => setForm(f => ({ ...f, agente_telefono: e.target.value }))} placeholder="+971 50..." />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Descrizione zona (opzionale — "Perché scegliere {form.zona_nome || 'X'}")</label>
+                <textarea className={inputCls} rows={4} value={form.zona_descrizione} onChange={e => setForm(f => ({ ...f, zona_descrizione: e.target.value }))}
+                  placeholder="Prezzi competitivi, rendimenti 6-8%, community family-friendly..." />
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2 */}
+          {step === 2 && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-white font-medium text-sm">Proprietà ({form.proprieta.length}/3)</h3>
+                {form.proprieta.length < 3 && (
+                  <button onClick={addProp} className="text-xs text-cyan-400 flex items-center gap-1 hover:text-cyan-300">
+                    <Plus className="w-3 h-3" /> Aggiungi proprietà
+                  </button>
+                )}
+              </div>
+
+              {form.proprieta.map((prop, idx) => (
+                <div key={idx} className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Proprietà {idx + 1}</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setActivePropIdx(activePropIdx === idx ? null : idx)} className="text-xs text-cyan-400 flex items-center gap-1 px-2 py-1 rounded-lg border border-cyan-500/30 hover:border-cyan-500/60">
+                        <Search className="w-3 h-3" /> Cerca nel catalogo
+                      </button>
+                      {form.proprieta.length > 1 && (
+                        <button onClick={() => removeProp(idx)} className="text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Catalog search */}
+                  {activePropIdx === idx && (
+                    <div className="space-y-2">
+                      <input className={inputCls} value={catalogSearch}
+                        onChange={e => { setCatalogSearch(e.target.value); searchCatalog(e.target.value); }}
+                        placeholder="Cerca progetto nel catalogo Off-Plan..." autoFocus />
+                      {catalogResults.length > 0 && (
+                        <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                          {catalogResults.map(l => (
+                            <button key={l.id} onClick={() => pickFromCatalog(l, idx)}
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 border-b border-zinc-800 last:border-0">
+                              <span className="text-white">{l.title}</span>
+                              <span className="text-zinc-500 ml-2 text-xs">{l.location_name}</span>
+                              {l.price_from && <span className="text-cyan-400 ml-2 text-xs">{Number(l.price_from).toLocaleString()} AED</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Nome progetto</label>
+                      <input className={inputCls} value={prop.nome} onChange={e => updateProp(idx, 'nome', e.target.value)} placeholder="es. BINGHATTI TULIP" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Zona</label>
+                      <input className={inputCls} value={prop.zona} onChange={e => updateProp(idx, 'zona', e.target.value)} placeholder="es. JVC" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Prezzo</label>
+                    <input className={inputCls} value={prop.prezzo} onChange={e => updateProp(idx, 'prezzo', e.target.value)} placeholder="es. 715,000 AED" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Specifiche (separate da ; o a capo)</label>
+                    <textarea className={inputCls} rows={3} value={prop.specs} onChange={e => updateProp(idx, 'specs', e.target.value)}
+                      placeholder="STUDIO 304 SQFT; ARREDATO; GYM; PISCINA; VISTA BURJ KHALIFA; PIANO 24; HANDOVER 2026" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>URL foto (max 3)</label>
+                    <div className="space-y-2">
+                      {[0,1,2].map(fi => (
+                        <input key={fi} className={inputCls} value={prop.foto_urls[fi] || ''} onChange={e => updateFoto(idx, fi, e.target.value)} placeholder={`Foto ${fi+1} — https://...`} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* STEP 3 */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <h3 className="text-white font-medium text-sm">Riepilogo</h3>
+              <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div><span className="text-zinc-500">Cliente:</span> <span className="text-white">{form.cliente_nome || '—'}</span></div>
+                  <div><span className="text-zinc-500">Budget:</span> <span className="text-white">{form.budget || '—'}</span></div>
+                  <div><span className="text-zinc-500">Zona:</span> <span className="text-white">{form.zona_nome || '—'}</span></div>
+                  <div><span className="text-zinc-500">Agente:</span> <span className="text-white">{form.agente_email || user?.nome}</span></div>
+                </div>
+                <div className="pt-2 border-t border-zinc-800">
+                  <p className="text-xs text-zinc-500 mb-2">Proprietà incluse:</p>
+                  {form.proprieta.map((p, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm py-1">
+                      <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center font-bold">{i+1}</span>
+                      <span className="text-white font-medium">{p.nome || 'N/D'}</span>
+                      <span className="text-zinc-500">{p.zona}</span>
+                      <span className="text-cyan-400">{p.prezzo}</span>
+                      <span className="text-zinc-600 text-xs">{p.foto_urls.filter(Boolean).length} foto</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-zinc-500">Il PDF verrà aperto in una nuova finestra in formato A4 landscape. Usa "Salva come PDF" nel dialogo di stampa.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-800">
+          <button onClick={step > 1 ? () => setStep(s => s-1) : onClose} className="text-sm text-zinc-400 hover:text-white px-4 py-2">
+            {step > 1 ? '← Indietro' : 'Annulla'}
+          </button>
+          <div className="flex gap-3">
+            {step < 3 && (
+              <button onClick={() => setStep(s => s+1)} className="px-5 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#06b6d4' }}>
+                Avanti →
+              </button>
+            )}
+            {step === 3 && (
+              <button onClick={handleSave} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50" style={{ background: '#06b6d4' }}>
+                {saving ? 'Salvataggio...' : 'Salva e Genera PDF'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ==================== MAIN APP ====================
 export default function App() {
   const [view, setView] = useState('login');
@@ -742,6 +1171,10 @@ export default function App() {
   
   // Saved Listings (PropertyFinder)
   const [savedListings, setSavedListings] = useState([]);
+
+  // Offerte
+  const [offerte, setOfferte] = useState([]);
+  const [showOffertaModal, setShowOffertaModal] = useState(null);
   
   // Global Search
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
@@ -789,14 +1222,18 @@ export default function App() {
   const loadTasks = async () => { const { data } = await supabase.from('tasks').select('*').order('scadenza', { ascending: true }); setTasks(data || []); };
   const loadActivities = async () => { const { data } = await supabase.from('lead_activities').select('*').order('created_at', { ascending: false }); setActivities(data || []); };
   const loadFollowUps = async () => { const { data } = await supabase.from('follow_ups').select('*').order('data_reminder', { ascending: true }); setFollowUps(data || []); };
-  const loadSavedListings = async () => { 
+  const loadSavedListings = async () => {
     const { data } = await supabase.from('saved_listings').select('*')
       .eq('user_id', user?.id)
-      .order('created_at', { ascending: false }); 
-    setSavedListings(data || []); 
+      .order('created_at', { ascending: false });
+    setSavedListings(data || []);
   };
-  
-  useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); loadActivities(); loadFollowUps(); loadSavedListings(); if (user.ruolo === 'admin') loadUsers(); }}, [user]);
+  const loadOfferte = async () => {
+    const { data } = await supabase.from('offerte').select('*').order('created_at', { ascending: false });
+    setOfferte(data || []);
+  };
+
+  useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); loadActivities(); loadFollowUps(); loadSavedListings(); loadOfferte(); if (user.ruolo === 'admin') loadUsers(); }}, [user]);
 
   // Global refresh function
   const refreshAllData = async () => {
@@ -809,6 +1246,7 @@ export default function App() {
       loadActivities(),
       loadFollowUps(),
       loadSavedListings(),
+      loadOfferte(),
       user?.ruolo === 'admin' ? loadUsers() : Promise.resolve()
     ]);
     setLoading(false);
@@ -1145,6 +1583,24 @@ export default function App() {
   const updateUser = async (id, d) => { await supabase.from('user_credentials').update(d).eq('id', id); loadUsers(); setShowUserModal(null); showToast('Salvato'); };
   const deleteUser = async (id) => { if (!window.confirm('Eliminare?')) return; await supabase.from('user_credentials').delete().eq('id', id); loadUsers(); };
 
+  // Offerta handlers
+  const saveOfferta = async (data) => {
+    if (data.id) {
+      const { id, ...rest } = data;
+      await supabase.from('offerte').update(rest).eq('id', id);
+    } else {
+      await supabase.from('offerte').insert([data]);
+    }
+    await loadOfferte();
+    showToast('Offerta salvata');
+  };
+  const deleteOfferta = async (id) => {
+    if (!window.confirm('Eliminare questa offerta?')) return;
+    await supabase.from('offerte').delete().eq('id', id);
+    await loadOfferte();
+    showToast('Offerta eliminata');
+  };
+
   // Computed Data
   const filteredSales = sales.filter(s => {
     if (filters.search && !`${s.progetto} ${s.developer} ${s.agente} ${s.cliente_nome}`.toLowerCase().includes(filters.search.toLowerCase())) return false;
@@ -1249,6 +1705,7 @@ export default function App() {
       { id: 'crm', icon: Users, label: 'CRM', accent: theme.sections.crm.accent },
       { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent, isNew: true },
       { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent, isNew: true },
+      { id: 'offerte', icon: FileText, label: 'Offerte', accent: '#06b6d4' },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: myTasks.length },
       { id: 'settings', icon: Settings, label: 'Account', accent: theme.sections.utenti.accent }
     ];
@@ -1534,8 +1991,9 @@ export default function App() {
             {activeTab === 'tasks' && <AgentTasksTab tasks={myTasks} allTasks={tasks.filter(t => t.assegnato_a === user?.nome)} clienti={clienti} onComplete={completeTask} onAddNote={(t) => setShowNoteModal(t)} />}
             {activeTab === 'offplan' && <OffPlanTab clienti={myClienti} onCreateLead={createLeadFromListing} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeListing} user={user} />}
             {activeTab === 'calculator' && <ROICalculator />}
+            {activeTab === 'offerte' && <OffertaTab offerte={offerte} user={user} onCrea={() => setShowOffertaModal({})} onEdit={setShowOffertaModal} onDelete={deleteOfferta} onGeneraPDF={generateOffertaPDF} />}
             {activeTab === 'crm' && (showClienteDetail ? <ClienteDetailView cliente={showClienteDetail} sales={sales.filter(s => s.cliente_id === showClienteDetail.id)} tasks={tasks.filter(t => t.cliente_id === showClienteDetail.id)} onBack={() => setShowClienteDetail(null)} onEdit={() => setShowClienteModal(showClienteDetail)} onDelete={() => deleteCliente(showClienteDetail.id)} updateCliente={updateCliente} onAddTask={() => setShowTaskModal({ cliente_id: showClienteDetail.id })} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(showClienteDetail, sales.filter(s => s.cliente_id === showClienteDetail.id), tasks.filter(t => t.cliente_id === showClienteDetail.id))} /> : <CRMTab clienti={myClienti} filters={clienteFilters} setFilters={setClienteFilters} sales={mySales} onSelect={setShowClienteDetail} onCreate={() => setShowClienteModal({})} onDelete={deleteCliente} onUpdateCliente={updateCliente} users={users} />)}
-            
+
             {activeTab === 'settings' && (
               <Card className="max-w-lg">
                 <div className="flex items-center gap-4 mb-6">
@@ -1572,6 +2030,7 @@ export default function App() {
         {showPasswordModal && <PasswordModal currentPassword={user?.password} onSave={changePassword} onClose={() => setShowPasswordModal(false)} />}
         {showNoteModal && <NoteModal task={showNoteModal} onSave={addTaskNote} onClose={() => setShowNoteModal(null)} />}
         {showClienteModal && <ClienteModal cliente={showClienteModal.id ? showClienteModal : null} onSave={showClienteModal.id ? (d) => updateCliente(showClienteModal.id, d) : createCliente} onClose={() => setShowClienteModal(null)} />}
+        {showOffertaModal !== null && <OffertaModal offerta={showOffertaModal?.id ? showOffertaModal : null} clienti={clienti} user={user} onSave={async (data) => { await saveOfferta(data); if (!showOffertaModal?.id) generateOffertaPDF(data); }} onClose={() => setShowOffertaModal(null)} />}
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
     );
@@ -1634,6 +2093,7 @@ export default function App() {
       { id: 'crm', icon: Users, label: 'CRM', accent: theme.sections.crm.accent },
       { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent, isNew: true },
       { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent, isNew: true },
+      { id: 'offerte', icon: FileText, label: 'Offerte', accent: '#06b6d4' },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: pendingTasks.length },
       { id: 'followups', icon: Clock, label: 'Follow-up', accent: '#A855F7', badge: todayFollowUps.length + overdueFollowUps.length },
       { id: 'utenti', icon: Settings, label: 'Team', accent: theme.sections.utenti.accent }
@@ -1883,6 +2343,9 @@ export default function App() {
 
             {/* CALCULATOR */}
             {activeTab === 'calculator' && <ROICalculator />}
+
+            {/* OFFERTE */}
+            {activeTab === 'offerte' && <OffertaTab offerte={offerte} user={user} onCrea={() => setShowOffertaModal({})} onEdit={setShowOffertaModal} onDelete={deleteOfferta} onGeneraPDF={generateOffertaPDF} />}
 
             {/* TASKS */}
             {activeTab === 'tasks' && <AdminTasksTab tasks={tasks} clienti={clienti} users={users} onComplete={completeTask} onDelete={deleteTask} onEdit={setShowTaskModal} onCreate={() => setShowTaskModal({})} />}
@@ -2159,6 +2622,7 @@ export default function App() {
         {showUserModal && <UserModal user={showUserModal.id ? showUserModal : null} onSave={showUserModal.id ? (d) => updateUser(showUserModal.id, d) : createUser} onClose={() => setShowUserModal(null)} />}
         {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} recentSales={recentSalesNotifications} onClose={() => { setShowNotifications(false); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} onMarkAsRead={markSingleNotificationAsRead} userId={user?.id} />}
         {showGlobalSearch && <GlobalSearch isOpen={showGlobalSearch} onClose={() => setShowGlobalSearch(false)} sales={sales} clienti={clienti} tasks={tasks} onSelectSale={setShowLeadDetail} onSelectCliente={setShowClienteDetail} onSelectTask={() => setActiveTab('tasks')} setActiveTab={setActiveTab} />}
+        {showOffertaModal !== null && <OffertaModal offerta={showOffertaModal?.id ? showOffertaModal : null} clienti={clienti} user={user} onSave={async (data) => { await saveOfferta(data); if (!showOffertaModal?.id) generateOffertaPDF(data); }} onClose={() => setShowOffertaModal(null)} />}
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
     );
