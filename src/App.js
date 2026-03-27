@@ -710,66 +710,127 @@ const KEYPRIME_LOGO = 'https://assets.cdn.filesafe.space/Yjm3Uvb0rc8mRuraj7ad/me
 
 const generateOffertaPDF = (offerta) => {
   const props = offerta.proprieta || [];
-  const nProps = props.length || 1;
-  const colFlex = nProps === 1 ? '1' : nProps === 2 ? '0 0 47%' : '0 0 30%';
+  const n = props.length || 1;
 
-  const leftList = props.map(p => `
-    <div class="prop-item">
-      <div class="prop-zona">${(p.zona || '').toUpperCase()}</div>
-      <div class="prop-nome">${p.nome || ''}</div>
-      <div class="prop-price">${p.prezzo || ''}</div>
-      <div class="prop-specs">${(p.specs || '').split(/[;\n]/).filter(s => s.trim()).map(s => `<span>-${s.trim()}</span>`).join('')}</div>
-    </div>`).join('');
-
-  const rightCards = props.map(p => {
-    const fotos = (p.foto_urls || []).filter(Boolean).slice(0, 4);
-    const imgH = nProps === 1 ? '140px' : nProps === 2 ? '110px' : '80px';
-    const imgs = fotos.map(url => `<img src="${url}" style="width:100%;height:${imgH};object-fit:cover;border-radius:4px;display:block;" onerror="this.style.display='none'" />`).join('');
+  /* ── LEFT: elenco proprietà ── */
+  const leftProps = props.map(p => {
+    const specs = (p.specs || '').split(/[;\n]/).map(s => s.trim()).filter(Boolean);
     return `
-      <div style="flex:${colFlex};display:flex;flex-direction:column;gap:8px;min-width:0;">
-        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#12203a;text-align:center;padding-bottom:6px;border-bottom:2px solid #c9a84c;">${p.nome || ''}</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">${imgs || '<div style="height:80px;background:#dde3ed;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#8a9bbf;">Nessuna foto</div>'}</div>
-      </div>`;
+    <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.08);">
+      <div style="font-size:8px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;font-weight:600;margin-bottom:3px;">${(p.zona||'').toUpperCase()}</div>
+      <div style="font-size:13px;font-weight:700;color:#fff;line-height:1.25;margin-bottom:4px;">${p.nome||''}</div>
+      ${p.prezzo ? `<div style="font-size:11px;font-weight:600;color:#c9a84c;margin-bottom:5px;">${p.prezzo}</div>` : ''}
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        ${specs.map(s=>`<div style="font-size:9px;color:#94a8c4;line-height:1.4;">&#x2014; ${s}</div>`).join('')}
+      </div>
+    </div>`;
   }).join('');
 
-  const consultanteFooter = [
-    offerta.agente_nome ? `<strong style="color:#fff;font-size:10px;">${offerta.agente_nome}</strong>` : '',
-    offerta.agente_email ? `<div style="display:flex;align-items:center;gap:4px;margin-top:3px;">&#9993; ${offerta.agente_email}</div>` : '',
-    offerta.agente_telefono ? `<div style="display:flex;align-items:center;gap:4px;margin-top:2px;">&#9742; ${offerta.agente_telefono}</div>` : '',
-  ].filter(Boolean).join('');
+  /* ── RIGHT: schede con foto ── */
+  // Altezza immagini ottimizzata per riempire lo spazio
+  const totalH = 168; // mm disponibili nel right panel (210 - title - padding)
+  const imgH_mm = n === 1 ? 52 : n === 2 ? 48 : 40;
+  const imgH = `${imgH_mm}mm`;
+  const colW = n === 1 ? '92%' : n === 2 ? '47%' : '31%';
+
+  const rightCards = props.map(p => {
+    const fotos = (p.foto_urls || []).filter(Boolean).slice(0, 3);
+    const imgs = fotos.length
+      ? fotos.map(url => `<div style="overflow:hidden;border-radius:6px;margin-bottom:6px;flex-shrink:0;">
+          <img src="${url}" style="width:100%;height:${imgH};object-fit:cover;display:block;" onerror="this.parentElement.style.display='none'" />
+        </div>`).join('')
+      : `<div style="height:${imgH};background:linear-gradient(135deg,#e2e8f0,#cbd5e1);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px;margin-bottom:6px;">Nessuna foto</div>`;
+    return `
+    <div style="width:${colW};flex-shrink:0;display:flex;flex-direction:column;">
+      <div style="background:#0f1c35;color:#fff;padding:10px 12px;border-radius:8px 8px 0 0;text-align:center;">
+        <div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#c9a84c;margin-bottom:2px;">${(p.zona||'').toUpperCase()}</div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.5px;">${(p.nome||'').toUpperCase()}</div>
+        ${p.prezzo ? `<div style="font-size:10px;color:#c9a84c;margin-top:2px;font-weight:600;">${p.prezzo}</div>` : ''}
+      </div>
+      <div style="flex:1;padding:8px 0 0;">${imgs}</div>
+    </div>`;
+  }).join('');
+
+  /* ── Zona descrizione formattata ── */
+  const descLines = (offerta.zona_descrizione || '').split(/\n|•/).map(s => s.trim()).filter(Boolean);
+  const descHtml = descLines.map(l => `<div style="display:flex;gap:6px;margin-bottom:5px;"><span style="color:#c9a84c;flex-shrink:0;">&#x2022;</span><span>${l}</span></div>`).join('');
+
+  /* ── Pagine brochure extra ── */
+  const brochureUrls = props.map(p => p.brochure_url).filter(Boolean);
+  const brochurePages = brochureUrls.map(url => `
+    <div style="page-break-before:always;width:297mm;height:210mm;overflow:hidden;">
+      <iframe src="${url}" style="width:100%;height:100%;border:none;" allowfullscreen></iframe>
+    </div>`).join('');
 
   const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  @page { size: A4 landscape; margin:0; }
-  html, body { width:297mm; height:210mm; overflow:hidden; }
-  body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; display:flex; }
-  @media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  @page{size:A4 landscape;margin:0;}
+  html,body{width:297mm;height:210mm;}
+  body{font-family:'Inter',sans-serif;display:flex;flex-direction:column;}
+  .page1{display:flex;width:297mm;height:210mm;overflow:hidden;}
+  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
 </style>
 </head>
 <body>
-<!-- LEFT PANEL -->
-<div style="width:31%;background:#12203a;color:#fff;padding:22px 18px 18px;display:flex;flex-direction:column;justify-content:space-between;flex-shrink:0;">
-  <div>
-    <img src="${KEYPRIME_LOGO}" style="height:28px;width:auto;display:block;margin-bottom:4px;" onerror="this.style.display='none'" />
-    <div style="font-size:7px;letter-spacing:2px;color:#8a9bbf;text-transform:uppercase;margin-bottom:14px;">Real Estate Brokerage</div>
-    <div style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">Budget: <strong style="color:#fff;">${offerta.budget || 'N/D'}</strong></div>
-    ${leftList}
-    ${offerta.zona_nome ? `<div style="font-size:11px;font-weight:700;color:#c9a84c;text-decoration:underline;margin-bottom:5px;margin-top:12px;">Perch&eacute; scegliere ${offerta.zona_nome}:</div>` : ''}
-    ${offerta.zona_descrizione ? `<div style="font-size:9px;color:#aab8d0;line-height:1.6;">${offerta.zona_descrizione.replace(/\n/g,'<br>').replace(/•/g,'&#8226;')}</div>` : ''}
+
+<div class="page1">
+
+<!-- ═══ LEFT PANEL ═══ -->
+<div style="width:34%;background:#0f1c35;color:#fff;padding:26px 22px 20px;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;">
+
+  <!-- Logo + subtitle -->
+  <img src="${KEYPRIME_LOGO}" style="height:34px;width:auto;display:block;object-fit:contain;object-position:left;" onerror="this.style.display='none'" />
+  <div style="font-size:7px;letter-spacing:3px;color:#5a7ba0;text-transform:uppercase;margin-top:3px;margin-bottom:16px;">Real Estate Brokerage</div>
+
+  <!-- Budget badge -->
+  <div style="background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.35);border-radius:6px;padding:8px 12px;margin-bottom:18px;display:inline-block;">
+    <div style="font-size:8px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;margin-bottom:2px;">Budget Cliente</div>
+    <div style="font-size:14px;font-weight:800;color:#fff;letter-spacing:0.5px;">${offerta.budget || 'N/D'}</div>
   </div>
-  <div style="font-size:9px;color:#8a9bbf;border-top:1px solid rgba(255,255,255,0.1);padding-top:10px;">
-    ${consultanteFooter || `<strong style="color:#fff;">${offerta.agente_nome || ''}</strong>`}
+
+  <!-- Proprietà list -->
+  <div style="flex:1;overflow:hidden;">${leftProps}</div>
+
+  <!-- Zona description -->
+  ${offerta.zona_nome && offerta.zona_descrizione ? `
+  <div style="margin-top:10px;padding:10px 12px;background:rgba(255,255,255,0.04);border-radius:6px;border-left:2px solid #c9a84c;">
+    <div style="font-size:8px;font-weight:700;letter-spacing:1.5px;color:#c9a84c;text-transform:uppercase;margin-bottom:6px;">Perch&eacute; scegliere ${offerta.zona_nome}</div>
+    <div style="font-size:8.5px;color:#94a8c4;line-height:1.5;">${descHtml}</div>
+  </div>` : ''}
+
+  <!-- Agent footer -->
+  <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);">
+    ${offerta.agente_nome ? `<div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:4px;">${offerta.agente_nome}</div>` : ''}
+    ${offerta.agente_email ? `<div style="font-size:9px;color:#94a8c4;margin-bottom:2px;">&#9993;&nbsp; ${offerta.agente_email}</div>` : ''}
+    ${offerta.agente_telefono ? `<div style="font-size:9px;color:#94a8c4;">&#9742;&nbsp; ${offerta.agente_telefono}</div>` : ''}
   </div>
+
 </div>
-<!-- RIGHT PANEL -->
-<div style="flex:1;background:#f0f2f5;padding:20px 22px;display:flex;flex-direction:column;min-width:0;">
-  <div style="font-size:42px;font-weight:900;color:#12203a;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;line-height:1;">OPZIONI</div>
-  <div style="display:flex;gap:14px;flex:1;align-items:flex-start;overflow:hidden;">${rightCards}</div>
+
+<!-- ═══ RIGHT PANEL ═══ -->
+<div style="flex:1;background:#f7f8fa;padding:26px 24px 20px;display:flex;flex-direction:column;min-width:0;overflow:hidden;">
+
+  <!-- Title -->
+  <div style="margin-bottom:18px;">
+    <div style="font-size:48px;font-weight:900;color:#0f1c35;letter-spacing:4px;text-transform:uppercase;line-height:1;margin-bottom:6px;">OPZIONI</div>
+    <div style="width:80px;height:3px;background:#c9a84c;border-radius:2px;"></div>
+  </div>
+
+  <!-- Cards row -->
+  <div style="display:flex;gap:14px;flex:1;align-items:stretch;overflow:hidden;">${rightCards}</div>
+
 </div>
+
+</div>
+
+${brochurePages}
+
 </body>
 </html>`;
 
@@ -777,9 +838,8 @@ const generateOffertaPDF = (offerta) => {
   if (!w) { alert('Abilita i popup per generare il PDF'); return; }
   w.document.write(html);
   w.document.close();
-  // Attendi caricamento immagini poi stampa
-  w.onload = () => setTimeout(() => w.print(), 300);
-  setTimeout(() => w.print(), 1800);
+  w.onload = () => setTimeout(() => w.print(), 500);
+  setTimeout(() => w.print(), 2500);
 };
 
 // ==================== OFFERTA TAB ====================
@@ -841,7 +901,7 @@ function OffertaTab({ offerte, user, onCrea, onEdit, onDelete, onGeneraPDF }) {
 }
 
 // ==================== OFFERTA MODAL ====================
-const EMPTY_PROP = { nome: '', zona: '', prezzo: '', specs: '', foto_urls: ['', '', ''] };
+const EMPTY_PROP = { nome: '', zona: '', prezzo: '', specs: '', foto_urls: ['', '', ''], brochure_url: '' };
 
 function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
   const [step, setStep] = useState(1);
@@ -905,6 +965,22 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
       if (!error) {
         const { data: urlData } = supabase.storage.from('offerte-images').getPublicUrl(filename);
         updateFoto(propIdx, fotoIdx, urlData.publicUrl);
+      }
+    } finally {
+      setUploading(u => ({ ...u, [key]: false }));
+    }
+  };
+
+  const uploadBrochure = async (file, propIdx) => {
+    const key = `brochure_${propIdx}`;
+    setUploading(u => ({ ...u, [key]: true }));
+    try {
+      const ext = file.name.split('.').pop().toLowerCase();
+      const filename = `brochure_${Date.now()}_${propIdx}.${ext}`;
+      const { error } = await supabase.storage.from('offerte-images').upload(filename, file, { contentType: file.type, upsert: true });
+      if (!error) {
+        const { data: urlData } = supabase.storage.from('offerte-images').getPublicUrl(filename);
+        updateProp(propIdx, 'brochure_url', urlData.publicUrl);
       }
     } finally {
       setUploading(u => ({ ...u, [key]: false }));
@@ -1122,6 +1198,20 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
                           </div>
                         );
                       })}
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Brochure PDF (opzionale — verrà allegata al PDF generato)</label>
+                    <div className="flex gap-2 items-center">
+                      <input className={`${inputCls} flex-1`} value={prop.brochure_url || ''}
+                        onChange={e => updateProp(idx, 'brochure_url', e.target.value)}
+                        placeholder="URL brochure PDF o carica ↓" />
+                      <label className="shrink-0 cursor-pointer px-3 py-2 rounded-lg text-xs font-medium text-zinc-300 bg-zinc-700/50 hover:bg-zinc-600/50 relative">
+                        {uploading[`brochure_${idx}`] ? '...' : '📄'}
+                        <input type="file" accept="application/pdf" className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                          onChange={e => e.target.files?.[0] && uploadBrochure(e.target.files[0], idx)} />
+                      </label>
+                      {prop.brochure_url && <span className="text-green-400 text-xs shrink-0">✓ PDF</span>}
                     </div>
                   </div>
                 </div>
