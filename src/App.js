@@ -1350,12 +1350,20 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
                       <input className={`${inputCls} flex-1`} value={prop.brochure_url || ''}
                         onChange={e => updateProp(idx, 'brochure_url', e.target.value)}
                         placeholder="URL brochure PDF o carica ↓" />
-                      <label className="shrink-0 cursor-pointer px-3 py-2 rounded-lg text-xs font-medium text-zinc-300 bg-zinc-700/50 hover:bg-zinc-600/50 relative">
-                        {uploading[`brochure_${idx}`] ? '...' : '📄'}
-                        <input type="file" accept="application/pdf" className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                      <label className={`shrink-0 cursor-pointer px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1.5 relative ${uploading[`brochure_${idx}`] ? 'bg-zinc-700/50 text-zinc-400 cursor-not-allowed' : 'text-zinc-300 bg-zinc-700/50 hover:bg-zinc-600/50'}`}>
+                        {uploading[`brochure_${idx}`] ? (
+                          <>
+                            <svg className="animate-spin" style={{width:13,height:13,flexShrink:0}} viewBox="0 0 24 24" fill="none">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25"/>
+                              <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                            </svg>
+                            <span>Caricamento…</span>
+                          </>
+                        ) : '📄 Carica PDF'}
+                        <input type="file" accept="application/pdf" disabled={uploading[`brochure_${idx}`]} className="absolute inset-0 opacity-0 cursor-pointer w-full"
                           onChange={e => e.target.files?.[0] && uploadBrochure(e.target.files[0], idx)} />
                       </label>
-                      {prop.brochure_url && <span className="text-green-400 text-xs shrink-0">✓ PDF</span>}
+                      {prop.brochure_url && !uploading[`brochure_${idx}`] && <span className="text-green-400 text-xs shrink-0">✓ PDF caricato</span>}
                     </div>
                   </div>
                 </div>
