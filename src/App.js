@@ -660,11 +660,11 @@ const generateDashboardPDF = (totals, sales, vendite, byAgente, byZona) => {
     </div>
     <div class="commission-item">
       <div class="commission-value" style="color: #22C55E">${fmt(totals.pell + totals.agPell)}</div>
-      <div class="commission-label">Pellegrino (netto ${fmt(totals.pell)} + ag. ${fmt(totals.agPell)})</div>
+      <div class="commission-label">Pellegrino (KP ${fmt(totals.pell)} + ag. ${fmt(totals.agPell)})</div>
     </div>
     <div class="commission-item">
       <div class="commission-value" style="color: #F97316">${fmt(totals.giov + totals.agGiov)}</div>
-      <div class="commission-label">Giovanni (netto ${fmt(totals.giov)} + ag. ${fmt(totals.agGiov)})</div>
+      <div class="commission-label">Giovanni (KP ${fmt(totals.giov)} + ag. ${fmt(totals.agGiov)})</div>
     </div>
   </div>
   
@@ -2653,8 +2653,8 @@ export default function App() {
                   <Card><p className="text-zinc-500 text-sm">Netto KeyPrime</p><p className="text-xl font-semibold text-amber-400 mt-1">{fmt(totals.netto)}</p></Card>
                   <Card><p className="text-zinc-500 text-sm">Commissioni Tot</p><p className="text-xl font-semibold text-emerald-400 mt-1">{fmt(totals.comm)}</p></Card>
                   <Card><p className="text-zinc-500 text-sm">Agenti 70%</p><p className="text-xl font-semibold text-blue-400 mt-1">{fmt(totals.ag)}</p></Card>
-                  <Card className="border-green-500/20"><p className="text-zinc-500 text-sm">Pellegrino</p><p className="text-xl font-semibold text-green-400 mt-1">{fmt(totals.pell + totals.agPell)}</p><p className="text-zinc-600 text-xs mt-1">Netto {fmt(totals.pell)} + Ag. {fmt(totals.agPell)}</p></Card>
-                  <Card className="border-orange-500/20"><p className="text-zinc-500 text-sm">Giovanni</p><p className="text-xl font-semibold text-orange-400 mt-1">{fmt(totals.giov + totals.agGiov)}</p><p className="text-zinc-600 text-xs mt-1">Netto {fmt(totals.giov)} + Ag. {fmt(totals.agGiov)}</p></Card>
+                  <Card className="border-green-500/20"><p className="text-zinc-500 text-sm">Pellegrino</p><p className="text-xl font-semibold text-green-400 mt-1">{fmt(totals.pell + totals.agPell)}</p><p className="text-zinc-600 text-xs mt-1">KP {fmt(totals.pell)} + Ag. {fmt(totals.agPell)}</p></Card>
+                  <Card className="border-orange-500/20"><p className="text-zinc-500 text-sm">Giovanni</p><p className="text-xl font-semibold text-orange-400 mt-1">{fmt(totals.giov + totals.agGiov)}</p><p className="text-zinc-600 text-xs mt-1">KP {fmt(totals.giov)} + Ag. {fmt(totals.agGiov)}</p></Card>
                 </div>
 
                 {/* Pipeline Overview */}
@@ -2876,7 +2876,7 @@ export default function App() {
                     <p className="text-2xl font-bold text-green-400 mt-2">{fmt(totals.pell + totals.agPell)}</p>
                     <p className="text-zinc-500 text-xs mt-1">Totale reale</p>
                     <div className="mt-2 pt-2 border-t border-zinc-700/50 space-y-1">
-                      <div className="flex justify-between text-xs"><span className="text-zinc-500">Quota netta</span><span className="text-green-400/70">{fmt(totals.pell)}</span></div>
+                      <div className="flex justify-between text-xs"><span className="text-zinc-500">Quota KeyPrime</span><span className="text-green-400/70">{fmt(totals.pell)}</span></div>
                       {totals.agPell > 0 && <div className="flex justify-between text-xs"><span className="text-zinc-500">Comm. agente</span><span className="text-green-400/70">{fmt(totals.agPell)}</span></div>}
                     </div>
                   </Card>
@@ -2885,7 +2885,7 @@ export default function App() {
                     <p className="text-2xl font-bold text-orange-400 mt-2">{fmt(totals.giov + totals.agGiov)}</p>
                     <p className="text-zinc-500 text-xs mt-1">Totale reale</p>
                     <div className="mt-2 pt-2 border-t border-zinc-700/50 space-y-1">
-                      <div className="flex justify-between text-xs"><span className="text-zinc-500">Quota netta</span><span className="text-orange-400/70">{fmt(totals.giov)}</span></div>
+                      <div className="flex justify-between text-xs"><span className="text-zinc-500">Quota KeyPrime</span><span className="text-orange-400/70">{fmt(totals.giov)}</span></div>
                       {totals.agGiov > 0 && <div className="flex justify-between text-xs"><span className="text-zinc-500">Comm. agente</span><span className="text-orange-400/70">{fmt(totals.agGiov)}</span></div>}
                     </div>
                   </Card>
