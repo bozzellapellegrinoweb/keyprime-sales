@@ -2896,6 +2896,41 @@ export default function App() {
                   </Card>
                 </div>
 
+                {/* Incassato vs Da Incassare */}
+                {(() => {
+                  const incassatoSales = periodSales.filter(s => s.stato === 'incassato');
+                  const vendutoSales = periodSales.filter(s => s.stato === 'venduto');
+                  const commIncassato = incassatoSales.reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100), 0);
+                  const commVenduto = vendutoSales.reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100), 0);
+                  const commTot = commIncassato + commVenduto;
+                  const pctIncassato = commTot > 0 ? (commIncassato / commTot * 100) : 0;
+                  return (
+                    <Card>
+                      <h3 className="text-white font-semibold mb-4">Stato Incasso Commissioni</h3>
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="text-center p-4 bg-emerald-500/10 rounded-xl">
+                          <p className="text-emerald-400 text-2xl font-bold">{fmt(commTot)}</p>
+                          <p className="text-zinc-500 text-xs mt-1">Totale</p>
+                        </div>
+                        <div className="text-center p-4 bg-green-500/10 rounded-xl">
+                          <p className="text-green-400 text-2xl font-bold">{fmt(commIncassato)}</p>
+                          <p className="text-zinc-500 text-xs mt-1">Incassate ({incassatoSales.length} vendite)</p>
+                        </div>
+                        <div className="text-center p-4 bg-red-500/10 rounded-xl">
+                          <p className="text-red-400 text-2xl font-bold">{fmt(commVenduto)}</p>
+                          <p className="text-zinc-500 text-xs mt-1">Da incassare ({vendutoSales.length} vendite)</p>
+                        </div>
+                      </div>
+                      <div className="relative h-4 bg-zinc-700/50 rounded-full overflow-hidden">
+                        <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-500" style={{ width: `${pctIncassato}%` }} />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-xs font-medium text-white drop-shadow">{pctIncassato.toFixed(0)}% incassato</span>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })()}
+
                 {/* Maturate vs Pagate */}
                 {(() => {
                   const venduteSales = periodSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
