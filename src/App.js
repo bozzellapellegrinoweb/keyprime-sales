@@ -1642,6 +1642,17 @@ export default function App() {
 
   useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); loadActivities(); loadFollowUps(); loadSavedListings(); loadOfferte(); if (user.ruolo === 'admin') loadUsers(); }}, [user]);
 
+  // Realtime sync
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase.channel('db-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, () => loadSales())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clienti' }, () => loadClienti())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => loadTasks())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
   // Global refresh function
   const refreshAllData = async () => {
     setLoading(true);
@@ -1871,7 +1882,9 @@ export default function App() {
       if (tn) {
         const { data: tu } = await supabase.from('user_credentials').select('*').eq('nome', tn).single();
         if (tu) {
-          const ca = Number(s.valore) * (s.commission_pct || 5) / 100 * (s.agente ? 0.7 : 0.3);
+          const isAdmin = tu.ruolo === 'agente_admin';
+          const agRate = isAdmin ? (s.referente === 'Giovanni' ? 0.7 : 0.3) : (s.agente && tu.nome === s.agente ? 0.7 : 0.3);
+          const ca = Number(s.valore) * (s.commission_pct || 5) / 100 * agRate;
           await sendPushNotification(`💰 Commissione pagata!`, `${s.progetto}: ${fmt(ca)} AED`, APP_URL, { type: 'user', username: tu.username });
           if (tu.email) await sendEmail(tu.email, '💰 Commissione Pagata!',
             kpEmail('#f59e0b', 'Commissione Pagata', s.progetto,
@@ -1905,19 +1918,17 @@ export default function App() {
     }
     loadClienti(); setShowClienteModal(null); showToast('Cliente creato');
   };
-  const updateCliente = async (id, d) => { 
-    await supabase.from('clienti').update(d).eq('id', id); 
-    
-    // Se cambio l'agente assegnato, aggiorno anche tutti i lead di questo cliente
+  const updateCliente = async (id, d) => {
+    await supabase.from('clienti').update(d).eq('id', id);
+
     if (d.assegnato_a) {
       await supabase.from('sales').update({ assegnato_a: d.assegnato_a }).eq('cliente_id', id);
-      await loadSales(); // Refresh sales per aggiornare dashboard
     }
-    
-    await loadClienti(); 
-    setShowClienteModal(null); 
-    if (showClienteDetail?.id === id) setShowClienteDetail(prev => ({ ...prev, ...d })); 
-    showToast('Salvato'); 
+
+    await Promise.all([loadClienti(), loadSales()]);
+    setShowClienteModal(null);
+    if (showClienteDetail?.id === id) setShowClienteDetail(prev => ({ ...prev, ...d }));
+    showToast('Salvato');
   };
   const deleteCliente = async (id, skipConfirm = false) => { 
     if (!skipConfirm && !window.confirm('Eliminare?')) return; 
@@ -2098,11 +2109,14 @@ export default function App() {
     const mySales = sales.filter(s => type === 'agente' ? s.agente === user?.nome : s.segnalatore === user?.nome);
     const myTasks = tasks.filter(t => t.assegnato_a === user?.nome && t.stato === 'pending');
     const myClienti = clienti.filter(c => c.created_by === user?.nome || c.agente_riferimento === user?.nome);
-    // agente_admin prende 70% come agente normale, il 30% va a Pellegrino
+    const getMyRate = (s) => {
+      if (isAgenteAdmin) return s.referente === 'Giovanni' ? 0.7 : 0.3;
+      return (type === 'agente') ? 0.7 : 0.3;
+    };
     const rate = (type === 'agente' || isAgenteAdmin) ? 0.7 : 0.3;
     const myVendite = mySales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
-    const totalComm = myVendite.reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * rate), 0);
-    const pagate = myVendite.filter(s => s.pagato).reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * rate), 0);
+    const totalComm = myVendite.reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * getMyRate(s)), 0);
+    const pagate = myVendite.filter(s => s.pagato).reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * getMyRate(s)), 0);
     const byStato = pipelineStati.reduce((acc, st) => { acc[st] = mySales.filter(s => (s.stato || 'lead') === st); return acc; }, {});
 
     const tabs = [
@@ -2680,7 +2694,7 @@ export default function App() {
                     <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Award className="w-5 h-5 text-amber-400" />Top Agenti</h3>
                     <div className="space-y-3">
                       {Object.entries(byAgente).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, value], i) => (
-                        <div key={name} onClick={() => setShowAgentDetail({ name, type: 'agente' })} className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
+                        <div key={name} onClick={() => setShowAgentDetail({ name, type: users.find(u => u.nome === name)?.ruolo || 'agente' })} className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-500 text-black' : 'bg-zinc-700/50 text-zinc-400'}`}>{i + 1}</div>
                           <Avatar nome={name} size="sm" />
                           <div className="flex-1">
@@ -2975,7 +2989,7 @@ export default function App() {
                       periodSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato').reduce((acc, s) => {
                         const agente = s.agente || 'Non assegnato';
                         if (!acc[agente]) acc[agente] = { totale: 0, pagate: 0, count: 0 };
-                        const comm = Number(s.valore) * (s.commission_pct || 5) / 100 * 0.7;
+                        const comm = calcCommission(s).ag;
                         acc[agente].totale += comm;
                         if (s.pagato) acc[agente].pagate += comm;
                         acc[agente].count++;
@@ -4100,15 +4114,19 @@ function TeamTab({ users, onCreate, onEdit, onDelete }) {
 
 // Agent Detail View
 function AgentDetailView({ agent, sales, onBack }) {
-  const agentSales = sales.filter(s => 
-    agent.type === 'agente' ? s.agente === agent.name : s.segnalatore === agent.name
+  const agentSales = sales.filter(s =>
+    (agent.type === 'agente' || agent.type === 'agente_admin') ? s.agente === agent.name : s.segnalatore === agent.name
   );
   const vendite = agentSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
   const totalVolume = agentSales.reduce((sum, s) => sum + Number(s.valore || 0), 0);
   const totalVendite = vendite.reduce((sum, s) => sum + Number(s.valore || 0), 0);
+  const getRate = (s) => {
+    if (agent.type === 'agente_admin') return s.referente === 'Giovanni' ? 0.7 : 0.3;
+    return agent.type === 'agente' ? 0.7 : 0.3;
+  };
   const rate = agent.type === 'agente' ? 0.7 : 0.3;
-  const totalComm = vendite.reduce((sum, s) => sum + (Number(s.valore || 0) * (s.commission_pct || 5) / 100 * rate), 0);
-  const commPagate = vendite.filter(s => s.pagato).reduce((sum, s) => sum + (Number(s.valore || 0) * (s.commission_pct || 5) / 100 * rate), 0);
+  const totalComm = vendite.reduce((sum, s) => sum + (Number(s.valore || 0) * (s.commission_pct || 5) / 100 * getRate(s)), 0);
+  const commPagate = vendite.filter(s => s.pagato).reduce((sum, s) => sum + (Number(s.valore || 0) * (s.commission_pct || 5) / 100 * getRate(s)), 0);
   
   const byStato = pipelineStati.reduce((a, st) => { 
     a[st] = agentSales.filter(s => (s.stato || 'lead') === st).length; 
