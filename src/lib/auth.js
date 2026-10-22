@@ -116,3 +116,22 @@ export function generaPassword() {
   const numero = Math.floor(1000 + Math.random() * 9000);
   return `${parola}${numero}`;
 }
+
+// --- Controllo accessi (solo admin) ----------------------------------------
+
+export async function sessioniAttive() {
+  const token = getToken();
+  if (!token) return { ok: false, error: 'Sessione scaduta, rientra' };
+  const { data, error } = await supabase.rpc('app_sessioni_attive', { p_token: token });
+  if (error) return { ok: false, error: 'Servizio non raggiungibile' };
+  return data?.ok ? { ok: true, sessioni: data.sessioni || [] } : { ok: false, error: data?.error };
+}
+
+// Butta fuori un utente da tutti i dispositivi.
+export async function chiudiSessioni(userId) {
+  const token = getToken();
+  if (!token) return { ok: false, error: 'Sessione scaduta, rientra' };
+  const { data, error } = await supabase.rpc('app_chiudi_sessioni', { p_token: token, p_user_id: userId });
+  if (error) return { ok: false, error: 'Servizio non raggiungibile' };
+  return data?.ok ? { ok: true, chiuse: data.sessioni_chiuse } : { ok: false, error: data?.error };
+}

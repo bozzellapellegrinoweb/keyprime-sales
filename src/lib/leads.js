@@ -264,3 +264,47 @@ export function commissioneAgente(lead, utenteAgente) {
   const totale = Number(lead.valore || 0) * (lead.commission_pct || 5) / 100;
   return totale * percentualeAgente(lead, utenteAgente) / 100;
 }
+
+// --- Eliminazioni ----------------------------------------------------------
+//
+// Prima ogni cancellazione ignorava l'esito: l'app diceva "Eliminato" anche
+// quando il database aveva rifiutato. Un cliente con lead, offerte o immobili
+// salvati non si puo' cancellare finche' quelle righe esistono, perche' i
+// vincoli di chiave esterna lo impediscono (ed e' giusto: proteggono lo
+// storico delle vendite). Qui le dipendenze si contano, si mostrano, e si
+// rimuovono nell'ordine corretto solo se l'utente conferma.
+
+export async function eliminaLead(id) {
+  const { error } = await supabase.from('sales').delete().eq('id', id);
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+export async function eliminaLeads(ids) {
+  const { error } = await supabase.from('sales').delete().in('id', ids);
+  return error ? { ok: false, error: error.message } : { ok: true, eliminati: ids.length };
+}
+
+// Cosa verrebbe perso insieme al cliente.
+export async function dipendenzeCliente(clienteId) {
+  const { data, error } = await supabase.rpc('app_cliente_dipendenze', { p_id: clienteId });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, ...data };
+}
+
+// Rimuove prima cio' che dipende dal cliente, poi il cliente.
+// L'ordine conta: offerte e immobili salvati non hanno cascata, i lead
+// portano con se' attivita', follow-up e task.
+export async function eliminaCliente(clienteId) {
+  const passi = [
+    ['offerte', () => supabase.from('offerte').delete().eq('cliente_id', clienteId)],
+    ['immobili salvati', () => supabase.from('saved_listings').delete().eq('cliente_id', clienteId)],
+    ['lead', () => supabase.from('sales').delete().eq('cliente_id', clienteId)],
+    ['cliente', () => supabase.from('clienti').delete().eq('id', clienteId)]
+  ];
+
+  for (const [cosa, esegui] of passi) {
+    const { error } = await esegui();
+    if (error) return { ok: false, error: `Non riesco a eliminare ${cosa}: ${error.message}` };
+  }
+  return { ok: true };
+}
