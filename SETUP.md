@@ -151,6 +151,23 @@ e commissioni restano attribuite a lui.
 
 ---
 
+## 4bis. Recapiti degli agenti — da compilare
+
+Il PDF dell'offerta stampa, in copertina e su ogni scheda immobile, **nome,
+email e telefono dell'agente che la firma**. Se la scheda della persona è
+vuota, il cliente riceve un prospetto a cui non può rispondere.
+
+Oggi, in **Team**, nessuno ha il telefono e quattro persone su otto non hanno
+nemmeno l'email (Pellegrino, Giovanni, Giuseppe, Domenico). Vanno compilati:
+**Team → apri la persona → Email / Telefono → Salva**.
+
+Da lì in avanti ogni nuova offerta li porta già precompilati, e anche le
+offerte vecchie — salvate senza recapiti — li recuperano dalla scheda al
+momento della stampa. L'agente può comunque sovrascriverli sulla singola
+offerta (utile per un numero dedicato a un cliente).
+
+---
+
 ## 5. Pulizia residua — da fare a mano
 
 Due cose non le ho potute chiudere da qui: il gestore del database usato in

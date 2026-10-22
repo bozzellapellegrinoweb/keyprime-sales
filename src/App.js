@@ -479,8 +479,42 @@ const generateDashboardPDF = (totals, sales, vendite, byAgente, byZona) => {
 // ==================== OFFERTA PDF ====================
 const KEYPRIME_LOGO = 'https://assets.cdn.filesafe.space/Yjm3Uvb0rc8mRuraj7ad/media/69c3d8f7a5f60947f53a1b8f.png';
 
+// Una riga di proprieta' senza nome, prezzo, caratteristiche ne' foto non e'
+// un'opzione: e' una riga rimasta vuota nel modulo. Stamparla significa
+// consegnare al cliente una pagina bianca intestata "Opzione 2 di 2".
+const proprietaCompilata = (p) => !!(
+  (p?.nome || '').trim() || (p?.prezzo || '').trim() ||
+  (p?.specs || '').trim() || (p?.foto_urls || []).some(Boolean)
+);
+
+// I recapiti stampati sul prospetto non devono dipendere da cosa e' stato
+// digitato nel modulo quel giorno: se l'offerta non li porta, si leggono
+// dalla scheda della persona. Un'offerta senza recapito e' un'offerta a cui
+// il cliente non puo' rispondere.
+const recapitiAgente = async (offerta) => {
+  let email = (offerta.agente_email || '').trim();
+  let telefono = (offerta.agente_telefono || '').trim();
+  if ((email && telefono) || !offerta.agente_nome) return { email, telefono };
+  try {
+    const { data } = await supabase
+      .from('team_members').select('email, telefono')
+      .eq('nome', offerta.agente_nome).maybeSingle();
+    if (data) {
+      email = email || (data.email || '').trim();
+      telefono = telefono || (data.telefono || '').trim();
+    }
+  } catch {}
+  return { email, telefono };
+};
+
 const generateOffertaPDF = async (offerta) => {
-  const props = offerta.proprieta || [];
+  const props = (offerta.proprieta || []).filter(proprietaCompilata);
+  if (!props.length) {
+    alert('Questa offerta non ha nessuna proprieta compilata. Aggiungine almeno una prima di generare il PDF.');
+    return;
+  }
+  const recapiti = await recapitiAgente(offerta);
+  offerta = { ...offerta, agente_email: recapiti.email, agente_telefono: recapiti.telefono };
   const NAVY = '#0f1c35', GOLD = '#c9a84c';
 
   const stripMd = t => (t || '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/__(.*?)__/g, '$1');
@@ -724,15 +758,32 @@ const generateOffertaPDF = async (offerta) => {
     document.body.removeChild(frame);
 
     /* ══════════ BROCHURE — copia pagine vettoriali ══════════ */
-    const brochureUrls = props.map(p => p.brochure_url).filter(Boolean);
-    for (let bi = 0; bi < brochureUrls.length; bi++) {
-      setStatus('Allegando brochure', `${bi+1} di ${brochureUrls.length}…`, 70 + bi * Math.floor(20 / Math.max(brochureUrls.length, 1)));
-      try {
-        const bytes = await fetch(brochureUrls[bi]).then(r => r.arrayBuffer());
-        const srcPdf = await PDFDocument.load(bytes, { ignoreEncryption: true });
-        const copied = await pdfDoc.copyPages(srcPdf, srcPdf.getPageIndices());
-        copied.forEach(pg => pdfDoc.addPage(pg));
-      } catch(e) { console.error('Brochure merge error:', e); }
+    const conBrochure = props.filter(p => p.brochure_url);
+    const brochureNonAllegate = [];
+    for (let bi = 0; bi < conBrochure.length; bi++) {
+      setStatus('Allegando brochure', `${bi+1} di ${conBrochure.length}…`, 70 + bi * Math.floor(20 / Math.max(conBrochure.length, 1)));
+      const indirizzo = conBrochure[bi].brochure_url;
+      const scarica = async (u) => {
+        const r = await fetch(u);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.arrayBuffer();
+      };
+      // Prima diretto, poi dal proxy: molti host servono il PDF senza header
+      // CORS e il browser lo rifiuta prima ancora di leggerlo.
+      let errore = new Error('non tentato');
+      for (const sorgente of [indirizzo, `/api/proxy-image?url=${encodeURIComponent(indirizzo)}`]) {
+        try {
+          const srcPdf = await PDFDocument.load(await scarica(sorgente), { ignoreEncryption: true });
+          const copiate = await pdfDoc.copyPages(srcPdf, srcPdf.getPageIndices());
+          copiate.forEach(pg => pdfDoc.addPage(pg));
+          errore = null;
+          break;
+        } catch (e) { errore = e; }
+      }
+      if (errore) {
+        console.error('Brochure non allegata:', indirizzo, errore);
+        brochureNonAllegate.push(conBrochure[bi].nome || indirizzo);
+      }
     }
 
     setStatus('Finalizzazione…', 'Generazione file…', 92);
@@ -748,6 +799,14 @@ const generateOffertaPDF = async (offerta) => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    // Meglio saperlo adesso che dal cliente: il PDF c'e', la brochure no.
+    if (brochureNonAllegate.length) {
+      alert(
+        `PDF generato, ma la brochure di ${brochureNonAllegate.join(', ')} non e' stata allegata.\n\n` +
+        `Controlla che il link punti davvero a un file PDF.`
+      );
+    }
 
   } catch (err) {
     console.error('PDF error:', err);
@@ -937,6 +996,7 @@ const EMPTY_PROP = { nome: '', zona: '', prezzo: '', specs: '', foto_urls: ['', 
 function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [errore, setErrore] = useState('');
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [uploading, setUploading] = useState({});
   const [catalogSearch, setCatalogSearch] = useState('');
@@ -949,8 +1009,10 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
     budget: offerta?.budget || '',
     zona_nome: offerta?.zona_nome || '',
     zona_descrizione: offerta?.zona_descrizione || '',
-    agente_email: offerta?.agente_email ?? (user?.email || ''),
-    agente_telefono: offerta?.agente_telefono || '',
+    // Finiscono stampati sul prospetto, e nessuno si ricorda di riscriverli
+    // a ogni offerta: partono da quelli in scheda.
+    agente_email: (offerta?.agente_email || user?.email || '').trim(),
+    agente_telefono: (offerta?.agente_telefono || user?.telefono || '').trim(),
     note: offerta?.note || '',
     proprieta: offerta?.proprieta?.length
       ? offerta.proprieta.map(p => ({ ...EMPTY_PROP, ...p, foto_urls: [...(p.foto_urls?.length ? p.foto_urls : ['', '', ''])] }))
@@ -1047,17 +1109,31 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
   const addProp = () => { if (form.proprieta.length < 3) setForm(f => ({ ...f, proprieta: [...f.proprieta, { ...EMPTY_PROP, foto_urls: ['', '', ''] }] })); };
   const removeProp = (idx) => { if (form.proprieta.length > 1) setForm(f => ({ ...f, proprieta: f.proprieta.filter((_, i) => i !== idx) })); };
 
+  // Le righe lasciate in bianco non vanno ne' salvate ne' stampate.
+  const proprietaValide = form.proprieta.filter(p =>
+    (p.nome || '').trim() || (p.prezzo || '').trim() ||
+    (p.specs || '').trim() || (p.foto_urls || []).some(Boolean)
+  );
+  const righeVuote = form.proprieta.length - proprietaValide.length;
+
   const handleSave = async () => {
+    setErrore('');
+    if (!proprietaValide.length) {
+      setErrore('Aggiungi almeno una proprieta con nome, prezzo o foto: un prospetto vuoto non si manda a un cliente.');
+      setStep(2);
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
         ...(offerta?.id ? { id: offerta.id } : {}),
         ...form,
-        proprieta: form.proprieta.map(p => ({ ...p, foto_urls: p.foto_urls.filter(Boolean) })),
+        proprieta: proprietaValide.map(p => ({ ...p, foto_urls: p.foto_urls.filter(Boolean) })),
         agente_nome: offerta?.agente_nome || user?.nome,
         referente: offerta?.referente || user?.referente,
       };
-      await onSave(payload);
+      const esito = await onSave(payload);
+      if (esito && esito.ok === false) { setErrore(esito.error || 'Salvataggio non riuscito'); return; }
       onClose();
     } finally {
       setSaving(false);
@@ -1110,7 +1186,7 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Nome (agente)</label>
-                  <input className={inputCls} value={form.agente_nome_display || user?.nome || ''} disabled style={{ opacity: 0.6 }} />
+                  <input className={inputCls} value={offerta?.agente_nome || user?.nome || ''} disabled style={{ opacity: 0.6 }} />
                 </div>
                 <div>
                   <label className={labelCls}>Email agente</label>
@@ -1121,6 +1197,13 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
                 <label className={labelCls}>Telefono agente</label>
                 <input className={inputCls} value={form.agente_telefono} onChange={e => setForm(f => ({ ...f, agente_telefono: e.target.value }))} placeholder="+971 50 340 8622" />
               </div>
+              {(!form.agente_email.trim() || !form.agente_telefono.trim()) && (
+                <p className="text-xs text-amber-400 flex items-start gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  Email e telefono vengono stampati sul prospetto: senza, il cliente non ha modo di risponderti.
+                  Compilali qui, oppure falli mettere in scheda dall'amministratore e resteranno per sempre.
+                </p>
+              )}
               <div>
                 <label className={labelCls}>Zona / Area (es. JVC, Business Bay)</label>
                 <input className={inputCls} value={form.zona_nome} onChange={e => setForm(f => ({ ...f, zona_nome: e.target.value }))} placeholder="es. JVC" />
@@ -1267,13 +1350,15 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
                   <div><span className="text-zinc-500">Cliente:</span> <span className="text-white ml-1">{form.cliente_nome || '—'}</span></div>
                   <div><span className="text-zinc-500">Budget:</span> <span className="text-white ml-1">{form.budget || '—'}</span></div>
                   <div><span className="text-zinc-500">Zona:</span> <span className="text-white ml-1">{form.zona_nome || '—'}</span></div>
-                  <div><span className="text-zinc-500">Consulente:</span> <span className="text-white ml-1">{user?.nome}</span></div>
-                  <div><span className="text-zinc-500">Email:</span> <span className="text-white ml-1">{form.agente_email || '—'}</span></div>
-                  <div><span className="text-zinc-500">Tel:</span> <span className="text-white ml-1">{form.agente_telefono || '—'}</span></div>
+                  <div><span className="text-zinc-500">Consulente:</span> <span className="text-white ml-1">{offerta?.agente_nome || user?.nome}</span></div>
+                  <div><span className="text-zinc-500">Email:</span> <span className={form.agente_email ? 'text-white ml-1' : 'text-amber-400 ml-1'}>{form.agente_email || 'mancante'}</span></div>
+                  <div><span className="text-zinc-500">Tel:</span> <span className={form.agente_telefono ? 'text-white ml-1' : 'text-amber-400 ml-1'}>{form.agente_telefono || 'mancante'}</span></div>
                 </div>
                 <div className="pt-2 border-t border-zinc-800">
-                  <p className="text-xs text-zinc-500 mb-2">Proprietà:</p>
-                  {form.proprieta.map((p, i) => (
+                  <p className="text-xs text-zinc-500 mb-2">
+                    Proprietà nel PDF:{righeVuote > 0 && <span className="text-zinc-600"> ({righeVuote} {righeVuote === 1 ? 'riga vuota verrà scartata' : 'righe vuote verranno scartate'})</span>}
+                  </p>
+                  {proprietaValide.map((p, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm py-1">
                       <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
                       <span className="text-white font-medium truncate">{p.nome || 'N/D'}</span>
@@ -1284,12 +1369,20 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
                   ))}
                 </div>
               </div>
-              <p className="text-xs text-zinc-500">Salva e apri la finestra di stampa (A4 landscape). Usa "Salva come PDF".</p>
+              <p className="text-xs text-zinc-500">
+                Al salvataggio il PDF (A4 orizzontale) viene generato e scaricato: copertina, una pagina per proprietà
+                e le brochure in coda.
+              </p>
             </div>
           )}
         </div>
 
         {/* Footer */}
+        {errore && (
+          <div className="px-6 pt-3 shrink-0">
+            <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{errore}</p>
+          </div>
+        )}
         <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-800 shrink-0">
           <button onClick={step > 1 ? () => setStep(s => s-1) : onClose} className="text-sm text-zinc-400 hover:text-white px-4 py-2">
             {step > 1 ? '← Indietro' : 'Annulla'}
@@ -1993,14 +2086,20 @@ export default function App() {
 
   // Offerta handlers
   const saveOfferta = async (data) => {
+    let error;
     if (data.id) {
       const { id, ...rest } = data;
-      await supabase.from('offerte').update(rest).eq('id', id);
+      ({ error } = await supabase.from('offerte').update(rest).eq('id', id));
     } else {
-      await supabase.from('offerte').insert([data]);
+      ({ error } = await supabase.from('offerte').insert([data]));
+    }
+    if (error) {
+      showToast(`Offerta non salvata: ${error.message}`, 'error');
+      return { ok: false, error: error.message };
     }
     await loadOfferte();
     showToast('Offerta salvata');
+    return { ok: true };
   };
   const deleteOfferta = async (id) => {
     if (!window.confirm('Eliminare questa offerta?')) return;
@@ -2518,7 +2617,7 @@ export default function App() {
         {showPasswordModal && <PasswordModal obbligatorio={!!user?.must_change_password} onSave={changePassword} onClose={() => setShowPasswordModal(false)} />}
         {showNoteModal && <NoteModal task={showNoteModal} onSave={addTaskNote} onClose={() => setShowNoteModal(null)} />}
         {showClienteModal && <ClienteModal cliente={showClienteModal.id ? showClienteModal : null} onSave={showClienteModal.id ? (d) => updateCliente(showClienteModal.id, d) : createCliente} onClose={() => setShowClienteModal(null)} />}
-        {showOffertaModal !== null && <OffertaModal offerta={showOffertaModal?.id ? showOffertaModal : null} clienti={clienti} user={user} onSave={async (data) => { await saveOfferta(data); if (!showOffertaModal?.id) generateOffertaPDF(data); }} onClose={() => setShowOffertaModal(null)} />}
+        {showOffertaModal !== null && <OffertaModal offerta={showOffertaModal?.id ? showOffertaModal : null} clienti={clienti} user={user} onSave={async (data) => { const esito = await saveOfferta(data); if (esito.ok && !showOffertaModal?.id) generateOffertaPDF(data); return esito; }} onClose={() => setShowOffertaModal(null)} />}
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
     );
@@ -3230,7 +3329,7 @@ export default function App() {
         {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} recentSales={recentSalesNotifications} onClose={() => { setShowNotifications(false); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} onMarkAsRead={markSingleNotificationAsRead} userId={user?.id} />}
         {showPasswordModal && <PasswordModal obbligatorio={!!user?.must_change_password} onSave={changePassword} onClose={() => setShowPasswordModal(false)} />}
         {showGlobalSearch && <GlobalSearch isOpen={showGlobalSearch} onClose={() => setShowGlobalSearch(false)} sales={sales} clienti={clienti} tasks={tasks} onSelectSale={setShowLeadDetail} onSelectCliente={setShowClienteDetail} onSelectTask={() => setActiveTab('tasks')} setActiveTab={setActiveTab} />}
-        {showOffertaModal !== null && <OffertaModal offerta={showOffertaModal?.id ? showOffertaModal : null} clienti={clienti} user={user} onSave={async (data) => { await saveOfferta(data); if (!showOffertaModal?.id) generateOffertaPDF(data); }} onClose={() => setShowOffertaModal(null)} />}
+        {showOffertaModal !== null && <OffertaModal offerta={showOffertaModal?.id ? showOffertaModal : null} clienti={clienti} user={user} onSave={async (data) => { const esito = await saveOfferta(data); if (esito.ok && !showOffertaModal?.id) generateOffertaPDF(data); return esito; }} onClose={() => setShowOffertaModal(null)} />}
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
     );
