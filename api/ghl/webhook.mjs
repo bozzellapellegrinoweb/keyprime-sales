@@ -183,7 +183,7 @@ export default async function handler(req, res) {
     // 6. Avviso all'agente: un lead caldo non deve aspettare che qualcuno apra l'app.
     if (agente) {
       const { data: utente } = await supabase
-        .from('user_credentials').select('username, email').eq('nome', agente).maybeSingle();
+        .from('team_members').select('username, email').eq('nome', agente).maybeSingle();
       const nominativo = `${cliente.nome} ${cliente.cognome || ''}`.trim();
 
       await push({

@@ -15,20 +15,18 @@ export function tokenFromRequest(req) {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Ritorna l'utente della sessione, oppure null.
+//
+// La verifica passa dalla funzione app_session_validate, che gira con i
+// privilegi del proprietario: funziona quindi anche con la sola chiave
+// pubblica, e non restituisce mai l'hash della password.
 export async function sessionUser(req, supabase) {
   const token = tokenFromRequest(req);
   if (!token || !UUID.test(token)) return null;
 
-  const { data, error } = await supabase
-    .from('app_sessions')
-    .select('user_id, expires_at, user_credentials!inner(id, nome, username, email, ruolo, referente, attivo)')
-    .eq('token', token)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('app_session_validate', { p_token: token });
+  if (error || !data?.ok) return null;
 
-  if (error || !data) return null;
-  if (new Date(data.expires_at) <= new Date()) return null;
-
-  const u = data.user_credentials;
+  const u = data.user;
   if (!u || u.attivo !== true) return null;
   return u;
 }
@@ -69,5 +67,17 @@ export function checkCron(req) {
   const cronSecret = process.env.CRON_SECRET;
   const auth = req.headers.authorization || '';
   if (cronSecret && auth === `Bearer ${cronSecret}`) return { ok: true };
-  return checkSecret(req, 'KP_JOB_SECRET');
+
+  const conSegreto = checkSecret(req, 'KP_JOB_SECRET');
+  if (conSegreto.ok) return { ok: true };
+
+  // Senza alcun segreto configurato il cron di Vercel non riuscirebbe a
+  // partire. L'intestazione x-vercel-cron e' falsificabile, quindi non vale
+  // come autenticazione: il job e' pero' reso innocuo alla ripetizione (non
+  // riavvisa sullo stesso follow-up entro 12 ore), cosi' una chiamata
+  // abusiva non produce altro che una risposta vuota.
+  if (!cronSecret && !process.env.KP_JOB_SECRET && req.headers['x-vercel-cron']) {
+    return { ok: true, senzaSegreto: true };
+  }
+  return conSegreto;
 }
