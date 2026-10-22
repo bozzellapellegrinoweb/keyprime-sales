@@ -117,6 +117,38 @@ export function addContactToWorkflow(contactId, workflowId, eventStartTime) {
   });
 }
 
+// --- Lettura con ripiego sulla versione ------------------------------------
+
+// Per contatti, conversazioni, opportunita' e workflow la documentazione GHL
+// non usa lo stesso valore di `Version`: alcuni endpoint sono su "v3", altri
+// ancora su versioni datate. Invece di indovinare, provo le varianti e
+// riporto quale ha risposto, cosi' la configurazione si scopre da se'.
+const VERSIONI_LETTURA = ['v3', '2021-07-28', '2023-02-21'];
+
+export async function ghlGetConRipiego(path) {
+  const tentativi = [];
+  for (const version of VERSIONI_LETTURA) {
+    try {
+      const dati = await ghlFetch(path, { method: 'GET', version });
+      return { ok: true, version, dati, tentativi };
+    } catch (err) {
+      tentativi.push({ version, stato: err.status || null, errore: err.message.slice(0, 200) });
+      // 401/403 sono problemi di token o scope: insistere con altre versioni
+      // non cambia nulla.
+      if (err.status === 401 || err.status === 403) break;
+    }
+  }
+  return { ok: false, tentativi };
+}
+
+export function listaPipeline() {
+  return ghlGetConRipiego(`/opportunities/pipelines?locationId=${encodeURIComponent(GHL_LOCATION_ID)}`);
+}
+
+export function listaWorkflow() {
+  return ghlGetConRipiego(`/workflows/?locationId=${encodeURIComponent(GHL_LOCATION_ID)}`);
+}
+
 // --- Log --------------------------------------------------------------------
 
 // Ogni scambio con GHL finisce in ghl_sync_log: quando qualcosa non torna,

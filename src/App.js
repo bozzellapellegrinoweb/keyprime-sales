@@ -20,6 +20,7 @@ import {
 import WorkQueue from './components/WorkQueue';
 import LeadInbox from './components/LeadInbox';
 import MessaggiGhl from './components/MessaggiGhl';
+import ImpostazioniTab from './components/ImpostazioniTab';
 import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List, ExternalLink, Calculator } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -2552,7 +2553,8 @@ export default function App() {
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: pendingTasks.length },
       { id: 'followups', icon: Clock, label: 'Follow-up', accent: '#A855F7', badge: todayFollowUps.length + overdueFollowUps.length },
       { id: 'push', icon: Bell, label: 'Notifiche', accent: '#f59e0b' },
-      { id: 'utenti', icon: Settings, label: 'Team', accent: theme.sections.utenti.accent }
+      { id: 'utenti', icon: Users, label: 'Team', accent: theme.sections.utenti.accent },
+      { id: 'impostazioni', icon: Settings, label: 'Impostazioni', accent: theme.sections.ghl.accent }
     ];
 
     return (
@@ -2629,6 +2631,7 @@ export default function App() {
                   {activeTab === 'followups' && `${todayFollowUps.length + overdueFollowUps.length} follow-up da gestire`}
                   {activeTab === 'commissioni' && `${fmt(totals.comm)} AED commissioni totali`}
                   {activeTab === 'utenti' && `${users.length} membri del team`}
+                  {activeTab === 'impostazioni' && 'Collegamento GHL, tempi di reazione e distribuzione lead'}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -3106,6 +3109,15 @@ export default function App() {
             )}
 
             {/* TEAM */}
+            {activeTab === 'impostazioni' && (
+              <ImpostazioniTab
+                impostazioni={impostazioni}
+                agentiAttivi={agentiAttivi}
+                onRicarica={loadImpostazioni}
+                onToast={showToast}
+              />
+            )}
+
             {activeTab === 'utenti' && <TeamTab users={users} currentUserId={user?.id} onCreate={() => setShowUserModal({})} onEdit={setShowUserModal} onSetActive={setUserActive} />}
           </div>
         </main>

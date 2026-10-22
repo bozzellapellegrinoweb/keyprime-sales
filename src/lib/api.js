@@ -76,3 +76,19 @@ export function avviaSequenzaGhl({ saleId, clienteId, workflow, workflowId }) {
 export function sincronizzaGhlInSilenzio(args) {
   sincronizzaGhl(args).catch(() => {});
 }
+
+// Legge pipeline e workflow dalla location GHL: serve al pannello
+// Impostazioni per far scegliere da un elenco invece di incollare id.
+export async function leggiConfigGhl() {
+  const token = getToken();
+  try {
+    const risposta = await fetch('/api/ghl/config', {
+      headers: token ? { 'x-kp-token': token } : {}
+    });
+    const dati = await risposta.json().catch(() => null);
+    if (!risposta.ok) return { ok: false, error: estraiErrore(dati) || `Errore ${risposta.status}` };
+    return { ok: true, ...dati };
+  } catch {
+    return { ok: false, error: 'Connessione non disponibile' };
+  }
+}

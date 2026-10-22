@@ -227,6 +227,17 @@ export async function assegnaARotazione(saleId, eseguitoDa) {
   return data?.ok ? { ok: true, agente: data.agente } : { ok: false, error: data?.error };
 }
 
+export async function salvaImpostazioni(key, value) {
+  const token = getToken();
+  if (!token) return { ok: false, error: 'Sessione scaduta, rientra' };
+
+  const { data, error } = await supabase.rpc('app_settings_set', {
+    p_token: token, p_key: key, p_value: value
+  });
+  if (error) return { ok: false, error: 'Servizio non raggiungibile' };
+  return data?.ok ? { ok: true } : { ok: false, error: data?.error || 'Non riuscito' };
+}
+
 export async function caricaImpostazioni() {
   const { data } = await supabase.from('app_settings').select('key, value');
   const mappa = {};
