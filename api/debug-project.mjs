@@ -1,11 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
-
-const SUPABASE_URL = 'https://wqtylxrrerhbxagdzftn.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NjkyNjAsImV4cCI6MjA4NzI0NTI2MH0.oXUs9ITNi6lEFat_5FH0x-Exw5MDgRhwx6T0yL3xiWQ';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+import { serviceClient } from './_lib/supabase.mjs';
 
 export default async function handler(req, res) {
+  let supabase;
+  try { supabase = serviceClient(); }
+  catch (err) { return res.status(500).json({ error: err.message }); }
+
   try {
     const search = req.query.search || 'holm';
     
