@@ -22,6 +22,8 @@ import LeadInbox from './components/LeadInbox';
 import MessaggiGhl from './components/MessaggiGhl';
 import ImpostazioniTab from './components/ImpostazioniTab';
 import ControlloAccessi from './components/ControlloAccessi';
+import { generaOffertaPdf, proprietaCompilata } from './lib/offertaPdf';
+import { istantaneaCatalogo, trimestreAnno, etichettaFase } from './lib/offerta';
 import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List, ExternalLink, Calculator } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -479,342 +481,60 @@ const generateDashboardPDF = (totals, sales, vendite, byAgente, byZona) => {
 // ==================== OFFERTA PDF ====================
 const KEYPRIME_LOGO = 'https://assets.cdn.filesafe.space/Yjm3Uvb0rc8mRuraj7ad/media/69c3d8f7a5f60947f53a1b8f.png';
 
-// Una riga di proprieta' senza nome, prezzo, caratteristiche ne' foto non e'
-// un'opzione: e' una riga rimasta vuota nel modulo. Stamparla significa
-// consegnare al cliente una pagina bianca intestata "Opzione 2 di 2".
-const proprietaCompilata = (p) => !!(
-  (p?.nome || '').trim() || (p?.prezzo || '').trim() ||
-  (p?.specs || '').trim() || (p?.foto_urls || []).some(Boolean)
-);
-
-// I recapiti stampati sul prospetto non devono dipendere da cosa e' stato
-// digitato nel modulo quel giorno: se l'offerta non li porta, si leggono
-// dalla scheda della persona. Un'offerta senza recapito e' un'offerta a cui
-// il cliente non puo' rispondere.
-const recapitiAgente = async (offerta) => {
-  let email = (offerta.agente_email || '').trim();
-  let telefono = (offerta.agente_telefono || '').trim();
-  if ((email && telefono) || !offerta.agente_nome) return { email, telefono };
-  try {
-    const { data } = await supabase
-      .from('team_members').select('email, telefono')
-      .eq('nome', offerta.agente_nome).maybeSingle();
-    if (data) {
-      email = email || (data.email || '').trim();
-      telefono = telefono || (data.telefono || '').trim();
-    }
-  } catch {}
-  return { email, telefono };
-};
-
+// L'impaginazione sta in lib/offertaPdf. Qui resta solo quello che riguarda
+// l'utente davanti allo schermo: la schermata di attesa, il salvataggio del
+// file e cosa dirgli se qualcosa non e' riuscito.
 const generateOffertaPDF = async (offerta) => {
-  const props = (offerta.proprieta || []).filter(proprietaCompilata);
-  if (!props.length) {
-    alert('Questa offerta non ha nessuna proprieta compilata. Aggiungine almeno una prima di generare il PDF.');
-    return;
-  }
-  const recapiti = await recapitiAgente(offerta);
-  offerta = { ...offerta, agente_email: recapiti.email, agente_telefono: recapiti.telefono };
-  const NAVY = '#0f1c35', GOLD = '#c9a84c';
-
-  const stripMd = t => (t || '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/__(.*?)__/g, '$1');
-  const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-  /* ── Precarica immagini: prova diretta, fallback via proxy API ── */
-  const toDataUrl = async (url) => {
-    if (!url) return null;
-    if (url.startsWith('data:')) return url;
-    const tryFetch = async (u) => {
-      try {
-        const res = await fetch(u);
-        if (!res.ok) return null;
-        const blob = await res.blob();
-        return await new Promise((resolve) => {
-          const r = new FileReader();
-          r.onload = () => resolve(r.result);
-          r.onerror = () => resolve(null);
-          r.readAsDataURL(blob);
-        });
-      } catch { return null; }
-    };
-    const direct = await tryFetch(url);
-    if (direct) return direct;
-    // Proxy server-side per URL con CORS bloccato
-    const proxied = await tryFetch(`/api/proxy-image?url=${encodeURIComponent(url)}`);
-    return proxied || url;
-  };
-
-  /* ── Loading overlay ── */
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,28,53,0.96);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;';
-  overlay.innerHTML = `
-    <img src="${KEYPRIME_LOGO}" style="height:36px;margin-bottom:20px;opacity:0.85;" />
-    <div style="font-size:14px;color:#fff;font-weight:600;" id="_pdfStatus">Caricamento…</div>
-    <div style="font-size:12px;color:#4a6a8a;margin-top:6px;" id="_pdfSub"></div>
-    <div style="width:260px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:16px;">
-      <div id="_pdfBar" style="height:4px;background:#c9a84c;border-radius:2px;width:0%;transition:width 0.35s;"></div>
+  const velo = document.createElement('div');
+  velo.style.cssText = 'position:fixed;inset:0;background:rgba(13,17,22,0.97);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,sans-serif;';
+  velo.innerHTML = `
+    <img src="${KEYPRIME_LOGO}" style="height:34px;margin-bottom:22px;opacity:0.9;" alt="" />
+    <div style="font-size:14px;color:#fff;font-weight:600;" id="_pdfStato">Preparazione…</div>
+    <div style="font-size:12px;color:#8ba6c4;margin-top:6px;" id="_pdfDettaglio"></div>
+    <div style="width:260px;height:4px;background:rgba(255,255,255,0.12);border-radius:2px;margin-top:18px;">
+      <div id="_pdfBarra" style="height:4px;background:#c9a84c;border-radius:2px;width:0%;transition:width 0.35s;"></div>
     </div>`;
-  document.body.appendChild(overlay);
-  const setStatus = (msg, sub, pct) => {
-    const s = document.getElementById('_pdfStatus');
-    const ss = document.getElementById('_pdfSub');
-    const b = document.getElementById('_pdfBar');
-    if (s && msg) s.textContent = msg;
-    if (ss) ss.textContent = sub || '';
+  document.body.appendChild(velo);
+
+  const mostraStato = (testo, dettaglio, pct) => {
+    const t = document.getElementById('_pdfStato');
+    const d = document.getElementById('_pdfDettaglio');
+    const b = document.getElementById('_pdfBarra');
+    if (t && testo) t.textContent = testo;
+    if (d) d.textContent = dettaglio || '';
     if (b && pct !== undefined) b.style.width = pct + '%';
   };
 
   try {
-    setStatus('Caricamento librerie…', '', 5);
-    const [{ default: html2canvas }, { PDFDocument }] = await Promise.all([
-      import('html2canvas'),
-      import('pdf-lib'),
-    ]);
+    const esito = await generaOffertaPdf(offerta, { logoUrl: KEYPRIME_LOGO, onStato: mostraStato });
+    if (!esito.ok) { alert(esito.errore); return; }
 
-    if (!document.getElementById('_kpInterFont')) {
-      const lnk = document.createElement('link');
-      lnk.id = '_kpInterFont'; lnk.rel = 'stylesheet';
-      lnk.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap';
-      document.head.appendChild(lnk);
-    }
-    await document.fonts.ready;
-    await new Promise(r => setTimeout(r, 600));
-
-    setStatus('Caricamento immagini…', '', 12);
-    const logoUrl = await toDataUrl(KEYPRIME_LOGO);
-    const propImgUrls = await Promise.all(
-      props.map(p => Promise.all(
-        (p.foto_urls || []).filter(Boolean).slice(0, 3).map(toDataUrl)
-      ))
-    );
-
-    /* ── A4 Landscape: 297×210mm @96dpi = 1123×794px ── */
-    const A4W = 1123, A4H = 794;
-    const frame = document.createElement('div');
-    frame.style.cssText = `position:fixed;left:-${A4W + 50}px;top:0;width:${A4W}px;height:${A4H}px;overflow:hidden;font-family:'Inter',system-ui,sans-serif;box-sizing:border-box;`;
-    document.body.appendChild(frame);
-
-    const capture = async (html, bg = '#fff') => {
-      frame.innerHTML = html;
-      frame.style.background = bg;
-      await document.fonts.ready;
-      await new Promise(r => setTimeout(r, 300));
-      return html2canvas(frame, {
-        scale: 2, useCORS: true, allowTaint: false,
-        backgroundColor: bg, width: A4W, height: A4H, logging: false,
-      });
-    };
-
-    const pdfDoc = await PDFDocument.create();
-    // A4 landscape in pdf-lib points: 841.89 × 595.28
-    const PW = 841.89, PH = 595.28;
-    const addPage = async (canvas) => {
-      const b64 = canvas.toDataURL('image/jpeg', 0.93).split(',')[1];
-      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-      const img = await pdfDoc.embedJpg(bytes);
-      const pg = pdfDoc.addPage([PW, PH]);
-      pg.drawImage(img, { x: 0, y: 0, width: PW, height: PH });
-    };
-
-    const rawDesc = stripMd(offerta.zona_descrizione || '');
-    const descLines = rawDesc.split(/\n|•/).map(s => s.trim().replace(/^[-•]\s*/, '')).filter(Boolean);
-    const LEFT_COVER = Math.round(A4W * 0.40);
-    const LEFT_PROP  = Math.round(A4W * 0.37);
-
-    /* ══════════ COVER (landscape 2-col) ══════════ */
-    setStatus('Generazione PDF', 'Copertina…', 20);
-    const allPhotos = propImgUrls.flat().filter(Boolean).slice(0, 4);
-    let coverPhotosHtml = '';
-    if (!allPhotos.length) {
-      coverPhotosHtml = `<div style="width:100%;height:100%;background:#1a2a42;display:flex;align-items:center;justify-content:center;"><span style="color:#2a4a64;font-size:18px;letter-spacing:4px;text-transform:uppercase;">KeyPrime</span></div>`;
-    } else if (allPhotos.length === 1) {
-      coverPhotosHtml = `<img src="${allPhotos[0]}" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
-    } else if (allPhotos.length === 2) {
-      coverPhotosHtml = `<div style="display:flex;height:100%;">
-        ${allPhotos.map(u => `<div style="flex:1;overflow:hidden;"><img src="${u}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>`).join('')}
-      </div>`;
-    } else {
-      coverPhotosHtml = `<div style="display:flex;flex-direction:column;height:100%;gap:3px;">
-        <div style="flex:2;overflow:hidden;"><img src="${allPhotos[0]}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>
-        <div style="flex:1;display:flex;gap:3px;">
-          ${allPhotos.slice(1,4).map(u => `<div style="flex:1;overflow:hidden;"><img src="${u}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>`).join('')}
-        </div>
-      </div>`;
-    }
-
-    const coverHtml = `
-<div style="width:${A4W}px;height:${A4H}px;display:flex;overflow:hidden;box-sizing:border-box;">
-  <div style="width:${LEFT_COVER}px;flex-shrink:0;background:${NAVY};color:#fff;padding:30px 26px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-      ${logoUrl ? `<img src="${logoUrl}" style="height:30px;width:auto;object-fit:contain;" />` : ''}
-      <div>
-        <div style="font-size:7px;letter-spacing:3px;color:${GOLD};text-transform:uppercase;font-weight:600;">Real Estate Brokerage</div>
-        <div style="font-size:6px;letter-spacing:2px;color:#4a6a8a;text-transform:uppercase;margin-top:1px;">Dubai — UAE</div>
-      </div>
-    </div>
-    <div style="height:1px;background:linear-gradient(90deg,${GOLD},transparent);margin-bottom:20px;"></div>
-    <div style="margin-bottom:14px;">
-      <div style="font-size:8px;letter-spacing:3px;color:${GOLD};text-transform:uppercase;font-weight:600;margin-bottom:8px;">Selezione Immobili</div>
-      ${offerta.cliente_nome ? `<div style="font-size:24px;font-weight:800;color:#fff;line-height:1.1;margin-bottom:4px;">Per: ${esc(offerta.cliente_nome)}</div>` : ''}
-      ${offerta.zona_nome ? `<div style="font-size:13px;color:#5a8aaa;letter-spacing:0.5px;">${esc(offerta.zona_nome)} — Dubai</div>` : ''}
-    </div>
-    ${offerta.budget ? `
-    <div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:6px;padding:10px 14px;margin-bottom:16px;">
-      <div style="font-size:7px;letter-spacing:2px;color:${GOLD};text-transform:uppercase;margin-bottom:2px;">Budget Cliente</div>
-      <div style="font-size:20px;font-weight:800;color:#fff;">${esc(offerta.budget)}</div>
-    </div>` : ''}
-    <div style="margin-bottom:14px;">
-      <div style="font-size:7px;letter-spacing:2px;color:#4a6a8a;text-transform:uppercase;margin-bottom:8px;">Opzioni presentate</div>
-      ${props.map((p, i) => `
-      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-        <div style="width:20px;height:20px;border-radius:50%;background:${GOLD};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:800;color:${NAVY};">${i+1}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.nome||'')}</div>
-          ${p.zona ? `<div style="font-size:9px;color:#5a8aaa;">${esc(p.zona)}</div>` : ''}
-        </div>
-        ${p.prezzo ? `<div style="font-size:10px;font-weight:700;color:${GOLD};white-space:nowrap;flex-shrink:0;">${esc(p.prezzo)}</div>` : ''}
-      </div>`).join('')}
-    </div>
-    ${descLines.length ? `
-    <div style="background:rgba(255,255,255,0.04);border-left:2px solid ${GOLD};padding:10px 12px;flex:1;overflow:hidden;border-radius:0 4px 4px 0;">
-      <div style="font-size:7px;font-weight:700;letter-spacing:2px;color:${GOLD};text-transform:uppercase;margin-bottom:8px;">Perché ${esc(offerta.zona_nome||'questa zona')}</div>
-      ${descLines.slice(0,5).map(l => `
-      <div style="display:flex;gap:6px;margin-bottom:5px;">
-        <span style="color:${GOLD};font-size:10px;line-height:1.4;flex-shrink:0;">•</span>
-        <span style="font-size:10px;color:#a8c4dc;line-height:1.4;">${esc(l)}</span>
-      </div>`).join('')}
-    </div>` : '<div style="flex:1;"></div>'}
-    <div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);">
-      ${offerta.agente_nome ? `<div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:2px;">${esc(offerta.agente_nome)}</div>` : ''}
-      ${offerta.agente_email ? `<div style="font-size:9px;color:#5a8aaa;margin-bottom:1px;">✉ ${esc(offerta.agente_email)}</div>` : ''}
-      ${offerta.agente_telefono ? `<div style="font-size:9px;color:#5a8aaa;">✆ ${esc(offerta.agente_telefono)}</div>` : ''}
-      <div style="font-size:8px;color:#2a4a64;margin-top:4px;">${new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})}</div>
-    </div>
-  </div>
-  <div style="flex:1;overflow:hidden;">${coverPhotosHtml}</div>
-</div>`;
-    await addPage(await capture(coverHtml, NAVY));
-
-    /* ══════════ PROPERTY PAGES (landscape 2-col) ══════════ */
-    for (let idx = 0; idx < props.length; idx++) {
-      const p = props[idx];
-      setStatus('Generazione PDF', `Proprietà ${idx+1} di ${props.length}…`, 25 + idx * Math.floor(40 / Math.max(props.length, 1)));
-      const fotos = propImgUrls[idx].filter(Boolean);
-      const specs = (p.specs || '').split(/[;\n]/).map(s => s.trim()).filter(Boolean);
-
-      let fotosHtml = '';
-      if (!fotos.length) {
-        fotosHtml = `<div style="width:100%;height:100%;background:#e8edf2;display:flex;align-items:center;justify-content:center;"><span style="color:#94a3b8;font-size:14px;">Nessuna foto</span></div>`;
-      } else if (fotos.length === 1) {
-        fotosHtml = `<img src="${fotos[0]}" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
-      } else if (fotos.length === 2) {
-        fotosHtml = `<div style="display:flex;height:100%;gap:3px;">
-          ${fotos.map(u => `<div style="flex:1;overflow:hidden;"><img src="${u}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>`).join('')}
-        </div>`;
-      } else {
-        fotosHtml = `<div style="display:flex;height:100%;gap:3px;">
-          <div style="flex:2;overflow:hidden;"><img src="${fotos[0]}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>
-          <div style="flex:1;display:flex;flex-direction:column;gap:3px;">
-            <div style="flex:1;overflow:hidden;"><img src="${fotos[1]}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>
-            <div style="flex:1;overflow:hidden;"><img src="${fotos[2]}" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>
-          </div>
-        </div>`;
-      }
-
-      const nameFontSize = (p.nome||'').length > 22 ? 18 : (p.nome||'').length > 14 ? 22 : 26;
-      const propHtml = `
-<div style="width:${A4W}px;height:${A4H}px;display:flex;overflow:hidden;box-sizing:border-box;">
-  <div style="width:${LEFT_PROP}px;flex-shrink:0;background:${NAVY};color:#fff;padding:30px 24px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;">
-    <div style="font-size:8px;letter-spacing:3px;color:${GOLD};text-transform:uppercase;font-weight:600;margin-bottom:10px;">${esc((p.zona||'').toUpperCase())}</div>
-    <div style="font-size:${nameFontSize}px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:18px;">${esc(p.nome||'')}</div>
-    ${p.prezzo ? `
-    <div style="background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.3);border-radius:6px;padding:10px 14px;margin-bottom:20px;">
-      <div style="font-size:7px;letter-spacing:2px;color:${GOLD};text-transform:uppercase;margin-bottom:2px;">Prezzo</div>
-      <div style="font-size:20px;font-weight:800;color:${GOLD};">${esc(p.prezzo)}</div>
-    </div>` : ''}
-    <div style="height:1px;background:rgba(255,255,255,0.08);margin-bottom:16px;"></div>
-    ${specs.length ? `
-    <div style="flex:1;overflow:hidden;">
-      <div style="font-size:7px;letter-spacing:2px;color:#4a6a8a;text-transform:uppercase;margin-bottom:10px;">Caratteristiche</div>
-      ${specs.map(s => `
-      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;">
-        <span style="width:5px;height:5px;border-radius:50%;background:${GOLD};flex-shrink:0;margin-top:5px;display:inline-block;"></span>
-        <span style="font-size:11px;color:#c8d8e8;line-height:1.4;">${esc(s)}</span>
-      </div>`).join('')}
-    </div>` : '<div style="flex:1;"></div>'}
-    <div style="padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        ${logoUrl ? `<img src="${logoUrl}" style="height:14px;width:auto;object-fit:contain;" />` : '<span></span>'}
-        <div style="font-size:8px;color:#2a4a64;">Opzione ${idx+1} di ${props.length}</div>
-      </div>
-      ${offerta.agente_nome ? `<div style="font-size:9px;color:#3a5a74;">${esc(offerta.agente_nome)}${offerta.agente_telefono ? ' · '+esc(offerta.agente_telefono) : ''}</div>` : ''}
-    </div>
-  </div>
-  <div style="flex:1;overflow:hidden;">${fotosHtml}</div>
-</div>`;
-      await addPage(await capture(propHtml, NAVY));
-    }
-
-    document.body.removeChild(frame);
-
-    /* ══════════ BROCHURE — copia pagine vettoriali ══════════ */
-    const conBrochure = props.filter(p => p.brochure_url);
-    const brochureNonAllegate = [];
-    for (let bi = 0; bi < conBrochure.length; bi++) {
-      setStatus('Allegando brochure', `${bi+1} di ${conBrochure.length}…`, 70 + bi * Math.floor(20 / Math.max(conBrochure.length, 1)));
-      const indirizzo = conBrochure[bi].brochure_url;
-      const scarica = async (u) => {
-        const r = await fetch(u);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.arrayBuffer();
-      };
-      // Prima diretto, poi dal proxy: molti host servono il PDF senza header
-      // CORS e il browser lo rifiuta prima ancora di leggerlo.
-      let errore = new Error('non tentato');
-      for (const sorgente of [indirizzo, `/api/proxy-image?url=${encodeURIComponent(indirizzo)}`]) {
-        try {
-          const srcPdf = await PDFDocument.load(await scarica(sorgente), { ignoreEncryption: true });
-          const copiate = await pdfDoc.copyPages(srcPdf, srcPdf.getPageIndices());
-          copiate.forEach(pg => pdfDoc.addPage(pg));
-          errore = null;
-          break;
-        } catch (e) { errore = e; }
-      }
-      if (errore) {
-        console.error('Brochure non allegata:', indirizzo, errore);
-        brochureNonAllegate.push(conBrochure[bi].nome || indirizzo);
-      }
-    }
-
-    setStatus('Finalizzazione…', 'Generazione file…', 92);
-    const pdfBytes = await pdfDoc.save();
-    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(esito.blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `KeyPrime_Offerta_${(offerta.cliente_nome||'Cliente').replace(/\s+/g,'_')}.pdf`;
+    a.download = esito.nomeFile;
     document.body.appendChild(a);
-    setStatus('Completato!', 'Download avviato ✓', 100);
-    await new Promise(r => setTimeout(r, 500));
+    mostraStato('Pronto', `${esito.pagine} pagine · download avviato`, 100);
+    await new Promise(r => setTimeout(r, 450));
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
     // Meglio saperlo adesso che dal cliente: il PDF c'e', la brochure no.
-    if (brochureNonAllegate.length) {
+    if (esito.brochureNonAllegate.length) {
       alert(
-        `PDF generato, ma la brochure di ${brochureNonAllegate.join(', ')} non e' stata allegata.\n\n` +
+        `PDF generato, ma la brochure di ${esito.brochureNonAllegate.join(', ')} non e' stata allegata.\n\n` +
         `Controlla che il link punti davvero a un file PDF.`
       );
     }
-
   } catch (err) {
-    console.error('PDF error:', err);
-    alert('Errore generazione PDF: ' + err.message);
+    console.error('Errore generazione PDF:', err);
+    alert('Errore nella generazione del PDF: ' + err.message);
   } finally {
-    if (document.body.contains(overlay)) document.body.removeChild(overlay);
+    if (document.body.contains(velo)) document.body.removeChild(velo);
   }
 };
+
 
 // ==================== PUSH TAB (admin only) ====================
 function PushTab({ users }) {
@@ -1030,18 +750,31 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
     setCatalogResults(data || []);
   };
 
-  const pickFromCatalog = (listing, idx) => {
+  // La ricerca restituisce poche colonne per restare leggera: developer,
+  // consegna e piano di pagamento si leggono qui, alla scelta, e restano
+  // attaccati all'offerta. Il prezzo di oggi e' quello che il cliente ha
+  // visto, non quello che il catalogo avra' fra sei mesi.
+  const pickFromCatalog = async (listing, idx) => {
     const imgs = (listing.images || []).slice(0, 3).map(i => i.medium_image_url || '').filter(Boolean);
     while (imgs.length < 3) imgs.push('');
+
+    let istantanea = { listing_id: listing.id };
+    const { data: completo } = await supabase
+      .from('pf_projects')
+      .select('id,title,developer_name,location_name,location_full,price_from,bedrooms,delivery_date,construction_phase,payment_plans,url,raw_data')
+      .eq('id', listing.id)
+      .maybeSingle();
+    if (completo) istantanea = istantaneaCatalogo(completo);
+
     setForm(f => ({
       ...f,
       proprieta: f.proprieta.map((p, i) => i !== idx ? p : {
         ...p,
+        ...istantanea,
         nome: listing.title || '',
         zona: listing.location_name || listing.location_full || '',
-        prezzo: listing.price_from ? `${Number(listing.price_from).toLocaleString()} AED` : '',
+        prezzo: listing.price_from ? `${Number(listing.price_from).toLocaleString('it-IT')} AED` : '',
         foto_urls: imgs,
-        listing_id: listing.id,
       })
     }));
     setCatalogResults([]); setCatalogSearch(''); setActivePropIdx(null);
@@ -1080,17 +813,36 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
     }
   };
 
+  // Il modello scrive meglio se sa per chi scrive: budget, immobili scelti,
+  // developer e consegna sono gia' nel modulo, quindi partono con la richiesta.
   const generaDescrizione = async () => {
     if (!form.zona_nome) return;
+    setErrore('');
     setGeneratingDesc(true);
     try {
       const res = await fetch('/api/genera-descrizione', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ zona: form.zona_nome }),
+        body: JSON.stringify({
+          zona: form.zona_nome,
+          budget: form.budget || null,
+          cliente: form.cliente_nome || null,
+          proprieta: form.proprieta
+            .filter(p => (p.nome || '').trim())
+            .map(p => ({
+              nome: p.nome, prezzo: p.prezzo, developer: p.developer,
+              tipologie: p.tipologie, consegna: p.consegna
+            }))
+        }),
       });
-      const { descrizione } = await res.json();
-      if (descrizione) setForm(f => ({ ...f, zona_descrizione: descrizione }));
-    } catch (e) {}
+      const dati = await res.json().catch(() => ({}));
+      if (!res.ok || !dati.descrizione) {
+        setErrore(dati.error || 'Non sono riuscito a generare il testo, riprova.');
+      } else {
+        setForm(f => ({ ...f, zona_descrizione: dati.descrizione }));
+      }
+    } catch (e) {
+      setErrore('Servizio non raggiungibile, riprova.');
+    }
     setGeneratingDesc(false);
   };
 
@@ -1109,11 +861,10 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
   const addProp = () => { if (form.proprieta.length < 3) setForm(f => ({ ...f, proprieta: [...f.proprieta, { ...EMPTY_PROP, foto_urls: ['', '', ''] }] })); };
   const removeProp = (idx) => { if (form.proprieta.length > 1) setForm(f => ({ ...f, proprieta: f.proprieta.filter((_, i) => i !== idx) })); };
 
-  // Le righe lasciate in bianco non vanno ne' salvate ne' stampate.
-  const proprietaValide = form.proprieta.filter(p =>
-    (p.nome || '').trim() || (p.prezzo || '').trim() ||
-    (p.specs || '').trim() || (p.foto_urls || []).some(Boolean)
-  );
+  // Le righe lasciate in bianco non vanno ne' salvate ne' stampate: stesso
+  // criterio che usa il generatore del PDF, cosi' il riepilogo mostra
+  // esattamente quello che finira' nel documento.
+  const proprietaValide = form.proprieta.filter(proprietaCompilata);
   const righeVuote = form.proprieta.length - proprietaValide.length;
 
   const handleSave = async () => {
@@ -1288,6 +1039,41 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
                     <label className={labelCls}>Prezzo</label>
                     <input className={inputCls} value={prop.prezzo} onChange={e => updateProp(idx, 'prezzo', e.target.value)} placeholder="es. 715,000 AED" />
                   </div>
+
+                  {/* Quello che il catalogo sa gia': finisce nel PDF senza
+                      che nessuno lo riscriva. Se manca, la sezione sparisce. */}
+                  {(prop.developer || prop.consegna || prop.tipologie || prop.payment_plans) && (
+                    <div className="rounded-lg px-3 py-2.5 text-xs" style={{ background: 'rgba(201,168,76,0.07)', border: '1px solid rgba(201,168,76,0.18)' }}>
+                      <p className="text-oro-400 font-medium mb-1.5">Dal catalogo — finisce nel PDF</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-zinc-400">
+                        {prop.developer && <div>Developer: <span className="text-zinc-200">{prop.developer}</span></div>}
+                        {prop.tipologie && <div>Tipologie: <span className="text-zinc-200">{prop.tipologie}</span></div>}
+                        {prop.consegna && <div>Consegna: <span className="text-zinc-200">{trimestreAnno(prop.consegna)}</span></div>}
+                        {prop.fase && <div>Stato: <span className="text-zinc-200">{etichettaFase(prop.fase) || prop.fase}</span></div>}
+                        {prop.payment_plans?.plans?.[0]?.summary && (
+                          <div className="col-span-2">Piano di pagamento: <span className="text-zinc-200">
+                            {prop.payment_plans.plans[0].summary.down_payment}% acconto · {prop.payment_plans.plans[0].summary.handover}% alla consegna
+                          </span></div>
+                        )}
+                        {prop.lat && <div className="col-span-2 text-zinc-500">Mappa inclusa</div>}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Affitto annuo atteso — facoltativo</label>
+                      <input className={inputCls} value={prop.affitto_annuo || ''} onChange={e => updateProp(idx, 'affitto_annuo', e.target.value)} placeholder="es. 65,000 AED" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Spese annue — facoltativo</label>
+                      <input className={inputCls} value={prop.spese_annue || ''} onChange={e => updateProp(idx, 'spese_annue', e.target.value)} placeholder="service charge, gestione" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-zinc-600 -mt-1">
+                    Compilando l'affitto, il PDF calcola il rendimento lordo (e il netto se metti le spese) e stampa
+                    i dati da cui arriva. Lasciandoli vuoti, la sezione non compare: nessuna proiezione inventata.
+                  </p>
                   <div>
                     <label className={labelCls}>Specifiche (separate da ; o a capo)</label>
                     <textarea className={inputCls} rows={3} value={prop.specs} onChange={e => updateProp(idx, 'specs', e.target.value)}

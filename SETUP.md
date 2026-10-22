@@ -168,6 +168,36 @@ offerta (utile per un numero dedicato a un cliente).
 
 ---
 
+## 4ter. La presentazione immobili (PDF)
+
+Il documento è A4 verticale e si compone da sé con quello che c'è:
+
+| Pagina | Quando compare |
+|---|---|
+| Copertina | sempre |
+| La zona | se hai scritto la descrizione della zona |
+| Le opzioni a confronto | da 2 immobili in su |
+| Una scheda per immobile | sempre |
+| I prossimi passi + contatti | sempre |
+| Brochure del developer | se l'immobile ha un link a un PDF |
+
+**Scegli l'immobile dal catalogo** (campo di ricerca nello step 2) e la scheda si
+riempie da sola: developer con il logo, tipologie, data di consegna, stato dei
+lavori, disponibilità, **piano di pagamento convertito in dirham** e mappa della
+posizione. Scritto a mano resta solo nome, prezzo e foto.
+
+**Affitto annuo atteso** è facoltativo. Se lo compili, il PDF calcola il
+rendimento lordo (e il netto, se metti anche le spese) e stampa i numeri da cui
+arriva. Se lo lasci vuoto la sezione non compare: non vengono inventate
+proiezioni.
+
+Il testo di "Perché questa zona" lo scrive Claude, e riceve il contesto
+dell'offerta — budget del cliente, immobili scelti, developer, consegna —
+quindi parla di quella proposta, non della zona in generale. Serve
+`ANTHROPIC_API_KEY` su Vercel.
+
+---
+
 ## 5. Pulizia residua — da fare a mano
 
 Due cose non le ho potute chiudere da qui: il gestore del database usato in
