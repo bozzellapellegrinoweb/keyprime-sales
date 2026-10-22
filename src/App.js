@@ -2163,7 +2163,7 @@ export default function App() {
               <div>
                 <h1 className="text-xl font-semibold text-white">{activeTab === 'oggi' ? `Ciao ${(user?.nome || '').split(' ')[0]}` : tabs.find(t => t.id === activeTab)?.label}</h1>
                 <p className="text-zinc-500 text-sm">
-                  {activeTab === 'oggi' && (codaDiLavoro.length ? `${codaDiLavoro.length} cose da fare adesso` : 'Nessun lead in attesa')}
+                  {activeTab === 'oggi' && (codaDiLavoro.length ? (codaDiLavoro.length === 1 ? '1 cosa da fare adesso' : `${codaDiLavoro.length} cose da fare adesso`) : 'Nessun lead in attesa')}
                   {activeTab === 'home' && 'Il tuo riepilogo'}
                   {activeTab === 'leads' && `${mySales.length} lead totali`}
                   {activeTab === 'pipeline' && 'Stato dei tuoi lead'}
@@ -2618,7 +2618,7 @@ export default function App() {
             {/* Desktop Header */}
             <div className="hidden lg:flex items-center justify-between mb-8">
               <div>
-                <h1 className="text-2xl font-semibold text-white capitalize">{activeTab}</h1>
+                <h1 className="text-2xl font-semibold text-white">{tabs.find(t => t.id === activeTab)?.label || activeTab}</h1>
                 <p className="text-zinc-500 text-sm mt-1">
                   {activeTab === 'dashboard' && 'Panoramica generale'}
                   {activeTab === 'inbox' && (daAssegnare + daLavorare > 0 ? `${daAssegnare} senza agente, ${daLavorare} mai contattati` : 'Tutti i lead sono presi in carico')}

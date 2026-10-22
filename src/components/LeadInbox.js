@@ -18,7 +18,7 @@ export default function LeadInbox({
   const [selezionati, setSelezionati] = useState([]);
   const [agenteScelto, setAgenteScelto] = useState('');
   const [inCorso, setInCorso] = useState(false);
-  const [vista, setVista] = useState('nonAssegnati');
+  const [vista, setVista] = useState(null);
 
   const cliente = (id) => clienti.find((c) => c.id === id);
   const nomeCliente = (id) => {
@@ -52,7 +52,14 @@ export default function LeadInbox({
     [aperti, sla]
   );
 
-  const elenco = vista === 'nonAssegnati' ? nonAssegnati : vista === 'nonLavorati' ? nonLavorati : fermi;
+  // Finche' l'admin non sceglie, mostro la prima vista non vuota.
+  const vistaEffettiva = vista
+    || (nonAssegnati.length ? 'nonAssegnati'
+      : nonLavorati.length ? 'nonLavorati'
+      : fermi.length ? 'fermi' : 'nonAssegnati');
+
+  const elenco = vistaEffettiva === 'nonAssegnati' ? nonAssegnati
+    : vistaEffettiva === 'nonLavorati' ? nonLavorati : fermi;
 
   const inverti = (id) =>
     setSelezionati((p) => (p.includes(id) ? p.filter((i) => i !== id) : [...p, id]));
@@ -101,9 +108,9 @@ export default function LeadInbox({
         {schede.map((s) => (
           <button key={s.id} onClick={() => { setVista(s.id); setSelezionati([]); }}
                   className={`rounded-2xl p-4 text-left border transition-all ${
-                    vista === s.id ? 'bg-zinc-800' : 'bg-zinc-900 hover:bg-zinc-800/60'
+                    vistaEffettiva === s.id ? 'bg-zinc-800' : 'bg-zinc-900 hover:bg-zinc-800/60'
                   }`}
-                  style={{ borderColor: vista === s.id ? s.colore : 'transparent' }}>
+                  style={{ borderColor: vistaEffettiva === s.id ? s.colore : 'transparent' }}>
             <p className="text-zinc-500 text-xs lg:text-sm">{s.label}</p>
             <p className="text-2xl font-semibold mt-1" style={{ color: s.conta > 0 ? s.colore : '#6d7d98' }}>
               {s.conta}
@@ -122,7 +129,7 @@ export default function LeadInbox({
                 <Avatar nome={a.nome} size="sm" />
                 <div>
                   <p className="text-white text-sm leading-tight">{a.nome}</p>
-                  <p className="text-zinc-500 text-xs">{carico[a.nome] || 0} aperti</p>
+                  <p className="text-zinc-500 text-xs">{carico[a.nome] || 0} {(carico[a.nome] || 0) === 1 ? 'aperto' : 'aperti'}</p>
                 </div>
               </div>
             ))}
@@ -145,13 +152,13 @@ export default function LeadInbox({
                       className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-zinc-600">
                 <option value="">Assegna a...</option>
                 {agenti.map((a) => (
-                  <option key={a.nome} value={a.nome}>{a.nome} ({carico[a.nome] || 0} aperti)</option>
+                  <option key={a.nome} value={a.nome}>{a.nome} ({carico[a.nome] || 0} {(carico[a.nome] || 0) === 1 ? 'aperto' : 'aperti'})</option>
                 ))}
               </select>
               <Button onClick={assegna} icon={UserPlus} disabled={inCorso || !selezionati.length || !agenteScelto}>
                 Assegna
               </Button>
-              {vista === 'nonAssegnati' && (
+              {vistaEffettiva === 'nonAssegnati' && (
                 <Button variant="secondary" onClick={rotazione} icon={RefreshCw} disabled={inCorso || !agenti.length}>
                   {selezionati.length ? 'A rotazione' : 'Distribuisci tutti'}
                 </Button>
@@ -165,10 +172,10 @@ export default function LeadInbox({
       {elenco.length === 0 ? (
         <EmptyState
           icon={Check}
-          title={vista === 'nonAssegnati' ? 'Nessun lead senza agente' : vista === 'nonLavorati' ? 'Nessun lead in attesa di primo contatto' : 'Nessun lead fermo'}
-          description={vista === 'nonAssegnati'
+          title={vistaEffettiva === 'nonAssegnati' ? 'Nessun lead senza agente' : vistaEffettiva === 'nonLavorati' ? 'Nessun lead in attesa di primo contatto' : 'Nessun lead fermo'}
+          description={vistaEffettiva === 'nonAssegnati'
             ? 'Tutti i lead aperti hanno un proprietario.'
-            : vista === 'nonLavorati'
+            : vistaEffettiva === 'nonLavorati'
               ? `Ogni lead assegnato e' stato contattato entro ${sla.primo_contatto_ore ?? 24} ore.`
               : 'Nessuna trattativa e rimasta indietro oltre i tempi previsti.'}
         />

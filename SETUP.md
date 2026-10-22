@@ -145,8 +145,13 @@ Supabase → SQL Editor:
 --    ma tanto vale toglierla.
 alter table public.user_credentials drop column if exists password;
 
--- 2. Utenti e lead creati solo per collaudare login e rotazione.
-delete from public.user_credentials where username in ('__selftest__', '__selftest_agente__');
+-- 2. Utenti e lead creati solo per collaudare login, rotazione e follow-up.
+--    Sono gia' disattivati e rinominati "DA ELIMINARE"; questo li toglie.
+delete from public.user_credentials
+where username in ('__selftest__', '__selftest_agente__', '__collaudo__');
+
+-- Il lead di prova porta con se' follow-up e attivita' create nel collaudo
+-- (le chiavi esterne sono in cascata).
 delete from public.sales where progetto = '__TEST ROTAZIONE - eliminabile__';
 ```
 

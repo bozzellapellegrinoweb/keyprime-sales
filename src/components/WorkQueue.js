@@ -71,7 +71,7 @@ export default function WorkQueue({
                     <div className="flex-1 min-w-0">
                       <button onClick={() => voce.lead && onApriLead(voce.lead)} className="text-left block w-full">
                         <p className="text-white font-medium truncate">{voce.titolo}</p>
-                        {voce.sottotitolo && (
+                        {voce.sottotitolo && voce.sottotitolo !== voce.titolo && (
                           <p className="text-zinc-500 text-sm truncate">{voce.sottotitolo}</p>
                         )}
                       </button>

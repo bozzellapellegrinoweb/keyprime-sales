@@ -106,7 +106,7 @@ export const EmptyState = ({ icon: Icon, title, description, action, onAction })
     </div>
     <h3 className="text-lg font-medium text-white mb-2">{title}</h3>
     <p className="text-zinc-500 text-sm mb-6 max-w-sm mx-auto">{description}</p>
-    {action && <button onClick={onAction} className="px-5 py-2.5 bg-white text-zinc-900 rounded-xl font-medium text-sm hover:bg-zinc-100 transition-colors">{action}</button>}
+    {action && <button onClick={onAction} className="px-5 py-2.5 bg-oro-500 text-[#0b1526] rounded-xl font-semibold text-sm hover:bg-oro-400 transition-colors">{action}</button>}
   </Card>
 );
 
@@ -131,7 +131,7 @@ export const Select = ({ label, children, ...props }) => (
 // Button
 export const Button = ({ children, variant = 'primary', size = 'md', icon: Icon, className = '', ...props }) => {
   const variants = {
-    primary: 'bg-white text-zinc-900 hover:bg-zinc-100',
+    primary: 'bg-oro-500 text-[#0b1526] hover:bg-oro-400 font-semibold',
     secondary: 'bg-zinc-700/50 text-white hover:bg-zinc-700',
     ghost: 'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5',
     danger: 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
@@ -181,7 +181,8 @@ export const BottomSheet = ({ isOpen, onClose, title, children }) => {
 
 // Sidebar Nav Item
 export const NavItem = ({ icon: Icon, label, active, onClick, accent, badge, isNew }) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all relative ${active ? 'bg-white/10 text-white' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
+  <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all relative ${active ? 'bg-white/[0.07] text-white' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+          style={active ? { boxShadow: `inset 3px 0 0 ${accent || '#c9a84c'}` } : {}}>
     <Icon className="w-5 h-5" style={active ? { color: accent } : {}} />
     <span className="font-medium flex-1">{label}</span>
     {badge > 0 && <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">{badge}</span>}
