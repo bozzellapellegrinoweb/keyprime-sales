@@ -24,9 +24,17 @@ codice le legge da qui.
 | `ADMIN_EMAIL` | Destinatario dei riepiloghi | `bozzellapellegrino@gmail.com` |
 | `APP_URL` | Link nelle notifiche | `https://portal.keyprimere.com` |
 
-> **Le tre chiavi vecchie vanno ruotate.** Erano nel repository in chiaro:
-> la `service_role` di Supabase, la chiave Resend e quella RapidAPI. Chi ha
-> letto il codice le ha viste. Rigenerale e metti le nuove qui.
+> **Le chiavi erano nel repository in chiaro** e vanno sostituite, ma non tutte
+> allo stesso modo:
+>
+> - **Resend e RapidAPI**: rigenerale e basta, non rompono nulla.
+> - **Supabase `service_role`**: va messa **così com'è adesso** per rimettere
+>   in funzione email, push e GHL. Ruotarla non è un'operazione isolata: su
+>   Supabase si rigenera il JWT secret, che cambia *anche* la chiave pubblica
+>   `anon`. Quella è scritta in `src/lib/supabaseClient.js`, quindi la
+>   rotazione va fatta insieme a una modifica del codice e a un nuovo deploy,
+>   altrimenti il portale smette di collegarsi al database. Pianificatela a
+>   parte.
 
 Il file `.env.example` elenca tutte le variabili con le note.
 
@@ -157,7 +165,16 @@ delete from public.sales where progetto = '__TEST ROTAZIONE - eliminabile__';
 
 ---
 
-## 6. Quello che resta aperto
+## 6. Utenti di collaudo rimasti
+
+Tre utenti usati per le verifiche (`__selftest__`, `__selftest_agente__`,
+`__collaudo__`) sono **disattivati** e rinominati "DA ELIMINARE": non possono
+accedere e non compaiono nelle rotazioni. Restano visibili nella scheda Team
+finché non esegui la query del punto 5.
+
+---
+
+## 7. Quello che resta aperto
 
 **Autorizzazioni a livello database.** Credenziali e sessioni sono chiuse: con
 la chiave pubblica dell'app non si leggono più password né token. Ma `sales`,
