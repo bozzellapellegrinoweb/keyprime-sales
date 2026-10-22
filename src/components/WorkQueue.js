@@ -210,7 +210,7 @@ function RiepilogoTesta({ coda }) {
       {celle.map((c) => (
         <Card key={c.label} padding="p-4">
           <p className="text-zinc-500 text-sm">{c.label}</p>
-          <p className="text-2xl font-semibold mt-1" style={{ color: c.valore > 0 ? c.colore : '#6d7d98' }}>
+          <p className="text-2xl font-semibold mt-1" style={{ color: c.valore > 0 ? c.colore : '#6f7889' }}>
             {c.valore}
           </p>
         </Card>
