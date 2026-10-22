@@ -15,23 +15,33 @@ codice le legge da qui.
 
 | Variabile | A cosa serve | Dove la trovi |
 |---|---|---|
-| `SUPABASE_SERVICE_ROLE_KEY` | **Obbligatoria.** Senza, email, push, sync progetti e tutti gli endpoint GHL rispondono 500 | Supabase → Project Settings → API → `service_role` |
-| `RESEND_API_KEY` | **Obbligatoria** per le email | Resend → API Keys |
-| `ONESIGNAL_REST_API_KEY` | **Obbligatoria** per le notifiche push | OneSignal → Settings → Keys & IDs |
-| `PF_API_KEY` | Sync notturno dei progetti off-plan | RapidAPI (la chiave già in uso) |
+| `RESEND_API_KEY` | **Serve** per le email | Resend → API Keys |
+| `GHL_API_KEY` | **Serve** per GoHighLevel | Private Integration Token della location |
+| `GHL_LOCATION_ID` | **Serve** per GoHighLevel | l'id nell'URL della sub-account |
+| `GHL_WEBHOOK_SECRET` | **Serve** per i lead in ingresso | stringa lunga a tua scelta |
+| `ONESIGNAL_REST_API_KEY` | Notifiche push | OneSignal → Settings → Keys & IDs (già presente) |
+| `PF_API_KEY` | Sync notturno dei progetti off-plan | RapidAPI |
 | `ANTHROPIC_API_KEY` | Generazione descrizioni nelle offerte | già presente |
-| `KP_JOB_SECRET` | Per lanciare a mano il job dei promemoria | inventane una lunga |
-| `ADMIN_EMAIL` | Destinatario dei riepiloghi | `bozzellapellegrino@gmail.com` |
-| `APP_URL` | Link nelle notifiche | `https://portal.keyprimere.com` |
+| `KP_JOB_SECRET` | Solo per lanciare a mano il job dei promemoria | inventane una lunga |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Facoltativa.** Gli endpoint funzionano senza | Supabase → Settings → API |
+| `ADMIN_EMAIL` | Destinatario dei riepiloghi | già impostata |
+| `APP_URL` | Link nelle notifiche | già impostata |
+
+> La `service_role` **non è più necessaria**. Gli endpoint usano la chiave
+> pubblica — la stessa che gira nel bundle del portale — e fanno passare le
+> operazioni delicate da funzioni `SECURITY DEFINER` sul database, che non
+> espongono mai gli hash delle password. Se la configuri viene usata, ma
+> niente si rompe se manca.
 
 > **Le chiavi erano nel repository in chiaro** e vanno sostituite, ma non tutte
 > allo stesso modo:
 >
 > - **Resend e RapidAPI**: rigenerale e basta, non rompono nulla.
-> - **Supabase `service_role`**: va messa **così com'è adesso** per rimettere
->   in funzione email, push e GHL. Ruotarla non è un'operazione isolata: su
->   Supabase si rigenera il JWT secret, che cambia *anche* la chiave pubblica
->   `anon`. Quella è scritta in `src/lib/supabaseClient.js`, quindi la
+> - **Supabase `service_role`**: ora che non serve più, la cosa più pulita è
+>   non configurarla affatto. Se un giorno vuoi comunque ruotarla, sappi che
+>   non è un'operazione isolata: su Supabase si rigenera il JWT secret, che
+>   cambia *anche* la chiave pubblica `anon`. Quella è scritta in
+>   `src/lib/supabaseClient.js`, quindi la
 >   rotazione va fatta insieme a una modifica del codice e a un nuovo deploy,
 >   altrimenti il portale smette di collegarsi al database. Pianificatela a
 >   parte.
