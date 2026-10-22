@@ -5,7 +5,7 @@
 // sta maturando ogni persona. La tabella dei permessi non e' decorativa:
 // descrive il comportamento reale del codice, scheda per scheda.
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Shield, Monitor, Wallet, LogOut, Check, X as Ics, RefreshCw } from 'lucide-react';
 import { Card, Button, Avatar } from './ui';
 import { theme } from '../lib/theme';
@@ -44,15 +44,17 @@ export default function ControlloAccessi({ users = [], sales = [], onToast, onMo
   const [caricando, setCaricando] = useState(false);
   const [scheda, setScheda] = useState('permessi');
 
-  const carica = async () => {
+  // useCallback invece di sopprimere l'avviso: cosi' la dipendenza dell'effetto
+  // e' dichiarata davvero, e la funzione non viene ricreata a ogni render.
+  const carica = useCallback(async () => {
     setCaricando(true);
     const esito = await sessioniAttive();
     setCaricando(false);
     if (!esito.ok) { onToast?.(esito.error || 'Non riuscito', 'error'); return; }
     setSessioni(esito.sessioni);
-  };
+  }, [onToast]);
 
-  useEffect(() => { carica(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { carica(); }, [carica]);
 
   const disconnetti = async (u) => {
     if (!window.confirm(`Disconnettere ${u.nome} da tutti i dispositivi? Dovra' rientrare con le sue credenziali.`)) return;
