@@ -1,12 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { serviceClient } from './_lib/supabase.mjs';
 
-const SUPABASE_URL = 'https://wqtylxrrerhbxagdzftn.supabase.co';
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTY2OTI2MCwiZXhwIjoyMDg3MjQ1MjYwfQ.l97tHyVwh3TYIaueNDCCHwtgi12RBcvHas351DJ-pO8';
-
-const PF_API_HOST = 'uae-real-estate-api-propertyfinder-ae-data.p.rapidapi.com';
-const PF_API_KEY = '726ac8a1f8msh5ec783ecc467b76p1e1338jsn88a853551916';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const PF_API_HOST = process.env.PF_API_HOST || 'uae-real-estate-api-propertyfinder-ae-data.p.rapidapi.com';
 
 function transformProject(p) {
   // Try to find brochure URL in various possible locations
@@ -32,7 +26,7 @@ function transformProject(p) {
   };
 }
 
-async function getAllExistingIds() {
+async function getAllExistingIds(supabase) {
   const ids = new Set();
   let from = 0;
   while (true) {
@@ -46,9 +40,18 @@ async function getAllExistingIds() {
 }
 
 export default async function handler(req, res) {
+  let supabase;
+  try { supabase = serviceClient(); }
+  catch (err) { return res.status(500).json({ success: false, error: err.message }); }
+
+  const PF_API_KEY = process.env.PF_API_KEY;
+  if (!PF_API_KEY) {
+    return res.status(500).json({ success: false, error: 'PF_API_KEY non configurata' });
+  }
+
   try {
     const startTime = Date.now();
-    const existingIds = await getAllExistingIds();
+    const existingIds = await getAllExistingIds(supabase);
 
     let currentOffset = 0;
     let totalNew = 0;
