@@ -43,7 +43,13 @@ export default async function handler(req, res) {
       .eq('completato', false)
       .lte('data_reminder', oggi)
       .order('data_reminder', { ascending: true });
-    const followUps = followUpsRaw || [];
+
+    // Un follow-up gia' segnalato nelle ultime 12 ore non viene ripetuto:
+    // il job resta corretto se il cron scatta due volte, e una chiamata
+    // ripetuta dall'esterno non produce una raffica di notifiche.
+    const dodiciOreFa = Date.now() - 12 * 60 * 60 * 1000;
+    const followUps = (followUpsRaw || []).filter(f =>
+      !f.reminder_inviato_at || new Date(f.reminder_inviato_at).getTime() < dodiciOreFa);
 
     // --- Lead che stanno marcendo -------------------------------------------
     const { data: leadsRaw } = await supabase
@@ -137,8 +143,10 @@ export default async function handler(req, res) {
     }
 
     // --- Rubrica del team ---------------------------------------------------
+    // team_members e' la vista senza hash: leggibile anche con la chiave
+    // pubblica, a differenza di user_credentials che e' chiusa da RLS.
     const { data: teamRaw } = await supabase
-      .from('user_credentials').select('nome, username, email, ruolo, attivo').eq('attivo', true);
+      .from('team_members').select('nome, username, email, ruolo, attivo').eq('attivo', true);
     const team = teamRaw || [];
     const rubrica = Object.fromEntries(team.map(u => [u.nome, u]));
 
