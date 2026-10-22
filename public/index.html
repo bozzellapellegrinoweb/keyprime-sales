@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <meta name="theme-color" content="#f59e0b" />
+    <meta name="theme-color" content="#0b1526" />
     <meta name="description" content="KeyPrime Real Estate Sales Management System" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -28,6 +28,46 @@
     <title>KeyPrime - Sales Management</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // La scala "zinc" e "slate" di Tailwind viene ridefinita sulle tonalita'
+      // navy del marchio KeyPrime. L'app usa quelle classi in centinaia di
+      // punti: ridefinirle qui ricolora tutto in modo coerente, senza
+      // riscrivere le classi una per una.
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              oro: {
+                50:  '#fbf7ec', 100: '#f5ecd2', 200: '#ead8a5',
+                300: '#dfc478', 400: '#d4b662', 500: '#c9a84c',
+                600: '#a98a33', 700: '#856c28', 800: '#5f4d1d', 900: '#3b3012'
+              },
+              navy: {
+                50:  '#f6f7f9', 100: '#eceff4', 200: '#d4dae6',
+                300: '#aeb8cd', 400: '#7d8aa8', 500: '#5d6b8a',
+                600: '#44516a', 700: '#2b3a54', 800: '#1a2a45',
+                900: '#121f36', 950: '#0b1526'
+              },
+              zinc: {
+                50:  '#f6f7f9', 100: '#eceff4', 200: '#d4dae6',
+                300: '#aeb8cd', 400: '#9aa8c0', 500: '#6d7d98',
+                600: '#4c5a74', 700: '#33476a', 800: '#1a2a45',
+                900: '#121f36', 950: '#0b1526'
+              },
+              slate: {
+                50:  '#f6f7f9', 100: '#eceff4', 200: '#d4dae6',
+                300: '#aeb8cd', 400: '#9aa8c0', 500: '#6d7d98',
+                600: '#4c5a74', 700: '#33476a', 800: '#1a2a45',
+                900: '#121f36', 950: '#0b1526'
+              }
+            },
+            fontFamily: {
+              sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'Segoe UI', 'Roboto', 'sans-serif']
+            }
+          }
+        }
+      };
+    </script>
     
     <style>
       /* Safe area for iOS notch */
@@ -86,7 +126,7 @@
       button, a { -webkit-user-select: none; user-select: none; }
     </style>
   </head>
-  <body class="bg-slate-900">
+  <body class="bg-[#0b1526]">
     <noscript>Devi abilitare JavaScript per usare questa app.</noscript>
     <div id="root"></div>
   </body>

@@ -1,6 +1,25 @@
 /* eslint-disable */
 import React, { useState, useEffect, useRef } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './lib/supabaseClient';
+import { theme, BRAND } from './lib/theme';
+import * as auth from './lib/auth';
+import * as apiKp from './lib/api';
+import * as leadLib from './lib/leads';
+import {
+  zones, developers, commissions, pipelineStati, pipelineLabels, clienteStati,
+  taskPriorita, motiviPerdita
+} from './lib/costanti';
+import {
+  fmt, fmtDate, fmtDateTime, fmtShort, getWhatsAppLink, getBaseUrl,
+  isOverdue, isToday, getInitials
+} from './lib/format';
+import {
+  Toast, Avatar, StatusBadge, Card, SectionHeader, MetricCard, ProgressBar,
+  EmptyState, Input, Select, Button, Modal, BottomSheet, NavItem, QuickActions
+} from './components/ui';
+import WorkQueue from './components/WorkQueue';
+import LeadInbox from './components/LeadInbox';
+import MessaggiGhl from './components/MessaggiGhl';
 import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List, ExternalLink, Calculator } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -13,7 +32,7 @@ const initNativePlugins = async () => {
     try {
       // Status bar dark with app background
       await StatusBar.setStyle({ style: Style.Dark });
-      await StatusBar.setBackgroundColor({ color: '#0f172a' });
+      await StatusBar.setBackgroundColor({ color: '#0b1526' });
       
       // Keyboard listeners for better UX
       Keyboard.addListener('keyboardWillShow', () => {
@@ -39,20 +58,13 @@ const hapticFeedback = async (style = 'light') => {
 
 initNativePlugins();
 
-const supabase = createClient('https://wqtylxrrerhbxagdzftn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdHlseHJyZXJoYnhhZ2R6ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NjkyNjAsImV4cCI6MjA4NzI0NTI2MH0.oXUs9ITNi6lEFat_5FH0x-Exw5MDgRhwx6T0yL3xiWQ');
 
 // Send Push Notification via OneSignal REST API (serverless /api/send-push)
 // target: { type: 'admin' | 'user' | 'all', username?: string }
 const sendPushNotification = async (title, message, url = null, target = { type: 'admin' }) => {
-  try {
-    await fetch('/api/send-push', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, message, url: url || 'https://portal.keyprimere.com', target })
-    });
-  } catch (e) {
-    console.log('Push error:', e);
-  }
+  const esito = await apiKp.inviaPush(title, message, url || 'https://portal.keyprimere.com', target);
+  if (!esito.ok) console.log('Push non inviata:', esito.error);
+  return esito.ok;
 };
 
 // Config
@@ -118,82 +130,22 @@ const getLocationCoords = (locationName) => {
   return null;
 };
 
-// Data
-const zones = ['Palm Jumeirah', 'Dubai Marina', 'Downtown', 'Dubai Creek', 'JBR', 'Business Bay', 'JLT', 'DIFC', 'MBR City', 'Dubai Hills', 'Altro'];
-const developers = ['Emaar', 'Damac', 'Sobha', 'Meraas', 'Nakheel', 'Dubai Properties', 'Azizi', 'Danube', 'Binghatti', 'Altro'];
-const commissions = [2, 4, 5, 6];
-const pipelineStati = ['lead', 'trattativa', 'EOI', 'venduto', 'incassato'];
-const pipelineLabels = { 'lead': 'Lead', 'trattativa': 'Trattativa', 'EOI': 'EOI', 'venduto': 'Venduto (SPA)', 'incassato': 'Incassato' };
-const clienteStati = ['nuovo', 'contattato', 'interessato', 'trattativa', 'acquistato', 'perso'];
-const taskPriorita = ['bassa', 'normale', 'alta', 'urgente'];
 
-// Theme Colors - Section Based
-const theme = {
-  bg: { primary: '#0f172a', secondary: '#1e293b', tertiary: '#1e293b', elevated: '#1F1F23' },
-  border: { subtle: '#334155', default: '#3F3F46', strong: '#52525B' },
-  text: { primary: '#FAFAFA', secondary: '#A1A1AA', tertiary: '#71717A', muted: '#52525B' },
-  sections: {
-    dashboard: { accent: '#A78BFA', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.2)' },
-    vendite: { accent: '#34D399', bg: 'rgba(52,211,153,0.08)', border: 'rgba(52,211,153,0.2)' },
-    pipeline: { accent: '#60A5FA', bg: 'rgba(96,165,250,0.08)', border: 'rgba(96,165,250,0.2)' },
-    crm: { accent: '#FBBF24', bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.2)' },
-    tasks: { accent: '#F472B6', bg: 'rgba(244,114,182,0.08)', border: 'rgba(244,114,182,0.2)' },
-    utenti: { accent: '#22D3EE', bg: 'rgba(34,211,238,0.08)', border: 'rgba(34,211,238,0.2)' },
-    offplan: { accent: '#F97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.2)' },
-    calculator: { accent: '#10B981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)' }
-  },
-  status: {
-    lead: { color: '#71717A', bg: 'rgba(113,113,122,0.15)' },
-    trattativa: { color: '#60A5FA', bg: 'rgba(96,165,250,0.15)' },
-    EOI: { color: '#FBBF24', bg: 'rgba(251,191,36,0.15)' },
-    prenotato: { color: '#FBBF24', bg: 'rgba(251,191,36,0.15)' }, // legacy
-    venduto: { color: '#34D399', bg: 'rgba(52,211,153,0.15)' },
-    incassato: { color: '#22C55E', bg: 'rgba(34,197,94,0.15)' }
-  },
-  priority: {
-    bassa: { color: '#71717A', bg: 'rgba(113,113,122,0.15)' },
-    normale: { color: '#60A5FA', bg: 'rgba(96,165,250,0.15)' },
-    alta: { color: '#FBBF24', bg: 'rgba(251,191,36,0.15)' },
-    urgente: { color: '#EF4444', bg: 'rgba(239,68,68,0.15)' }
-  }
-};
-
-// Utilities
-const fmt = (n) => (n || 0).toLocaleString('en-AE', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
-const fmtDateTime = (d) => d ? new Date(d).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-';
-const fmtShort = (d) => d ? new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }) : '-';
-const getWhatsAppLink = (phone, msg = '') => `https://wa.me/${(phone || '').replace(/\D/g, '')}${msg ? `?text=${encodeURIComponent(msg)}` : ''}`;
-const getBaseUrl = () => typeof window !== 'undefined' ? window.location.origin : '';
-const isOverdue = (d) => d && new Date(d) < new Date();
-const isToday = (d) => d && new Date(d).toDateString() === new Date().toDateString();
-const getInitials = (nome, cognome) => `${(nome || '')[0] || ''}${(cognome || '')[0] || ''}`.toUpperCase() || '?';
-
-// Email Functions - via serverless to avoid CORS
-const sendEmail = async (to, subject, html) => { 
-  try { 
-    const response = await fetch('/api/send-email', { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ to, subject, html }) 
-    }); 
-    const data = await response.json();
-    return data.success || false; 
-  } catch (e) { 
-    console.log('Email error:', e);
-    return false; 
-  } 
+const sendEmail = async (to, subject, html) => {
+  const esito = await apiKp.inviaEmail(to, subject, html);
+  if (!esito.ok) console.log('Email non inviata:', esito.error);
+  return esito.ok;
 };
 const APP_URL = 'https://portal.keyprimere.com';
 // ── Email template helpers ──────────────────────────────────────────────────
 const kpEmail = (accentColor, badge, title, rows, url = APP_URL) =>
-  `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px"><tr><td align="center"><table cellpadding="0" cellspacing="0" style="max-width:560px;width:100%"><tr><td style="background:#1e293b;border-radius:12px 12px 0 0;padding:20px 32px;text-align:center"><span style="font-size:20px;font-weight:800;color:white;letter-spacing:-0.5px;font-family:Georgia,serif">KEY<span style="color:#f59e0b">PRIME</span></span></td></tr><tr><td style="background:${accentColor};height:4px;font-size:1px;line-height:4px">&nbsp;</td></tr><tr><td style="background:white;padding:32px 32px 28px;border-radius:0 0 12px 12px"><p style="margin:0 0 6px;font-size:11px;font-weight:700;color:${accentColor};text-transform:uppercase;letter-spacing:1.5px">${badge}</p><h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#0f172a;line-height:1.3">${title}</h1><table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #f1f5f9">${rows}</table><a href="${url}" style="display:inline-block;margin-top:28px;padding:13px 28px;background:#1e293b;color:white;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;letter-spacing:0.2px">Apri KeyPrime &rarr;</a></td></tr><tr><td style="padding:18px;text-align:center"><p style="margin:0;font-size:11px;color:#94a3b8">KeyPrime Sales &middot; <a href="mailto:info@keyprimere.com" style="color:#94a3b8;text-decoration:none">info@keyprimere.com</a></p></td></tr></table></td></tr></table></body></html>`;
+  `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px"><tr><td align="center"><table cellpadding="0" cellspacing="0" style="max-width:560px;width:100%"><tr><td style="background:#121f36;border-radius:12px 12px 0 0;padding:20px 32px;text-align:center"><span style="font-size:20px;font-weight:800;color:white;letter-spacing:-0.5px;font-family:Georgia,serif">KEY<span style="color:#f59e0b">PRIME</span></span></td></tr><tr><td style="background:${accentColor};height:4px;font-size:1px;line-height:4px">&nbsp;</td></tr><tr><td style="background:white;padding:32px 32px 28px;border-radius:0 0 12px 12px"><p style="margin:0 0 6px;font-size:11px;font-weight:700;color:${accentColor};text-transform:uppercase;letter-spacing:1.5px">${badge}</p><h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#0b1526;line-height:1.3">${title}</h1><table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #f1f5f9">${rows}</table><a href="${url}" style="display:inline-block;margin-top:28px;padding:13px 28px;background:#121f36;color:white;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;letter-spacing:0.2px">Apri KeyPrime &rarr;</a></td></tr><tr><td style="padding:18px;text-align:center"><p style="margin:0;font-size:11px;color:#94a3b8">KeyPrime Sales &middot; <a href="mailto:info@keyprimere.com" style="color:#94a3b8;text-decoration:none">info@keyprimere.com</a></p></td></tr></table></td></tr></table></body></html>`;
 const kpRow = (label, value) =>
-  `<tr><td style="padding:11px 0;border-bottom:1px solid #f1f5f9"><span style="display:block;font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">${label}</span><span style="display:block;margin-top:3px;font-size:15px;color:#0f172a;font-weight:500">${value}</span></td></tr>`;
+  `<tr><td style="padding:11px 0;border-bottom:1px solid #f1f5f9"><span style="display:block;font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">${label}</span><span style="display:block;margin-top:3px;font-size:15px;color:#0b1526;font-weight:500">${value}</span></td></tr>`;
 const kpBig = (value, color) =>
   `<tr><td style="padding:14px 0 10px;border-bottom:1px solid #f1f5f9"><span style="font-size:30px;font-weight:800;color:${color}">${value}</span></td></tr>`;
 const kpNote = (text) =>
-  `<tr><td style="padding:14px 16px;background:#f8fafc;border-radius:8px;margin-top:8px;border-left:3px solid #e2e8f0"><span style="font-size:14px;color:#334155;line-height:1.5">${text}</span></td></tr>`;
+  `<tr><td style="padding:14px 16px;background:#f8fafc;border-radius:8px;margin-top:8px;border-left:3px solid #e2e8f0"><span style="font-size:14px;color:#24344f;line-height:1.5">${text}</span></td></tr>`;
 // ─────────────────────────────────────────────────────────────────────────────
 
 const notifyTaskCompleted = async (task, agentName) => {
@@ -269,192 +221,6 @@ const generateClientePDF = (cliente, sales, tasks) => { const tv = sales.filter(
 // ==================== UI COMPONENTS ====================
 
 // Toast
-const Toast = ({ message, type = 'success', onClose }) => {
-  useEffect(() => { const t = setTimeout(onClose, 2500); return () => clearTimeout(t); }, [onClose]);
-  const colors = { success: 'bg-emerald-500', error: 'bg-red-500', info: 'bg-blue-500' };
-  return (
-    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 ${colors[type]} text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-2 animate-slideUp`}>
-      <Check className="w-4 h-4" /><span className="text-sm font-medium">{message}</span>
-    </div>
-  );
-};
-
-// Avatar
-const Avatar = ({ nome, cognome, size = 'md', color }) => {
-  const sizes = { sm: 'w-8 h-8 text-xs', md: 'w-10 h-10 text-sm', lg: 'w-12 h-12 text-base', xl: 'w-14 h-14 text-lg' };
-  const colors = ['bg-violet-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500'];
-  const bgColor = color || colors[Math.abs((nome || '').charCodeAt(0) || 0) % colors.length];
-  return <div className={`${sizes[size]} ${bgColor} rounded-full flex items-center justify-center font-semibold text-white shrink-0`}>{getInitials(nome, cognome)}</div>;
-};
-
-// Status Badge
-const StatusBadge = ({ status, type = 'pipeline' }) => {
-  const config = type === 'pipeline' ? theme.status[status] : type === 'priority' ? theme.priority[status] : theme.status[status];
-  if (!config) return null;
-  const label = pipelineLabels[status] || status;
-  return <span className="px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: config.bg, color: config.color }}>{label}</span>;
-};
-
-// Card Component
-const Card = ({ children, className = '', hover = false, onClick, padding = 'p-5' }) => (
-  <div onClick={onClick} className={`bg-[#1e293b] border border-[#334155] rounded-2xl ${padding} ${hover ? 'hover:border-[#3F3F46] hover:bg-[#1F1F23] cursor-pointer transition-all duration-200' : ''} ${className}`}>
-    {children}
-  </div>
-);
-
-// Section Header
-const SectionHeader = ({ icon: Icon, title, accent, action, actionLabel, onAction }) => (
-  <div className="flex items-center justify-between mb-5">
-    <div className="flex items-center gap-3">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `rgba(${accent}, 0.15)` }}>
-        <Icon className="w-5 h-5" style={{ color: `rgb(${accent})` }} />
-      </div>
-      <h2 className="text-lg font-semibold text-white">{title}</h2>
-    </div>
-    {action && (
-      <button onClick={onAction} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:bg-white/5" style={{ color: `rgb(${accent})` }}>
-        {actionLabel} <ChevronRight className="w-4 h-4" />
-      </button>
-    )}
-  </div>
-);
-
-// Metric Card
-const MetricCard = ({ label, value, subValue, icon: Icon, color, trend, onClick }) => (
-  <Card hover={!!onClick} onClick={onClick} className="relative overflow-hidden">
-    <div className="flex items-start justify-between">
-      <div>
-        <p className="text-sm text-zinc-500 mb-1">{label}</p>
-        <p className="text-2xl font-semibold text-white">{typeof value === 'number' ? fmt(value) : value}</p>
-        {subValue && <p className="text-sm text-zinc-500 mt-1">{subValue}</p>}
-      </div>
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: `${color}15` }}>
-        <Icon className="w-5 h-5" style={{ color }} />
-      </div>
-    </div>
-    {trend !== undefined && (
-      <div className={`flex items-center gap-1 mt-3 text-sm ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-        {trend >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-        {Math.abs(trend)}% vs last month
-      </div>
-    )}
-    <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full opacity-5" style={{ background: color }} />
-  </Card>
-);
-
-// Progress Bar
-const ProgressBar = ({ value, max, color = '#A78BFA', height = 'h-2', showLabel = false }) => {
-  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
-  return (
-    <div className="relative">
-      <div className={`${height} bg-zinc-700/50 rounded-full overflow-hidden`}>
-        <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${pct}%`, background: color }} />
-      </div>
-      {showLabel && <span className="absolute right-0 -top-6 text-xs text-zinc-500">{pct.toFixed(0)}%</span>}
-    </div>
-  );
-};
-
-// Empty State
-const EmptyState = ({ icon: Icon, title, description, action, onAction }) => (
-  <Card className="text-center py-12">
-    <div className="w-16 h-16 rounded-2xl bg-zinc-700/50 flex items-center justify-center mx-auto mb-4">
-      <Icon className="w-8 h-8 text-zinc-600" />
-    </div>
-    <h3 className="text-lg font-medium text-white mb-2">{title}</h3>
-    <p className="text-zinc-500 text-sm mb-6 max-w-sm mx-auto">{description}</p>
-    {action && <button onClick={onAction} className="px-5 py-2.5 bg-white text-zinc-900 rounded-xl font-medium text-sm hover:bg-zinc-100 transition-colors">{action}</button>}
-  </Card>
-);
-
-// Input
-const Input = ({ label, ...props }) => (
-  <div>
-    {label && <label className="block text-sm text-zinc-400 mb-2">{label}</label>}
-    <input {...props} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] focus:ring-1 focus:ring-[#3F3F46] transition-all" />
-  </div>
-);
-
-// Select
-const Select = ({ label, children, ...props }) => (
-  <div>
-    {label && <label className="block text-sm text-zinc-400 mb-2">{label}</label>}
-    <select {...props} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3F3F46] transition-all appearance-none cursor-pointer">
-      {children}
-    </select>
-  </div>
-);
-
-// Button
-const Button = ({ children, variant = 'primary', size = 'md', icon: Icon, className = '', ...props }) => {
-  const variants = {
-    primary: 'bg-white text-zinc-900 hover:bg-zinc-100',
-    secondary: 'bg-zinc-700/50 text-white hover:bg-zinc-700',
-    ghost: 'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5',
-    danger: 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-  };
-  const sizes = { sm: 'px-3 py-1.5 text-xs', md: 'px-4 py-2.5 text-sm', lg: 'px-6 py-3 text-base' };
-  return (
-    <button {...props} className={`${variants[variant]} ${sizes[size]} rounded-xl font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${className}`}>
-      {Icon && <Icon className="w-4 h-4" />}{children}
-    </button>
-  );
-};
-
-// Modal
-const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
-  if (!isOpen) return null;
-  const sizes = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl' };
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative bg-[#1e293b] border border-[#334155] rounded-2xl w-full ${sizes[size]} max-h-[85vh] overflow-hidden animate-scaleIn`}>
-        <div className="flex items-center justify-between p-5 border-b border-[#334155]">
-          <h3 className="text-lg font-semibold text-white">{title}</h3>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
-        </div>
-        <div className="p-5 overflow-y-auto max-h-[calc(85vh-80px)]">{children}</div>
-      </div>
-    </div>
-  );
-};
-
-// Bottom Sheet
-const BottomSheet = ({ isOpen, onClose, title, children }) => {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-50 md:flex md:items-center md:justify-center md:p-4">
-      <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="absolute bottom-0 left-0 right-0 md:relative md:max-w-lg md:w-full bg-[#1e293b] border-t md:border border-[#334155] rounded-t-3xl md:rounded-2xl max-h-[90vh] overflow-hidden animate-slideUp">
-        <div className="flex items-center justify-between p-5 border-b border-[#334155]">
-          <h3 className="text-lg font-semibold text-white">{title}</h3>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
-        </div>
-        <div className="p-5 overflow-y-auto max-h-[calc(90vh-80px)]">{children}</div>
-      </div>
-    </div>
-  );
-};
-
-// Sidebar Nav Item
-const NavItem = ({ icon: Icon, label, active, onClick, accent, badge, isNew }) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all relative ${active ? 'bg-white/10 text-white' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
-    <Icon className="w-5 h-5" style={active ? { color: accent } : {}} />
-    <span className="font-medium flex-1">{label}</span>
-    {badge > 0 && <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">{badge}</span>}
-    {isNew && <span className="px-1.5 py-0.5 bg-emerald-500 text-white text-[10px] font-bold rounded animate-pulse">LIVE</span>}
-  </button>
-);
-
-// Quick Actions Row
-const QuickActions = ({ phone, whatsapp, email, clienteName }) => (
-  <div className="flex gap-2">
-    {phone && <a href={`tel:${phone}`} className="flex-1 bg-zinc-700/50 hover:bg-zinc-700 text-white rounded-xl py-3 flex items-center justify-center gap-2 text-sm transition-colors"><Phone className="w-4 h-4" />Chiama</a>}
-    {(whatsapp || phone) && <a href={getWhatsAppLink(whatsapp || phone, clienteName ? `Ciao ${clienteName}, ` : '')} target="_blank" rel="noopener noreferrer" className="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl py-3 flex items-center justify-center gap-2 text-sm transition-colors"><MessageCircle className="w-4 h-4" />WhatsApp</a>}
-    {email && <a href={`mailto:${email}`} className="flex-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl py-3 flex items-center justify-center gap-2 text-sm transition-colors"><Mail className="w-4 h-4" />Email</a>}
-  </div>
-);
-
 // Global Search Modal (CMD+K)
 const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, onSelectCliente, onSelectTask, setActiveTab }) => {
   const [query, setQuery] = useState('');
@@ -485,9 +251,9 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
       <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#1e293b] border border-[#334155] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-scaleIn">
+      <div className="relative bg-[#121f36] border border-[#24344f] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-scaleIn">
         {/* Search Input */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-[#334155]">
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-[#24344f]">
           <Search className="w-5 h-5 text-zinc-500" />
           <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca lead, clienti, task..." className="flex-1 bg-transparent text-white text-lg placeholder:text-zinc-600 focus:outline-none" />
           <kbd className="hidden sm:flex items-center gap-1 px-2 py-1 bg-zinc-700/50 rounded text-xs text-zinc-500">ESC</kbd>
@@ -562,7 +328,7 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
         </div>
         
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-[#334155] flex items-center justify-between text-xs text-zinc-600">
+        <div className="px-4 py-3 border-t border-[#24344f] flex items-center justify-between text-xs text-zinc-600">
           <span>KeyPrime Search</span>
           <div className="flex items-center gap-2">
             <span>Naviga con</span>
@@ -592,14 +358,14 @@ const generateDashboardPDF = (totals, sales, vendite, byAgente, byZona) => {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; max-width: 900px; margin: 0 auto; color: #1a1a1a; }
     .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #f0f0f0; }
-    .logo { font-size: 28px; font-weight: 700; color: #1e293b; }
+    .logo { font-size: 28px; font-weight: 700; color: #121f36; }
     .logo span { color: #A78BFA; }
     .date { color: #666; font-size: 14px; }
     h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
     h2 { font-size: 16px; font-weight: 600; color: #666; margin: 32px 0 16px; text-transform: uppercase; letter-spacing: 0.5px; }
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
     .stat { background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%); padding: 20px; border-radius: 12px; text-align: center; }
-    .stat-value { font-size: 28px; font-weight: 700; color: #1e293b; }
+    .stat-value { font-size: 28px; font-weight: 700; color: #121f36; }
     .stat-value.purple { color: #A78BFA; }
     .stat-value.green { color: #34D399; }
     .stat-value.blue { color: #60A5FA; }
@@ -1025,7 +791,7 @@ function PushTab({ users }) {
     }
   };
 
-  const inputCls = 'w-full bg-[#1e293b] border border-[#334155] rounded-lg px-3 py-2.5 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-colors';
+  const inputCls = 'w-full bg-[#121f36] border border-[#24344f] rounded-lg px-3 py-2.5 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-colors';
   const activeUsers = users.filter(u => u.ruolo !== 'admin');
 
   return (
@@ -1060,7 +826,7 @@ function PushTab({ users }) {
                 { v: 'user', label: '👤 Utente' },
               ].map(opt => (
                 <button key={opt.v} onClick={() => setTarget(opt.v)}
-                  className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${target === opt.v ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'bg-[#1e293b] border-[#334155] text-zinc-400 hover:border-zinc-500'}`}>
+                  className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${target === opt.v ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'bg-[#121f36] border-[#24344f] text-zinc-400 hover:border-zinc-500'}`}>
                   {opt.label}
                 </button>
               ))}
@@ -1579,6 +1345,9 @@ export default function App() {
   // Saved Listings (PropertyFinder)
   const [savedListings, setSavedListings] = useState([]);
 
+  // Impostazioni operative (SLA, rotazione, mappature GHL)
+  const [impostazioni, setImpostazioni] = useState({});
+
   // Offerte
   const [offerte, setOfferte] = useState([]);
   const [showOffertaModal, setShowOffertaModal] = useState(null);
@@ -1609,22 +1378,45 @@ export default function App() {
 
   const showToast = (message, type = 'success') => setToast({ message, type });
 
-  // Auth
+  // Riapertura app: il ruolo viene riletto dal server, non dal localStorage.
+  // Prima bastava modificare il localStorage per presentarsi come admin.
   useEffect(() => {
-    const s = localStorage.getItem('keyprime_user');
-    if (s) { 
-      const u = JSON.parse(s); 
-      setUser(u); 
-      setActiveTab(u.ruolo === 'admin' ? 'dashboard' : 'home'); 
-      // agente_admin usa la stessa view di agente
-      const viewRole = u.ruolo === 'admin' ? 'admin' : (u.ruolo === 'agente_admin' ? 'agente' : u.ruolo);
-      setView(viewRole); 
-    }
+    let annullato = false;
+    (async () => {
+      const esito = await auth.ripristinaSessione();
+      if (annullato) return;
+      if (!esito.ok) { setView('login'); return; }
+      applicaUtente(esito.user);
+    })();
+    return () => { annullato = true; };
   }, []);
+
+  // Porta l'utente nella vista giusta in base al ruolo verificato.
+  const applicaUtente = (u) => {
+    setUser(u);
+    setActiveTab(u.ruolo === 'admin' ? 'dashboard' : 'oggi');
+    // agente_admin lavora nella vista agente
+    const vista = u.ruolo === 'admin' ? 'admin' : (u.ruolo === 'agente_admin' ? 'agente' : u.ruolo);
+    setView(vista);
+    if (u.must_change_password) setShowPasswordModal(true);
+    registraSuOneSignal(u);
+  };
+
+  const registraSuOneSignal = (u) => {
+    if (!window.OneSignalDeferred) return;
+    window.OneSignalDeferred.push(async function (OneSignal) {
+      try {
+        await OneSignal.login(u.username);
+        await OneSignal.User.addTag('ruolo', u.ruolo);
+        await OneSignal.User.addTag('username', u.username);
+        if (u.email) await OneSignal.User.addTag('email', u.email);
+      } catch (e) { console.log('OneSignal:', e); }
+    });
+  };
   
   // Data Loading
   const loadSales = async () => { setLoading(true); const { data } = await supabase.from('sales_with_commissions').select('*').order('created_at', { ascending: false }); setSales(data || []); setLoading(false); };
-  const loadUsers = async () => { const { data } = await supabase.from('user_credentials').select('*').order('created_at', { ascending: false }); setUsers(data || []); };
+  const loadUsers = async () => { setUsers(await auth.caricaTeam()); };
   const loadClienti = async () => { const { data } = await supabase.from('clienti').select('*').order('created_at', { ascending: false }); setClienti(data || []); };
   const loadTasks = async () => { const { data } = await supabase.from('tasks').select('*').order('scadenza', { ascending: true }); setTasks(data || []); };
   const loadActivities = async () => { const { data } = await supabase.from('lead_activities').select('*').order('created_at', { ascending: false }); setActivities(data || []); };
@@ -1639,8 +1431,9 @@ export default function App() {
     const { data } = await supabase.from('offerte').select('*').order('created_at', { ascending: false });
     setOfferte(data || []);
   };
+  const loadImpostazioni = async () => { setImpostazioni(await leadLib.caricaImpostazioni()); };
 
-  useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); loadActivities(); loadFollowUps(); loadSavedListings(); loadOfferte(); if (user.ruolo === 'admin') loadUsers(); }}, [user]);
+  useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); loadActivities(); loadFollowUps(); loadSavedListings(); loadOfferte(); loadImpostazioni(); loadUsers(); }}, [user]);
 
   // Realtime sync
   useEffect(() => {
@@ -1665,41 +1458,36 @@ export default function App() {
       loadFollowUps(),
       loadSavedListings(),
       loadOfferte(),
-      user?.ruolo === 'admin' ? loadUsers() : Promise.resolve()
+      loadImpostazioni(),
+      loadUsers()
     ]);
     setLoading(false);
     showToast('Dati aggiornati ✓');
   };
 
   // Auth Handlers
+  // La password non viene piu' confrontata dal client: la verifica bcrypt
+  // avviene sul database, che restituisce un token di sessione.
   const handleLogin = async (username, password) => {
     setLoading(true); setError(null);
-    const { data } = await supabase.from('user_credentials').select('*').eq('username', username).eq('password', password).eq('attivo', true).single();
-    if (!data) { setError('Credenziali non valide'); setLoading(false); return; }
-    setUser(data); localStorage.setItem('keyprime_user', JSON.stringify(data));
-    setActiveTab(data.ruolo === 'admin' ? 'dashboard' : 'home');
-    // agente_admin usa la stessa view di agente
-    const viewRole = data.ruolo === 'admin' ? 'admin' : (data.ruolo === 'agente_admin' ? 'agente' : data.ruolo);
-    setView(viewRole); setLoading(false);
-    // Registra utente su OneSignal con external_id e tag ruolo
-    if (window.OneSignalDeferred) {
-      window.OneSignalDeferred.push(async function(OneSignal) {
-        try {
-          await OneSignal.login(data.username);
-          await OneSignal.User.addTag('ruolo', data.ruolo);
-          await OneSignal.User.addTag('username', data.username);
-          if (data.email) await OneSignal.User.addTag('email', data.email);
-        } catch(e) { console.log('OneSignal login error:', e); }
-      });
-    }
+    const esito = await auth.login(username, password);
+    setLoading(false);
+    if (!esito.ok) { setError(esito.error); return; }
+    applicaUtente(esito.user);
   };
-  
-  const handleLogout = () => { setUser(null); localStorage.removeItem('keyprime_user'); setView('login'); setMobileMenuOpen(false); };
-  
-  const changePassword = async (np) => {
-    await supabase.from('user_credentials').update({ password: np }).eq('id', user.id);
-    const u = { ...user, password: np }; setUser(u); localStorage.setItem('keyprime_user', JSON.stringify(u));
-    setShowPasswordModal(false); showToast('Password aggiornata');
+
+  const handleLogout = async () => {
+    setUser(null); setView('login'); setMobileMenuOpen(false);
+    await auth.logout();
+  };
+
+  const changePassword = async (vecchia, nuova) => {
+    const esito = await auth.cambiaPassword(vecchia, nuova);
+    if (!esito.ok) return esito;
+    setUser(u => (u ? { ...u, must_change_password: false } : u));
+    setShowPasswordModal(false);
+    showToast('Password aggiornata');
+    return { ok: true };
   };
 
   // Saved Listings Handlers
@@ -1773,7 +1561,9 @@ export default function App() {
       referente: user?.referente,
       cliente_id: cliente_id,
       inserted_by: user?.nome,
-      inserted_as: user?.ruolo
+      inserted_as: user?.ruolo,
+      assegnato_a: user?.nome,
+      fonte: 'Off-Plan'
     }]);
     
     // Notifica email per nuovo lead (solo se non è admin a creare)
@@ -1805,7 +1595,8 @@ export default function App() {
       const { error } = await supabase.from('sales').insert([{
         data: ld.data, developer: ld.developer, progetto: ld.progetto, zona: ld.zona, valore: ld.valore || 0,
         agente: ld.agente, segnalatore: ld.segnalatore, referente: user?.referente, commission_pct: 5,
-        inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: ld.stato || 'lead', cliente_id
+        inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: ld.stato || 'lead', cliente_id,
+        assegnato_a: ld.agente || user?.nome, fonte: 'Inserimento manuale'
       }]);
       if (error) { console.error('Insert error:', error); showToast('Errore: ' + error.message); setSubmitting(false); return; }
       if (user?.ruolo !== 'admin') {
@@ -1850,7 +1641,7 @@ export default function App() {
     const updatedSale = { ...sale, valore: v, stato: 'venduto' };
     await notifyNewSaleToAdmin(updatedSale, sale?.agente || sale?.segnalatore || 'N/A', sale?.segnalatore && !sale?.agente ? 'segnalatore' : 'agente');
     if (sale?.segnalatore) {
-      const { data: sg } = await supabase.from('user_credentials').select('email, username').eq('nome', sale.segnalatore).single();
+      const { data: sg } = await supabase.from('team_members').select('email, username').eq('nome', sale.segnalatore).maybeSingle();
       if (sg) await notifySegnalatoreLeadVenduto(updatedSale, sg.username, sg.email);
     }
     setConvertingSale(null); setShowLeadDetail(null); showToast('Vendita confermata!'); loadSales(); loadClienti();
@@ -1863,7 +1654,7 @@ export default function App() {
     if (u.stato === 'vinto' && s?.stato !== 'vinto') {
       await notifyNewSaleToAdmin(s, s.agente || s.segnalatore || 'N/A', s?.segnalatore && !s?.agente ? 'segnalatore' : 'agente');
       if (s?.segnalatore) {
-        const { data: sg } = await supabase.from('user_credentials').select('email, username').eq('nome', s.segnalatore).single();
+        const { data: sg } = await supabase.from('team_members').select('email, username').eq('nome', s.segnalatore).maybeSingle();
         if (sg) await notifySegnalatoreLeadVenduto(s, sg.username, sg.email);
       }
     }
@@ -1880,7 +1671,7 @@ export default function App() {
     if (u.pagato === true && !s?.pagato) {
       const tn = s.agente || s.segnalatore;
       if (tn) {
-        const { data: tu } = await supabase.from('user_credentials').select('*').eq('nome', tn).single();
+        const { data: tu } = await supabase.from('team_members').select('*').eq('nome', tn).maybeSingle();
         if (tu) {
           const isAdmin = tu.ruolo === 'agente_admin';
           const agRate = isAdmin ? (s.referente === 'Giovanni' ? 0.7 : 0.3) : (s.agente && tu.nome === s.agente ? 0.7 : 0.3);
@@ -1902,16 +1693,27 @@ export default function App() {
       showToast('Errore: ' + (error.message || error.details || 'Sconosciuto'));
       return;
     }
-    console.log('Update success, reloading...');
     await loadSales();
     showToast('Salvato');
+
+    // GHL deve vedere lo stesso stato del portale, altrimenti le automazioni
+    // girano su dati vecchi. Non blocca l'agente: se GHL non e' configurato o
+    // non risponde, l'errore finisce in ghl_sync_log.
+    if (u.stato && u.stato !== s?.stato) {
+      apiKp.sincronizzaGhlInSilenzio({ saleId: id });
+    }
   };
 
   const deleteSale = async (id) => { if (!window.confirm('Eliminare questo lead?')) return; await supabase.from('sales').delete().eq('id', id); showToast('Eliminato'); loadSales(); };
 
   // Cliente Handlers
   const createCliente = async (d) => {
-    await supabase.from('clienti').insert([{ ...d, created_by: user?.nome, referente: user?.referente }]);
+    const { data: creato } = await supabase
+      .from('clienti')
+      .insert([{ ...d, created_by: user?.nome, referente: user?.referente, assegnato_a: d.assegnato_a || user?.nome }])
+      .select()
+      .single();
+    if (creato?.id) apiKp.sincronizzaGhlInSilenzio({ clienteId: creato.id });
     if (user?.ruolo !== 'admin') {
       await notifyNewClienteToAdmin(d, user?.nome, user?.ruolo);
       if (user?.ruolo === 'segnalatore') await notifySegnalatoreConfermaInserimento(user?.email, user?.username, 'Contatto', `${d.nome} ${d.cognome || ''}`.trim());
@@ -1943,7 +1745,7 @@ export default function App() {
     await supabase.from('tasks').insert([{ ...d, created_by: user?.nome }]);
     // Notifica push + email per nuovo task assegnato
     if (d.assegnato_a) {
-      const { data: agentData } = await supabase.from('user_credentials').select('email, username').eq('nome', d.assegnato_a).single();
+      const { data: agentData } = await supabase.from('team_members').select('email, username').eq('nome', d.assegnato_a).maybeSingle();
       await notifyNewTaskToAgent(d, agentData?.email, agentData?.username);
     }
     loadTasks(); setShowTaskModal(null); showToast('Task creato');
@@ -1986,8 +1788,8 @@ export default function App() {
     loadFollowUps();
     showToast('Follow-up programmato');
   };
-  const completeFollowUp = async (id) => {
-    await supabase.from('follow_ups').update({ completato: true }).eq('id', id);
+  const completeFollowUp = async (id, esito) => {
+    await leadLib.completaFollowUp(id, esito);
     loadFollowUps();
     showToast('Follow-up completato');
   };
@@ -1996,10 +1798,152 @@ export default function App() {
     loadFollowUps(); 
   };
 
-  // User Handlers
-  const createUser = async (d) => { await supabase.from('user_credentials').insert([d]); loadUsers(); setShowUserModal(null); showToast('Utente creato'); };
-  const updateUser = async (id, d) => { await supabase.from('user_credentials').update(d).eq('id', id); loadUsers(); setShowUserModal(null); showToast('Salvato'); };
-  const deleteUser = async (id) => { if (!window.confirm('Eliminare?')) return; await supabase.from('user_credentials').delete().eq('id', id); loadUsers(); };
+  // Programma il prossimo contatto e porta la data sul lead, cosi' la coda di
+  // lavoro e i promemoria la vedono senza rileggere tutti i follow-up.
+  const programmaFollowUp = async (saleId, clienteId, giorni, tipo, nota) => {
+    const esito = await leadLib.programmaFollowUp({
+      saleId, clienteId, giorni, tipo, nota,
+      assegnatoA: user?.nome, creatoDa: user?.nome
+    });
+    if (!esito.ok) { showToast(esito.error || 'Non riuscito', 'error'); return esito; }
+    await Promise.all([loadFollowUps(), loadSales()]);
+    showToast(giorni === 1 ? 'Richiamo fissato per domani' : `Richiamo fissato fra ${giorni} giorni`);
+    return esito;
+  };
+
+  // ---- Coda di lavoro --------------------------------------------------
+  const sla = impostazioni.sla || leadLib.SLA_PREDEFINITO;
+
+  const codaDiLavoro = leadLib.costruisciCoda({
+    leads: sales,
+    followUps,
+    clienti,
+    nomeUtente: user?.nome,
+    sla,
+    soloMiei: user?.ruolo !== 'admin'
+  });
+
+  // Chiude una voce della coda: registra com'e' andata, archivia il follow-up
+  // e, se richiesto, fissa subito quello successivo.
+  const eseguiVoceCoda = async (voce, { tipo, nota, prossimoFollowUp }) => {
+    const saleId = voce.lead?.id ?? voce.followUp?.sale_id;
+    const clienteId = voce.lead?.cliente_id ?? voce.followUp?.cliente_id;
+
+    if (saleId) {
+      await leadLib.registraAttivita({
+        saleId,
+        tipo: tipo || 'call',
+        contenuto: nota?.trim() || `${leadLib.TIPI_ATTIVITA.find(t => t.id === tipo)?.label || 'Contatto'} effettuato`,
+        autore: user?.nome
+      });
+    }
+    if (voce.followUp) await leadLib.completaFollowUp(voce.followUp.id, nota?.trim() || null);
+
+    if (prossimoFollowUp) {
+      await leadLib.programmaFollowUp({
+        saleId, clienteId, giorni: prossimoFollowUp, tipo: 'call',
+        assegnatoA: user?.nome, creatoDa: user?.nome
+      });
+    } else if (saleId) {
+      // Senza prossimo passo il lead resta scoperto: la coda lo ripescera'.
+      await supabase.from('sales').update({ prossima_azione_at: null }).eq('id', saleId);
+    }
+
+    await Promise.all([loadActivities(), loadFollowUps(), loadSales()]);
+    showToast(prossimoFollowUp ? 'Registrato, prossimo contatto fissato' : 'Registrato');
+  };
+
+  const rimandaVoceCoda = async (voce, giorni) => {
+    const quando = leadLib.fraGiorni(giorni);
+    if (voce.followUp) {
+      await supabase.from('follow_ups')
+        .update({ data_reminder: quando.data_reminder, ora_reminder: quando.ora_reminder, reminder_inviato_at: null })
+        .eq('id', voce.followUp.id);
+      if (voce.followUp.sale_id) {
+        await supabase.from('sales')
+          .update({ prossima_azione_at: `${quando.data_reminder}T${quando.ora_reminder}:00` })
+          .eq('id', voce.followUp.sale_id);
+      }
+    } else if (voce.lead) {
+      await leadLib.programmaFollowUp({
+        saleId: voce.lead.id, clienteId: voce.lead.cliente_id, giorni,
+        tipo: 'call', assegnatoA: user?.nome, creatoDa: user?.nome
+      });
+    }
+    await Promise.all([loadFollowUps(), loadSales()]);
+    showToast(giorni === 1 ? 'Rimandato a domani' : `Rimandato di ${giorni} giorni`);
+  };
+
+  // ---- Assegnazione ----------------------------------------------------
+  const assegnaLeads = async (ids, agente) => {
+    const esito = await leadLib.assegnaLead(ids, agente);
+    if (!esito.ok) { showToast(esito.error || 'Non riuscito', 'error'); return; }
+    await loadSales();
+    showToast(`${esito.aggiornati} lead assegnati a ${agente}`);
+
+    // L'agente deve saperlo subito, non al prossimo accesso.
+    const destinatario = users.find(u => u.nome === agente);
+    if (destinatario?.username) {
+      await sendPushNotification(
+        ids.length === 1 ? 'Nuovo lead assegnato' : `${ids.length} nuovi lead assegnati`,
+        'Apri il portale e guarda la scheda Oggi',
+        APP_URL,
+        { type: 'user', username: destinatario.username }
+      );
+    }
+  };
+
+  const assegnaRotazione = async (ids) => {
+    const assegnati = [];
+    for (const id of ids) {
+      const esito = await leadLib.assegnaARotazione(id, user?.nome);
+      if (esito.ok) assegnati.push(esito.agente);
+      else { showToast(esito.error || 'Rotazione non riuscita', 'error'); break; }
+    }
+    await loadSales();
+    if (assegnati.length) {
+      showToast(`${assegnati.length} lead distribuiti a rotazione`);
+      for (const nome of [...new Set(assegnati)]) {
+        const quanti = assegnati.filter(a => a === nome).length;
+        const destinatario = users.find(u => u.nome === nome);
+        if (destinatario?.username) {
+          await sendPushNotification(
+            quanti === 1 ? 'Nuovo lead assegnato' : `${quanti} nuovi lead assegnati`,
+            'Apri il portale e guarda la scheda Oggi',
+            APP_URL,
+            { type: 'user', username: destinatario.username }
+          );
+        }
+      }
+    }
+  };
+
+  // Agenti che entrano nella rotazione dei lead
+  const agentiAttivi = users.filter(u => u.attivo && (u.ruolo === 'agente' || u.ruolo === 'agente_admin'));
+
+  // Il lead mostrato nella scheda segue sempre i dati freschi di `sales`.
+  const leadInScheda = showLeadDetail
+    ? (sales.find(x => x.id === showLeadDetail.id) || showLeadDetail)
+    : null;
+
+  // Gestione team: passa dalle RPC, che verificano il ruolo admin sul server.
+  const saveUser = async (d) => {
+    const esito = await auth.salvaUtente(d);
+    if (!esito.ok) { showToast(esito.error || 'Non riuscito', 'error'); return esito; }
+    await loadUsers();
+    setShowUserModal(null);
+    showToast(d.id ? 'Utente aggiornato' : 'Utente creato');
+    return esito;
+  };
+
+  // Un agente che lascia l'agenzia va disattivato, non cancellato: le vendite
+  // e le commissioni restano attribuite a lui.
+  const setUserActive = async (id, attivo) => {
+    const esito = await auth.impostaAttivo(id, attivo);
+    if (!esito.ok) { showToast(esito.error || 'Non riuscito', 'error'); return; }
+    await loadUsers();
+    showToast(attivo ? 'Accesso riattivato' : 'Accesso disattivato');
+  };
 
   // Offerta handlers
   const saveOfferta = async (data) => {
@@ -2086,7 +2030,7 @@ export default function App() {
   // ==================== LOGIN VIEW ====================
   if (view === 'login') {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#0b1526] flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
           <div className="text-center mb-10">
             <img src="/logo.png" alt="KeyPrime" className="h-20 mx-auto mb-4" />
@@ -2109,24 +2053,30 @@ export default function App() {
     const mySales = sales.filter(s => type === 'agente' ? s.agente === user?.nome : s.segnalatore === user?.nome);
     const myTasks = tasks.filter(t => t.assegnato_a === user?.nome && t.stato === 'pending');
     const myClienti = clienti.filter(c => c.created_by === user?.nome || c.agente_riferimento === user?.nome);
+    // La percentuale dell'agente puo' essere personalizzata dall'admin
+    // (user.commission_pct). Il segnalatore resta al 30%, l'agente_admin
+    // segue la regola societaria legata al referente.
     const getMyRate = (s) => {
-      if (isAgenteAdmin) return s.referente === 'Giovanni' ? 0.7 : 0.3;
-      return (type === 'agente') ? 0.7 : 0.3;
+      if (type === 'segnalatore') return 0.3;
+      return leadLib.percentualeAgente(s, user) / 100;
     };
-    const rate = (type === 'agente' || isAgenteAdmin) ? 0.7 : 0.3;
+    const rate = type === 'segnalatore' ? 0.3 : leadLib.percentualeAgente({ referente: user?.referente }, user) / 100;
     const myVendite = mySales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
     const totalComm = myVendite.reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * getMyRate(s)), 0);
     const pagate = myVendite.filter(s => s.pagato).reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * getMyRate(s)), 0);
     const byStato = pipelineStati.reduce((acc, st) => { acc[st] = mySales.filter(s => (s.stato || 'lead') === st); return acc; }, {});
 
+    // "Oggi" apre l'app: la prima domanda di un agente e' cosa deve fare adesso.
+    // primaria = visibile nella barra mobile; il resto sta sotto "Altro".
     const tabs = [
-      { id: 'home', icon: LayoutDashboard, label: 'Home', accent: theme.sections.dashboard.accent },
-      { id: 'leads', icon: Target, label: 'Lead', accent: theme.sections.pipeline.accent },
-      { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.vendite.accent },
-      { id: 'crm', icon: Users, label: 'CRM', accent: theme.sections.crm.accent },
-      { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent, isNew: true },
-      { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent, isNew: true },
-      { id: 'offerte', icon: FileText, label: 'Offerte', accent: '#06b6d4' },
+      { id: 'oggi', icon: Clock, label: 'Oggi', accent: theme.sections.oggi.accent, badge: codaDiLavoro.length, primaria: true },
+      { id: 'leads', icon: Target, label: 'Lead', accent: theme.sections.pipeline.accent, primaria: true },
+      { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.vendite.accent, primaria: true },
+      { id: 'crm', icon: Users, label: 'Clienti', accent: theme.sections.crm.accent, primaria: true },
+      { id: 'home', icon: LayoutDashboard, label: 'Riepilogo', accent: theme.sections.dashboard.accent },
+      { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent },
+      { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent },
+      { id: 'offerte', icon: FileText, label: 'Offerte', accent: theme.sections.offerte.accent },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: myTasks.length },
       { id: 'settings', icon: Settings, label: 'Account', accent: theme.sections.utenti.accent }
     ];
@@ -2134,8 +2084,8 @@ export default function App() {
     // Form View (same for mobile/desktop)
     if (showForm) {
       return (
-        <div className="min-h-screen bg-[#0f172a]">
-          <div className="sticky top-0 z-40 bg-[#0f172a]/95 backdrop-blur-xl border-b border-[#334155] px-4 py-4">
+        <div className="min-h-screen bg-[#0b1526]">
+          <div className="sticky top-0 z-40 bg-[#0b1526]/95 backdrop-blur-xl border-b border-[#24344f] px-4 py-4">
             <div className="flex items-center justify-between max-w-lg mx-auto">
               <button onClick={() => setShowForm(null)} className="text-zinc-400 hover:text-white flex items-center gap-2 transition-colors">
                 <ChevronLeft className="w-5 h-5" />Indietro
@@ -2148,7 +2098,7 @@ export default function App() {
             {showForm === 'lead' && <LeadForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addLead} />}
             {showForm === 'vendita' && <SaleForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addSale} />}
           </div>
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0f172a]/95 backdrop-blur-xl border-t border-[#334155]">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0b1526]/95 backdrop-blur-xl border-t border-[#24344f]">
             <Button onClick={() => document.getElementById('submitBtn')?.click()} className="w-full py-4" disabled={submitting}>
               {submitting ? (
                 <span className="flex items-center justify-center gap-2">
@@ -2164,9 +2114,9 @@ export default function App() {
     }
 
     return (
-      <div className="min-h-screen bg-[#0f172a] lg:flex">
+      <div className="min-h-screen bg-[#0b1526] lg:flex">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-[#334155] bg-[#1e293b] p-4 fixed h-full">
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#24344f] bg-[#121f36] p-4 fixed h-full">
           <div className="mb-8">
             <img src="/logo.png" alt="KeyPrime" className="h-16" />
           </div>
@@ -2175,7 +2125,7 @@ export default function App() {
               <NavItem key={t.id} icon={t.icon} label={t.label} active={activeTab === t.id} onClick={() => setActiveTab(t.id)} accent={t.accent} badge={t.badge} isNew={t.isNew} />
             ))}
           </nav>
-          <div className="pt-4 border-t border-[#334155]">
+          <div className="pt-4 border-t border-[#24344f]">
             <div className="flex items-center gap-3 px-2 py-2">
               <Avatar nome={user?.nome} size="sm" />
               <div className="flex-1 min-w-0">
@@ -2190,7 +2140,7 @@ export default function App() {
         {/* Main Content */}
         <div className="flex-1 lg:ml-64 pb-24 lg:pb-0">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-40 bg-[#0f172a]/95 backdrop-blur-xl border-b border-[#334155]">
+          <div className="lg:hidden sticky top-0 z-40 bg-[#0b1526]/95 backdrop-blur-xl border-b border-[#24344f]">
             <div className="flex items-center justify-between px-4 py-4">
               <img src="/logo.png" alt="KeyPrime" className="h-12" />
               <div className="flex items-center gap-3">
@@ -2207,11 +2157,12 @@ export default function App() {
           </div>
 
           {/* Desktop Header */}
-          <div className="hidden lg:block sticky top-0 z-40 bg-[#0f172a]/95 backdrop-blur-xl border-b border-[#334155]">
+          <div className="hidden lg:block sticky top-0 z-40 bg-[#0b1526]/95 backdrop-blur-xl border-b border-[#24344f]">
             <div className="flex items-center justify-between px-6 py-4">
               <div>
-                <h1 className="text-xl font-semibold text-white capitalize">{activeTab === 'home' ? `Ciao, ${user?.nome}` : tabs.find(t => t.id === activeTab)?.label}</h1>
+                <h1 className="text-xl font-semibold text-white">{activeTab === 'oggi' ? `Ciao ${(user?.nome || '').split(' ')[0]}` : tabs.find(t => t.id === activeTab)?.label}</h1>
                 <p className="text-zinc-500 text-sm">
+                  {activeTab === 'oggi' && (codaDiLavoro.length ? `${codaDiLavoro.length} cose da fare adesso` : 'Nessun lead in attesa')}
                   {activeTab === 'home' && 'Il tuo riepilogo'}
                   {activeTab === 'leads' && `${mySales.length} lead totali`}
                   {activeTab === 'pipeline' && 'Stato dei tuoi lead'}
@@ -2221,11 +2172,11 @@ export default function App() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white bg-[#334155] rounded-xl">
+                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white bg-[#24344f] rounded-xl">
                   <Bell className="w-5 h-5" />
                   {notificationCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
                 </button>
-                <button onClick={refreshAllData} className="p-2 text-zinc-400 hover:text-white bg-[#334155] rounded-xl" title="Aggiorna">
+                <button onClick={refreshAllData} className="p-2 text-zinc-400 hover:text-white bg-[#24344f] rounded-xl" title="Aggiorna">
                   <RefreshCw className="w-5 h-5" />
                 </button>
                 <Button onClick={() => setShowForm('lead')} icon={Plus}>Nuovo Lead</Button>
@@ -2263,7 +2214,7 @@ export default function App() {
                   <div className="grid grid-cols-5 gap-2">
                     {pipelineStati.map(st => (
                       <div key={st} className="text-center">
-                        <div className="rounded-xl py-3 px-2" style={{ background: theme.status[st]?.bg || '#334155' }}>
+                        <div className="rounded-xl py-3 px-2" style={{ background: theme.status[st]?.bg || '#24344f' }}>
                           <p className="text-2xl font-bold" style={{ color: theme.status[st]?.color || '#fff' }}>{byStato[st]?.length || 0}</p>
                         </div>
                         <p className="text-xs text-zinc-500 mt-2">{pipelineLabels[st] || st}</p>
@@ -2409,6 +2360,17 @@ export default function App() {
               </div>
             )}
 
+            {activeTab === 'oggi' && (
+              <WorkQueue
+                coda={codaDiLavoro}
+                clienti={clienti}
+                onApriLead={setShowLeadDetail}
+                onEseguito={eseguiVoceCoda}
+                onRimanda={rimandaVoceCoda}
+                onApriTuttiLead={() => setActiveTab('leads')}
+              />
+            )}
+
             {activeTab === 'tasks' && <AgentTasksTab tasks={myTasks} allTasks={tasks.filter(t => t.assegnato_a === user?.nome)} clienti={clienti} onComplete={completeTask} onAddNote={(t) => setShowNoteModal(t)} />}
             {activeTab === 'offplan' && <OffPlanTab clienti={myClienti} onCreateLead={createLeadFromListing} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeListing} user={user} />}
             {activeTab === 'calculator' && <ROICalculator />}
@@ -2432,23 +2394,81 @@ export default function App() {
             )}
           </div>
 
-          {/* Mobile Bottom Nav */}
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0f172a]/95 backdrop-blur-xl border-t border-[#334155] px-4 py-2 z-30">
-            <div className="flex justify-around">
-              {tabs.map(t => (
-                <button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex flex-col items-center py-2 px-3 ${activeTab === t.id ? 'text-white' : 'text-zinc-500'}`}>
+          {/* Barra mobile: solo le schede primarie, il resto sotto "Altro".
+              Con dieci voci affiancate le etichette diventavano illeggibili. */}
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0b1526]/95 backdrop-blur-xl border-t border-[#24344f] px-2 py-2 z-30">
+            <div className="flex justify-around items-end">
+              {tabs.filter(t => t.primaria).map(t => (
+                <button key={t.id} onClick={() => { setActiveTab(t.id); setMobileMenuOpen(false); }}
+                        className={`relative flex flex-col items-center py-1.5 px-2 min-w-[60px] ${activeTab === t.id ? 'text-white' : 'text-zinc-500'}`}>
                   <t.icon className="w-6 h-6" style={activeTab === t.id ? { color: t.accent } : {}} />
-                  <span className="text-xs mt-1">{t.label}</span>
+                  {t.badge > 0 && (
+                    <span className="absolute top-0 right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center">
+                      {t.badge > 9 ? '9+' : t.badge}
+                    </span>
+                  )}
+                  <span className="text-[11px] mt-1">{t.label}</span>
                 </button>
               ))}
+              <button onClick={() => setMobileMenuOpen(true)}
+                      className={`flex flex-col items-center py-1.5 px-2 min-w-[60px] ${tabs.some(t => !t.primaria && t.id === activeTab) ? 'text-white' : 'text-zinc-500'}`}>
+                <Menu className="w-6 h-6" />
+                <span className="text-[11px] mt-1">Altro</span>
+              </button>
             </div>
           </div>
+
+          {/* Pannello "Altro" */}
+          {mobileMenuOpen && (
+            <div className="lg:hidden fixed inset-0 z-40">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+              <div className="absolute bottom-0 left-0 right-0 bg-[#121f36] border-t border-[#24344f] rounded-t-3xl p-4 pb-8 animate-slideUp">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-white font-semibold">Altre sezioni</h3>
+                  <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-500 hover:text-white"><X className="w-5 h-5" /></button>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {tabs.filter(t => !t.primaria).map(t => (
+                    <button key={t.id} onClick={() => { setActiveTab(t.id); setMobileMenuOpen(false); }}
+                            className={`rounded-2xl p-4 flex flex-col items-center gap-2 transition-all ${activeTab === t.id ? 'bg-white/10' : 'bg-zinc-800/60'}`}>
+                      <t.icon className="w-6 h-6" style={{ color: t.accent }} />
+                      <span className="text-xs text-center leading-tight text-zinc-300">{t.label}</span>
+                      {t.badge > 0 && <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] rounded-full">{t.badge}</span>}
+                    </button>
+                  ))}
+                  <button onClick={handleLogout} className="rounded-2xl p-4 flex flex-col items-center gap-2 bg-red-500/10">
+                    <LogOut className="w-6 h-6 text-red-400" />
+                    <span className="text-xs text-red-400">Esci</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {showLeadDetail && <LeadDetailSheet sale={showLeadDetail} cliente={clienti.find(c => c.id === showLeadDetail?.cliente_id)} rate={rate} onClose={() => setShowLeadDetail(null)} onUpdateSale={updateSale} onConvert={() => setConvertingSale(showLeadDetail)} activities={activities.filter(a => a.sale_id === showLeadDetail?.id)} followUps={followUps.filter(f => f.sale_id === showLeadDetail?.id)} onAddActivity={addActivity} onCreateFollowUp={createFollowUp} onCompleteFollowUp={completeFollowUp} onDeleteActivity={deleteActivity} onDeleteFollowUp={deleteFollowUp} userName={user?.nome} />}
+        {leadInScheda && <LeadDetailSheet
+          sale={leadInScheda}
+          cliente={clienti.find(c => c.id === leadInScheda.cliente_id)}
+          rate={leadLib.percentualeAgente(leadInScheda, user) / 100}
+          onClose={() => setShowLeadDetail(null)}
+          onUpdateSale={updateSale}
+          onConvert={() => setConvertingSale(leadInScheda)}
+          activities={activities.filter(a => a.sale_id === leadInScheda.id)}
+          followUps={followUps.filter(f => f.sale_id === leadInScheda.id)}
+          onAddActivity={addActivity}
+          onCreateFollowUp={createFollowUp}
+          onCompleteFollowUp={completeFollowUp}
+          onDeleteActivity={deleteActivity}
+          onDeleteFollowUp={deleteFollowUp}
+          onProgrammaFollowUp={programmaFollowUp}
+          agenti={agentiAttivi}
+          utente={user}
+          onToast={showToast}
+          sla={sla}
+        />}
         {convertingSale && <ConvertModal sale={convertingSale} onConvert={convertLeadToSale} onCancel={() => setConvertingSale(null)} />}
         {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} recentSales={recentSalesNotifications} onClose={() => { setShowNotifications(false); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} onMarkAsRead={markSingleNotificationAsRead} userId={user?.id} />}
-        {showPasswordModal && <PasswordModal currentPassword={user?.password} onSave={changePassword} onClose={() => setShowPasswordModal(false)} />}
+        {showPasswordModal && <PasswordModal obbligatorio={!!user?.must_change_password} onSave={changePassword} onClose={() => setShowPasswordModal(false)} />}
         {showNoteModal && <NoteModal task={showNoteModal} onSave={addTaskNote} onClose={() => setShowNoteModal(null)} />}
         {showClienteModal && <ClienteModal cliente={showClienteModal.id ? showClienteModal : null} onSave={showClienteModal.id ? (d) => updateCliente(showClienteModal.id, d) : createCliente} onClose={() => setShowClienteModal(null)} />}
         {showOffertaModal !== null && <OffertaModal offerta={showOffertaModal?.id ? showOffertaModal : null} clienti={clienti} user={user} onSave={async (data) => { await saveOfferta(data); if (!showOffertaModal?.id) generateOffertaPDF(data); }} onClose={() => setShowOffertaModal(null)} />}
@@ -2481,7 +2501,9 @@ export default function App() {
         if (s.referente === 'Giovanni') { ag = c * 0.7; sg = 0; g = 0; p = c * 0.3; }
         else { ag = c * 0.3; sg = 0; g = 0; p = c * 0.7; }
       } else {
-        ag = s.agente ? c * 0.7 : 0;
+        // 70% standard, o la percentuale personalizzata dell'agente
+        const pctAgente = leadLib.percentualeAgente(s, agentUser) / 100;
+        ag = s.agente ? c * pctAgente : 0;
         sg = s.segnalatore ? c * 0.3 : 0;
         const nr = c - ag - sg;
         p = s.referente === 'Pellegrino' ? nr * 0.7 : (s.referente === 'Giovanni' ? nr * 0.3 : 0);
@@ -2509,8 +2531,17 @@ export default function App() {
     const byZona = periodSales.reduce((a, s) => { if (s.zona) a[s.zona] = (a[s.zona] || 0) + Number(s.valore); return a; }, {});
     const pendingTasks = tasks.filter(t => t.stato === 'pending');
 
+    const daAssegnare = sales.filter(s => leadLib.eAperto(s) && !s.assegnato_a && !s.agente).length;
+    const daLavorare = sales.filter(s => {
+      if (!leadLib.eAperto(s)) return false;
+      if (!(s.assegnato_a || s.agente)) return false;
+      if (s.ultimo_contatto_at) return false;
+      return (leadLib.oreDa(s.created_at) || 0) > (sla.primo_contatto_ore ?? 24);
+    }).length;
+
     const tabs = [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', accent: theme.sections.dashboard.accent },
+      { id: 'inbox', icon: AlertCircle, label: 'Inbox Lead', accent: theme.sections.inbox.accent, badge: daAssegnare + daLavorare },
       { id: 'commissioni', icon: Award, label: 'Commissioni', accent: '#10B981' },
       { id: 'vendite', icon: DollarSign, label: 'Vendite', accent: theme.sections.vendite.accent },
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.pipeline.accent },
@@ -2525,9 +2556,9 @@ export default function App() {
     ];
 
     return (
-      <div className="min-h-screen bg-[#0f172a] flex">
+      <div className="min-h-screen bg-[#0b1526] flex">
         {/* Sidebar - Desktop */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-[#334155] bg-[#1e293b] p-4">
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#24344f] bg-[#121f36] p-4">
           <div className="mb-8">
             <img src="/logo.png" alt="KeyPrime" className="h-20" />
           </div>
@@ -2538,14 +2569,15 @@ export default function App() {
             ))}
           </nav>
           
-          <div className="border-t border-[#334155] pt-4 mt-4">
+          <div className="border-t border-[#24344f] pt-4 mt-4">
             <div className="flex items-center gap-3 px-4 py-3">
               <Avatar nome={user?.nome} size="sm" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{user?.nome}</p>
                 <p className="text-xs text-zinc-500">Admin</p>
               </div>
-              <button onClick={handleLogout} className="text-zinc-500 hover:text-white transition-colors"><LogOut className="w-4 h-4" /></button>
+              <button onClick={() => setShowPasswordModal(true)} className="text-zinc-500 hover:text-white transition-colors mr-2" title="Cambia password"><Key className="w-4 h-4" /></button>
+              <button onClick={handleLogout} className="text-zinc-500 hover:text-white transition-colors" title="Esci"><LogOut className="w-4 h-4" /></button>
             </div>
           </div>
         </aside>
@@ -2553,7 +2585,7 @@ export default function App() {
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-40 bg-[#0f172a]/95 backdrop-blur-xl border-b border-[#334155]">
+          <div className="lg:hidden sticky top-0 z-40 bg-[#0b1526]/95 backdrop-blur-xl border-b border-[#24344f]">
             <div className="flex items-center justify-between px-4 py-4">
               <button onClick={() => setMobileMenuOpen(true)} className="text-zinc-400"><Menu className="w-6 h-6" /></button>
               <img src="/logo.png" alt="KeyPrime" className="h-16" />
@@ -2587,6 +2619,7 @@ export default function App() {
                 <h1 className="text-2xl font-semibold text-white capitalize">{activeTab}</h1>
                 <p className="text-zinc-500 text-sm mt-1">
                   {activeTab === 'dashboard' && 'Panoramica generale'}
+                  {activeTab === 'inbox' && (daAssegnare + daLavorare > 0 ? `${daAssegnare} senza agente, ${daLavorare} mai contattati` : 'Tutti i lead sono presi in carico')}
                   {activeTab === 'vendite' && `${sales.length} transazioni totali`}
                   {activeTab === 'pipeline' && 'Gestisci il flusso di vendita'}
                   {activeTab === 'crm' && `${clienti.length} clienti in database`}
@@ -2751,6 +2784,19 @@ export default function App() {
                 agent={showAgentDetail} 
                 sales={periodSales} 
                 onBack={() => setShowAgentDetail(null)} 
+              />
+            )}
+
+            {/* INBOX LEAD */}
+            {activeTab === 'inbox' && (
+              <LeadInbox
+                leads={sales}
+                clienti={clienti}
+                agenti={agentiAttivi}
+                sla={sla}
+                onApriLead={setShowLeadDetail}
+                onAssegna={assegnaLeads}
+                onAssegnaRotazione={assegnaRotazione}
               />
             )}
 
@@ -3060,7 +3106,7 @@ export default function App() {
             )}
 
             {/* TEAM */}
-            {activeTab === 'utenti' && <TeamTab users={users} onCreate={() => setShowUserModal({})} onEdit={setShowUserModal} onDelete={deleteUser} />}
+            {activeTab === 'utenti' && <TeamTab users={users} currentUserId={user?.id} onCreate={() => setShowUserModal({})} onEdit={setShowUserModal} onSetActive={setUserActive} />}
           </div>
         </main>
 
@@ -3068,7 +3114,7 @@ export default function App() {
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <div className="absolute inset-0 bg-zinc-800/60" onClick={() => setMobileMenuOpen(false)} />
-            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#1e293b] p-4 animate-slideRight">
+            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#121f36] p-4 animate-slideRight">
               <div className="flex items-center justify-between mb-8">
                 <img src="/logo.png" alt="KeyPrime" className="h-16" />
                 <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-400"><X className="w-5 h-5" /></button>
@@ -3086,12 +3132,34 @@ export default function App() {
         )}
 
         {/* Modals */}
-        {showLeadDetail && <LeadDetailSheet sale={showLeadDetail} cliente={clienti.find(c => c.id === showLeadDetail?.cliente_id)} rate={0.7} onClose={() => setShowLeadDetail(null)} onUpdateSale={updateSale} onConvert={() => setConvertingSale(showLeadDetail)} isAdmin activities={activities.filter(a => a.sale_id === showLeadDetail?.id)} followUps={followUps.filter(f => f.sale_id === showLeadDetail?.id)} onAddActivity={addActivity} onCreateFollowUp={createFollowUp} onCompleteFollowUp={completeFollowUp} onDeleteActivity={deleteActivity} onDeleteFollowUp={deleteFollowUp} userName={user?.nome} />}
+        {leadInScheda && <LeadDetailSheet
+          sale={leadInScheda}
+          cliente={clienti.find(c => c.id === leadInScheda.cliente_id)}
+          rate={leadLib.percentualeAgente(leadInScheda, users.find(u => u.nome === (leadInScheda.assegnato_a || leadInScheda.agente))) / 100}
+          onClose={() => setShowLeadDetail(null)}
+          onUpdateSale={updateSale}
+          onConvert={() => setConvertingSale(leadInScheda)}
+          isAdmin
+          activities={activities.filter(a => a.sale_id === leadInScheda.id)}
+          followUps={followUps.filter(f => f.sale_id === leadInScheda.id)}
+          onAddActivity={addActivity}
+          onCreateFollowUp={createFollowUp}
+          onCompleteFollowUp={completeFollowUp}
+          onDeleteActivity={deleteActivity}
+          onDeleteFollowUp={deleteFollowUp}
+          onProgrammaFollowUp={programmaFollowUp}
+          onAssegna={assegnaLeads}
+          agenti={agentiAttivi}
+          utente={user}
+          onToast={showToast}
+          sla={sla}
+        />}
         {convertingSale && <ConvertModal sale={convertingSale} onConvert={convertLeadToSale} onCancel={() => setConvertingSale(null)} />}
         {showClienteModal && <ClienteModal cliente={showClienteModal.id ? showClienteModal : null} onSave={showClienteModal.id ? (d) => updateCliente(showClienteModal.id, d) : createCliente} onClose={() => setShowClienteModal(null)} />}
         {showTaskModal && <TaskModal task={showTaskModal.id ? showTaskModal : null} clienti={clienti} users={users} onSave={showTaskModal.id ? (d) => updateTask(showTaskModal.id, d) : createTask} onClose={() => setShowTaskModal(null)} />}
-        {showUserModal && <UserModal user={showUserModal.id ? showUserModal : null} onSave={showUserModal.id ? (d) => updateUser(showUserModal.id, d) : createUser} onClose={() => setShowUserModal(null)} />}
+        {showUserModal && <UserModal user={showUserModal.id ? showUserModal : null} onSave={saveUser} onClose={() => setShowUserModal(null)} />}
         {showNotifications && <NotificationsPanel tasks={notificationTasks} unreadIds={unreadNotificationIds} recentSales={recentSalesNotifications} onClose={() => { setShowNotifications(false); }} onGoToTask={() => { setShowNotifications(false); setActiveTab('tasks'); }} onMarkAsRead={markSingleNotificationAsRead} userId={user?.id} />}
+        {showPasswordModal && <PasswordModal obbligatorio={!!user?.must_change_password} onSave={changePassword} onClose={() => setShowPasswordModal(false)} />}
         {showGlobalSearch && <GlobalSearch isOpen={showGlobalSearch} onClose={() => setShowGlobalSearch(false)} sales={sales} clienti={clienti} tasks={tasks} onSelectSale={setShowLeadDetail} onSelectCliente={setShowClienteDetail} onSelectTask={() => setActiveTab('tasks')} setActiveTab={setActiveTab} />}
         {showOffertaModal !== null && <OffertaModal offerta={showOffertaModal?.id ? showOffertaModal : null} clienti={clienti} user={user} onSave={async (data) => { await saveOfferta(data); if (!showOffertaModal?.id) generateOffertaPDF(data); }} onClose={() => setShowOffertaModal(null)} />}
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -3111,9 +3179,9 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input type="text" placeholder="Cerca progetto, cliente, agente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50" />
+          <input type="text" placeholder="Cerca progetto, cliente, agente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50" />
         </div>
-        <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50">
+        <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50">
           <option value="">Tutti gli stati</option>
           {pipelineStati.map(s => <option key={s} value={s}>{pipelineLabels[s] || s}</option>)}
         </select>
@@ -3123,7 +3191,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#334155]">
+              <tr className="border-b border-[#24344f]">
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Data</th>
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Progetto</th>
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Zona</th>
@@ -3137,7 +3205,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
                 <th className="text-center text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#334155]">
+            <tbody className="divide-y divide-[#24344f]">
               {sales.map(s => (
                 <tr key={s.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-4 py-3 text-sm text-zinc-400">{fmtShort(s.data)}</td>
@@ -3630,9 +3698,9 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
         <div className="flex items-center gap-3 flex-wrap flex-1">
           <div className="relative min-w-[250px]">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input type="text" placeholder="Cerca cliente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50" />
+            <input type="text" placeholder="Cerca cliente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50" />
           </div>
-          <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none">
+          <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none">
             <option value="">Tutti gli stati</option>
             {clienteStati.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
@@ -3858,7 +3926,7 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-[#334155]">
+      <div className="flex gap-2 border-b border-[#24344f]">
         {['info', 'lead', 'task'].map(t => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${tab === t ? 'text-white border-amber-500' : 'text-zinc-500 border-transparent hover:text-white'}`}>
             {t === 'info' ? 'Informazioni' : t === 'lead' ? `Lead (${sales.length})` : `Task (${tasks.length})`}
@@ -3878,8 +3946,8 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
             <div><p className="text-zinc-500 text-xs mb-1">Agente Rif.</p><p className="text-white">{cliente.agente_riferimento || '-'}</p></div>
             <div><p className="text-zinc-500 text-xs mb-1">Fonte</p><p className="text-white">{cliente.fonte || '-'}</p></div>
           </div>
-          {cliente.note && <div className="mt-4 pt-4 border-t border-[#334155]"><p className="text-zinc-500 text-xs mb-1">Note</p><p className="text-white text-sm">{cliente.note}</p></div>}
-          <div className="mt-4 pt-4 border-t border-[#334155]">
+          {cliente.note && <div className="mt-4 pt-4 border-t border-[#24344f]"><p className="text-zinc-500 text-xs mb-1">Note</p><p className="text-white text-sm">{cliente.note}</p></div>}
+          <div className="mt-4 pt-4 border-t border-[#24344f]">
             <p className="text-zinc-500 text-xs mb-2">Stato</p>
             <div className="flex flex-wrap gap-2">
               {clienteStati.map(s => (
@@ -4071,48 +4139,105 @@ function AgentTasksTab({ tasks, allTasks, clienti, onComplete, onAddNote }) {
 }
 
 // Team Tab
-function TeamTab({ users, onCreate, onEdit, onDelete }) {
-  const [copiedId, setCopiedId] = useState(null);
-  const copy = (u) => {
-    navigator.clipboard.writeText(`KeyPrime\n${getBaseUrl()}\n${u.username} / ${u.password}`);
-    setCopiedId(u.id);
-    setTimeout(() => setCopiedId(null), 2000);
+function TeamTab({ users, currentUserId, onCreate, onEdit, onSetActive }) {
+  const [copiato, setCopiato] = useState(null);
+
+  // Le password non sono piu' leggibili: nel database resta solo l'hash.
+  // Si copia il link di accesso, non la credenziale.
+  const copiaAccesso = (u) => {
+    navigator.clipboard.writeText(`Portale KeyPrime\n${getBaseUrl()}\nUtente: ${u.username}`);
+    setCopiato(u.id);
+    setTimeout(() => setCopiato(null), 2000);
   };
 
+  const etichettaRuolo = {
+    admin: 'Admin', agente_admin: 'Agente Admin', agente: 'Agente', segnalatore: 'Segnalatore'
+  };
+  const coloreRuolo = {
+    admin: 'bg-oro-500/20 text-oro-300',
+    agente_admin: 'bg-violet-500/20 text-violet-300',
+    agente: 'bg-blue-500/20 text-blue-300',
+    segnalatore: 'bg-emerald-500/20 text-emerald-300'
+  };
+
+  const attivi = users.filter(u => u.attivo);
+  const disattivi = users.filter(u => !u.attivo);
+  const agenti = attivi.filter(u => u.ruolo === 'agente' || u.ruolo === 'agente_admin');
+
+  const scheda = (u) => (
+    <Card key={u.id} padding="p-4" className={u.attivo ? '' : 'opacity-60'}>
+      <div className="flex items-center gap-4">
+        <Avatar nome={u.nome} size="lg" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-white font-medium truncate">{u.nome}</p>
+            <span className={`px-2 py-0.5 rounded-full text-xs ${coloreRuolo[u.ruolo] || 'bg-zinc-700 text-zinc-300'}`}>
+              {etichettaRuolo[u.ruolo] || u.ruolo}
+            </span>
+            {!u.attivo && <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400">Disattivato</span>}
+            {u.must_change_password && u.attivo && (
+              <span className="px-2 py-0.5 rounded-full text-xs bg-amber-500/20 text-amber-300">Password da impostare</span>
+            )}
+          </div>
+          <p className="text-zinc-500 text-sm mt-1 truncate">
+            {u.username}
+            {u.email && ` • ${u.email}`}
+            {u.telefono && ` • ${u.telefono}`}
+          </p>
+          <p className="text-zinc-600 text-xs mt-1">
+            {(u.ruolo === 'agente' || u.ruolo === 'agente_admin') && (
+              u.ruolo === 'agente_admin'
+                ? 'Quota societaria legata al referente'
+                : `Commissione ${u.commission_pct ?? 70}%`
+            )}
+            {u.referente && ` • Referente ${u.referente}`}
+            {u.last_login_at ? ` • Ultimo accesso ${fmtShort(u.last_login_at)}` : ' • Mai entrato'}
+          </p>
+        </div>
+        <div className="flex gap-1 shrink-0">
+          <Button variant="ghost" size="sm" icon={copiato === u.id ? Check : Copy} onClick={() => copiaAccesso(u)} title="Copia link di accesso" />
+          <Button variant="ghost" size="sm" icon={Edit2} onClick={() => onEdit(u)} title="Modifica" />
+          {u.id !== currentUserId && (
+            u.attivo ? (
+              <Button variant="ghost" size="sm" icon={EyeOff}
+                onClick={() => { if (window.confirm(`Disattivare l'accesso di ${u.nome}? I suoi lead e le commissioni restano.`)) onSetActive(u.id, false); }}
+                title="Disattiva accesso" />
+            ) : (
+              <Button variant="ghost" size="sm" icon={Eye} onClick={() => onSetActive(u.id, true)} title="Riattiva accesso" />
+            )
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <p className="text-zinc-500">{users.length} membri</p>
-        <Button icon={UserPlus} onClick={onCreate}>Nuovo Utente</Button>
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card padding="p-4"><p className="text-zinc-500 text-sm">Attivi</p><p className="text-2xl font-semibold text-white mt-1">{attivi.length}</p></Card>
+        <Card padding="p-4"><p className="text-zinc-500 text-sm">In rotazione lead</p><p className="text-2xl font-semibold text-oro-400 mt-1">{agenti.length}</p></Card>
+        <Card padding="p-4"><p className="text-zinc-500 text-sm">Segnalatori</p><p className="text-2xl font-semibold text-emerald-400 mt-1">{attivi.filter(u => u.ruolo === 'segnalatore').length}</p></Card>
+        <Card padding="p-4"><p className="text-zinc-500 text-sm">Disattivati</p><p className="text-2xl font-semibold text-zinc-400 mt-1">{disattivi.length}</p></Card>
       </div>
 
-      <div className="space-y-2">
-        {users.map(u => (
-          <Card key={u.id} padding="p-4">
-            <div className="flex items-center gap-4">
-              <Avatar nome={u.nome} size="lg" />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-white font-medium">{u.nome}</p>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${u.ruolo === 'admin' ? 'bg-violet-500/20 text-violet-400' : u.ruolo === 'agente_admin' ? 'bg-purple-500/20 text-purple-400' : u.ruolo === 'agente' ? 'bg-blue-500/20 text-blue-400' : 'bg-emerald-500/20 text-emerald-400'}`}>{u.ruolo === 'agente_admin' ? 'Ag. Admin' : u.ruolo}</span>
-                  {!u.attivo && <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400">Disattivo</span>}
-                </div>
-                <p className="text-zinc-500 text-sm mt-1">{u.username} / {u.password}{u.email && ` • ${u.email}`}</p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" icon={copiedId === u.id ? Check : Copy} onClick={() => copy(u)} />
-                <Button variant="ghost" size="sm" icon={Edit2} onClick={() => onEdit(u)} />
-                {u.ruolo !== 'admin' && <Button variant="ghost" size="sm" icon={Trash2} onClick={() => onDelete(u.id)} />}
-              </div>
-            </div>
-          </Card>
-        ))}
+      <div className="flex justify-between items-center">
+        <p className="text-zinc-500 text-sm">
+          I nuovi lead inbound vengono distribuiti a rotazione fra i {agenti.length} agenti attivi.
+        </p>
+        <Button icon={UserPlus} onClick={onCreate}>Nuovo accesso</Button>
       </div>
+
+      <div className="space-y-2">{attivi.map(scheda)}</div>
+
+      {disattivi.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-zinc-500 text-sm pt-2">Accessi disattivati</p>
+          {disattivi.map(scheda)}
+        </div>
+      )}
     </div>
   );
 }
-
-// Agent Detail View
 function AgentDetailView({ agent, sales, onBack }) {
   const agentSales = sales.filter(s =>
     (agent.type === 'agente' || agent.type === 'agente_admin') ? s.agente === agent.name : s.segnalatore === agent.name
@@ -4145,7 +4270,7 @@ function AgentDetailView({ agent, sales, onBack }) {
   }, {});
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0f172a] overflow-auto">
+    <div className="fixed inset-0 z-50 bg-[#0b1526] overflow-auto">
       <div className="max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
@@ -4982,16 +5107,16 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         )}
 
         <Card className="mb-4">
-          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto, zona o developer..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
+          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto, zona o developer..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-3">
-            <select value={filters.emirate} onChange={(e) => setFilters(f => ({ ...f, emirate: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">🇦🇪 Emirato</option>{emirates.map(e => <option key={e} value={e}>{e}</option>)}</select>
-            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{availableZones.map(a => <option key={a} value={a}>{a}</option>)}</select>
-            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
-            <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
-            <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
-            <select value={filters.deliveryYear} onChange={(e) => setFilters(f => ({ ...f, deliveryYear: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Consegna</option>{deliveryYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
-            <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
-            <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <select value={filters.emirate} onChange={(e) => setFilters(f => ({ ...f, emirate: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">🇦🇪 Emirato</option>{emirates.map(e => <option key={e} value={e}>{e}</option>)}</select>
+            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{availableZones.map(a => <option key={a} value={a}>{a}</option>)}</select>
+            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
+            <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
+            <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
+            <select value={filters.deliveryYear} onChange={(e) => setFilters(f => ({ ...f, deliveryYear: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Consegna</option>{deliveryYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
+            <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
             <Button onClick={() => { setSelectedAreaProjects(null); searchListings(1); }} icon={Search} disabled={loading}>{loading ? '...' : 'Cerca'}</Button>
           </div>
           {/* Sorting and active filters */}
@@ -5118,9 +5243,9 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         )}
 
         {viewMode === 'map' && (
-          <div className="fixed inset-0 z-50 bg-[#0f172a]">
+          <div className="fixed inset-0 z-50 bg-[#0b1526]">
             {/* Header */}
-            <div className="absolute top-0 left-0 right-0 z-20 bg-[#0f172a]/95 backdrop-blur border-b border-zinc-800">
+            <div className="absolute top-0 left-0 right-0 z-20 bg-[#0b1526]/95 backdrop-blur border-b border-zinc-800">
               <div className="px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <img src="/logo.png" alt="KeyPrime" className="h-8 lg:h-10" />
@@ -5156,7 +5281,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
               {/* Desktop: Sidebar + Map */}
               <div className="hidden lg:flex h-full">
                 {/* Left Sidebar */}
-                <div className="w-96 h-full bg-[#1e293b] border-r border-zinc-800 flex flex-col">
+                <div className="w-96 h-full bg-[#121f36] border-r border-zinc-800 flex flex-col">
                   <div className="p-3 border-b border-zinc-800">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -5205,13 +5330,13 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                 </div>
                 
                 {/* Bottom Carousel */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#0f172a] via-[#0f172a]/95 to-transparent pt-8 pb-4">
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#0b1526] via-[#0b1526]/95 to-transparent pt-8 pb-4">
                   <div className="flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory scrollbar-hide">
                     {displayProjects.map(project => (
                       <div 
                         key={project.project_id} 
                         onClick={() => setSelectedListing(project)}
-                        className={'flex-shrink-0 w-72 bg-[#1e293b] rounded-xl p-3 border transition-all snap-start ' + (selectedListing?.project_id === project.project_id ? 'border-orange-500 scale-[1.02]' : 'border-zinc-800')}
+                        className={'flex-shrink-0 w-72 bg-[#121f36] rounded-xl p-3 border transition-all snap-start ' + (selectedListing?.project_id === project.project_id ? 'border-orange-500 scale-[1.02]' : 'border-zinc-800')}
                       >
                         <div className="flex gap-3">
                           <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700">
@@ -5598,7 +5723,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4">
       <div className="absolute inset-0 bg-zinc-800/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#1e293b] border border-[#334155] rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-scaleIn">
+      <div className="relative bg-[#121f36] border border-[#24344f] rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-scaleIn">
         
         {/* Hero Image Section with Gallery */}
         <div className="relative h-72 md:h-80">
@@ -5611,7 +5736,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           )}
           
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1e293b] via-transparent to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#121f36] via-transparent to-black/30" />
           
           {/* Top controls */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
@@ -6093,7 +6218,7 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-zinc-800/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#1e293b] border border-[#334155] rounded-2xl w-full max-w-md animate-scaleIn">
+      <div className="relative bg-[#121f36] border border-[#24344f] rounded-2xl w-full max-w-md animate-scaleIn">
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
           <h3 className="text-lg font-semibold text-white">Crea Lead da Annuncio</h3>
           <button onClick={onClose} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
@@ -6177,7 +6302,7 @@ function LoginForm({ onLogin, loading }) {
       <div>
         <label className="block text-sm text-zinc-400 mb-2">Password</label>
         <div className="relative">
-          <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 pr-12 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] transition-all" />
+          <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 pr-12 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#33476a] transition-all" />
           <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors">
             {showPwd ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
@@ -6191,339 +6316,453 @@ function LoginForm({ onLogin, loading }) {
 }
 
 // Lead Detail Sheet
-function LeadDetailSheet({ sale, cliente, rate, onClose, onUpdateSale, onConvert, isAdmin, activities = [], followUps = [], onAddActivity, onCreateFollowUp, onCompleteFollowUp, onDeleteActivity, onDeleteFollowUp, userName }) {
-  const mc = (sale?.stato === 'venduto' || sale?.stato === 'incassato') ? Number(sale.valore) * (sale.commission_pct || 5) / 100 * rate : 0;
+function LeadDetailSheet({
+  sale, cliente, rate, onClose, onUpdateSale, onConvert, isAdmin,
+  activities = [], followUps = [], onAddActivity, onCreateFollowUp,
+  onCompleteFollowUp, onDeleteActivity, onDeleteFollowUp,
+  onProgrammaFollowUp, onAssegna, agenti = [], utente, onToast, sla
+}) {
+  const mc = (sale?.stato === 'venduto' || sale?.stato === 'incassato')
+    ? Number(sale.valore) * (sale.commission_pct || 5) / 100 * rate : 0;
+
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [activeDetailTab, setActiveDetailTab] = useState('info'); // 'info', 'activities', 'followups'
+  const [scheda, setScheda] = useState('lavoro');
   const [showActivityForm, setShowActivityForm] = useState(false);
-  const [showFollowUpForm, setShowFollowUpForm] = useState(false);
   const [activityForm, setActivityForm] = useState({ tipo: 'call', contenuto: '' });
+  const [showFollowUpForm, setShowFollowUpForm] = useState(false);
   const [followUpForm, setFollowUpForm] = useState({ tipo: 'call', data_reminder: '', ora_reminder: '', nota: '' });
+  const [showPerso, setShowPerso] = useState(false);
+  const [motivoPerso, setMotivoPerso] = useState(motiviPerdita[0]);
   const [editForm, setEditForm] = useState({
-    progetto: sale?.progetto || '',
-    developer: sale?.developer || '',
-    zona: sale?.zona || '',
-    valore: sale?.valore || ''
+    progetto: sale?.progetto || '', developer: sale?.developer || '',
+    zona: sale?.zona || '', valore: sale?.valore || ''
   });
-  
-  const activityTypes = [
-    { id: 'call', label: 'Chiamata', icon: '📞', color: 'blue' },
-    { id: 'email', label: 'Email', icon: '📧', color: 'purple' },
-    { id: 'whatsapp', label: 'WhatsApp', icon: '💬', color: 'green' },
-    { id: 'meeting', label: 'Incontro', icon: '🤝', color: 'orange' },
-    { id: 'viewing', label: 'Visita', icon: '🏠', color: 'pink' },
-    { id: 'note', label: 'Nota', icon: '📝', color: 'zinc' }
-  ];
-  
+
+  useEffect(() => {
+    if (sale) {
+      setEditForm({
+        progetto: sale.progetto || '', developer: sale.developer || '',
+        zona: sale.zona || '', valore: sale.valore || ''
+      });
+      setScheda('lavoro');
+    }
+  }, [sale?.id]);
+
+  const diagnosi = sale ? leadLib.valutaLead(sale, sla || leadLib.SLA_PREDEFINITO) : null;
+  const followUpAperti = followUps.filter(f => !f.completato);
+  const prossimo = followUpAperti
+    .slice()
+    .sort((a, b) => new Date(a.data_reminder) - new Date(b.data_reminder))[0];
+
+  const handleSave = async () => {
+    if (!sale?.id) return;
+    setSaving(true);
+    await onUpdateSale(sale.id, {
+      progetto: editForm.progetto, developer: editForm.developer, zona: editForm.zona,
+      valore: editForm.valore ? parseFloat(editForm.valore) : 0
+    });
+    setSaving(false);
+    setEditing(false);
+  };
+
   const handleAddActivity = async () => {
     if (!activityForm.contenuto.trim()) return;
     await onAddActivity(sale.id, activityForm.tipo, activityForm.contenuto);
     setActivityForm({ tipo: 'call', contenuto: '' });
     setShowActivityForm(false);
   };
-  
+
   const handleAddFollowUp = async () => {
     if (!followUpForm.data_reminder) return;
-    await onCreateFollowUp({
-      sale_id: sale.id,
-      cliente_id: cliente?.id,
-      ...followUpForm
-    });
+    await onCreateFollowUp({ sale_id: sale.id, cliente_id: cliente?.id, ...followUpForm });
     setFollowUpForm({ tipo: 'call', data_reminder: '', ora_reminder: '', nota: '' });
     setShowFollowUpForm(false);
   };
-  
-  useEffect(() => {
-    if (sale) {
-      setEditForm({
-        progetto: sale.progetto || '',
-        developer: sale.developer || '',
-        zona: sale.zona || '',
-        valore: sale.valore || ''
-      });
-    }
-  }, [sale]);
-  
-  const handleSave = async () => {
-    console.log('handleSave called, sale:', sale);
-    console.log('sale.id:', sale?.id);
-    if (!sale?.id) {
-      console.error('No sale.id!');
-      return;
-    }
-    setSaving(true);
-    await onUpdateSale(sale.id, {
-      progetto: editForm.progetto,
-      developer: editForm.developer,
-      zona: editForm.zona,
-      valore: editForm.valore ? parseFloat(editForm.valore) : 0
-    });
-    setSaving(false);
-    setEditing(false);
-    onClose(); // Chiudi il modal per mostrare i dati aggiornati
+
+  const segnaPerso = async () => {
+    await onUpdateSale(sale.id, { stato: 'perso', perso_motivo: motivoPerso });
+    setShowPerso(false);
+    onClose();
   };
-  
+
+  const schede = [
+    { id: 'lavoro', label: 'Lavoro' },
+    { id: 'attivita', label: `Diario (${activities.length})` },
+    { id: 'messaggi', label: 'Messaggi' },
+    { id: 'dati', label: 'Dati' }
+  ];
+
   return (
-    <BottomSheet isOpen={!!sale} onClose={onClose} title={sale?.progetto || 'Lead'}>
+    <BottomSheet isOpen={!!sale} onClose={onClose} title={cliente ? `${cliente.nome} ${cliente.cognome || ''}`.trim() : (sale?.progetto || 'Lead')}>
       <div className="space-y-4">
-        {/* Status */}
-        <div className="flex items-center justify-between">
-          <StatusBadge status={sale?.stato || 'lead'} />
+        {/* Intestazione: stato, temperatura, perche' chiede attenzione */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="text-zinc-500 text-sm">{fmtDate(sale?.data)}</span>
-            <button onClick={() => setEditing(!editing)} className="p-1.5 rounded-lg bg-zinc-700/50 text-zinc-400 hover:text-white">
-              <Edit2 className="w-4 h-4" />
-            </button>
+            <StatusBadge status={sale?.stato || 'lead'} />
+            {sale?.temperatura && (
+              <span className="px-2 py-1 rounded-full text-xs font-medium"
+                    style={{ background: `${leadLib.TEMPERATURE[sale.temperatura]?.colore}22`, color: leadLib.TEMPERATURE[sale.temperatura]?.colore }}>
+                {leadLib.TEMPERATURE[sale.temperatura]?.emoji} {leadLib.TEMPERATURE[sale.temperatura]?.label}
+              </span>
+            )}
           </div>
+          <span className="text-zinc-500 text-sm">{fmtDate(sale?.data)}</span>
         </div>
 
-        {editing ? (
-          /* Edit Mode */
-          <div className="space-y-3">
-            <Card className="border-blue-500/20 bg-blue-500/5">
-              <p className="text-blue-400 text-xs font-medium mb-3">Modifica Lead</p>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-zinc-500 text-xs">Progetto/Immobile</label>
-                  <input type="text" value={editForm.progetto} onChange={(e) => setEditForm({...editForm, progetto: e.target.value})} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-zinc-500 text-xs">Developer</label>
-                    <input type="text" value={editForm.developer} onChange={(e) => setEditForm({...editForm, developer: e.target.value})} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-zinc-500 text-xs">Zona</label>
-                    <input type="text" value={editForm.zona} onChange={(e) => setEditForm({...editForm, zona: e.target.value})} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-zinc-500 text-xs">Valore (AED)</label>
-                  <input type="number" value={editForm.valore} onChange={(e) => setEditForm({...editForm, valore: e.target.value})} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
-                </div>
-              </div>
-              <div className="flex gap-2 mt-4">
-                <Button variant="secondary" onClick={() => setEditing(false)} className="flex-1" disabled={saving}>Annulla</Button>
-                <Button onClick={handleSave} className="flex-1" disabled={saving}>
-                  {saving ? <><RefreshCw className="w-4 h-4 animate-spin mr-2" />Salvataggio...</> : 'Salva'}
-                </Button>
-              </div>
-            </Card>
+        {diagnosi && (
+          <div className="rounded-xl px-3 py-2 border text-sm"
+               style={{ background: theme.gravita[diagnosi.gravita].bg, borderColor: theme.gravita[diagnosi.gravita].border, color: theme.gravita[diagnosi.gravita].color }}>
+            {diagnosi.motivo} — {diagnosi.dettaglio}
           </div>
-        ) : (
-          /* View Mode */
-          <>
-            {/* Value */}
-            <Card className="border-amber-500/20 bg-amber-500/5">
-              <p className="text-zinc-400 text-sm">Valore</p>
-              <p className="text-2xl font-semibold text-white mt-1">{sale?.valore > 0 ? `${fmt(sale.valore)} AED` : 'TBD'}</p>
-              {mc > 0 && <p className="text-emerald-400 text-sm mt-1">Commissione: {fmt(mc)} AED {sale?.pagato ? '✓' : ''}</p>}
-            </Card>
-
-            {/* Property/Immobile Details */}
-            <Card>
-              <p className="text-zinc-500 text-xs mb-2">Immobile</p>
-              <p className="text-white font-medium text-lg">{sale?.progetto || 'N/A'}</p>
-              <div className="grid grid-cols-2 gap-3 mt-3">
-                <div><p className="text-zinc-500 text-xs">Developer</p><p className="text-white text-sm">{sale?.developer || 'N/A'}</p></div>
-                <div><p className="text-zinc-500 text-xs">Zona</p><p className="text-white text-sm">{sale?.zona || 'N/A'}</p></div>
-              </div>
-              {sale?.pf_url && (
-                <a href={sale.pf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-3 text-blue-400 text-sm hover:underline">
-                  <Building2 className="w-3 h-3" /> Vedi su PropertyFinder
-                </a>
-              )}
-            </Card>
-          </>
         )}
 
-        {/* Cliente */}
-        {cliente && !editing && (
-          <Card>
-            <p className="text-zinc-500 text-xs mb-2">Cliente</p>
+        {/* Contatti rapidi */}
+        {cliente && (
+          <Card padding="p-4">
             <div className="flex items-center gap-3 mb-3">
               <Avatar nome={cliente.nome} cognome={cliente.cognome} />
-              <div>
-                <p className="text-white font-medium">{cliente.nome} {cliente.cognome}</p>
-                <p className="text-zinc-500 text-sm">{cliente.telefono}</p>
+              <div className="min-w-0">
+                <p className="text-white font-medium truncate">{cliente.nome} {cliente.cognome}</p>
+                <p className="text-zinc-500 text-sm truncate">
+                  {cliente.telefono}
+                  {sale?.fonte ? ` • ${sale.fonte}` : ''}
+                </p>
               </div>
             </div>
             <QuickActions phone={cliente.telefono} whatsapp={cliente.whatsapp || cliente.telefono} email={cliente.email} clienteName={cliente.nome} />
           </Card>
         )}
 
-        {/* Activities & Follow-ups Tabs */}
-        {!editing && (
-          <div className="border-t border-zinc-800 pt-4">
-            <div className="flex gap-2 mb-4">
-              <button onClick={() => setActiveDetailTab('activities')} className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeDetailTab === 'activities' ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
-                📝 Attività ({activities.length})
-              </button>
-              <button onClick={() => setActiveDetailTab('followups')} className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeDetailTab === 'followups' ? 'bg-purple-500/20 text-purple-400' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
-                ⏰ Follow-up ({followUps.filter(f => !f.completato).length})
-              </button>
+        {/* Navigazione interna */}
+        <div className="flex gap-1 bg-zinc-800/50 rounded-xl p-1">
+          {schede.map(s => (
+            <button key={s.id} onClick={() => setScheda(s.id)}
+                    className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-all ${
+                      scheda === s.id ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'
+                    }`}>
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ---------- LAVORO ---------- */}
+        {scheda === 'lavoro' && (
+          <div className="space-y-4">
+            {prossimo ? (
+              <Card padding="p-4" className="border-violet-500/25 bg-violet-500/5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-zinc-400 text-xs">Prossimo contatto</p>
+                    <p className="text-white font-medium mt-0.5">
+                      {new Date(prossimo.data_reminder).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
+                      {prossimo.ora_reminder ? ` alle ${String(prossimo.ora_reminder).slice(0, 5)}` : ''}
+                    </p>
+                    {prossimo.nota && <p className="text-zinc-500 text-xs mt-1">{prossimo.nota}</p>}
+                  </div>
+                  <button onClick={() => onCompleteFollowUp(prossimo.id)}
+                          className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors" title="Segna fatto">
+                    <Check className="w-5 h-5" />
+                  </button>
+                </div>
+              </Card>
+            ) : (
+              <Card padding="p-4" className="border-amber-500/25 bg-amber-500/5">
+                <p className="text-amber-300 text-sm">Nessun prossimo contatto fissato su questo lead.</p>
+              </Card>
+            )}
+
+            {/* Richiamo in un tocco: era la parte che nessuno usava perche'
+                richiedeva di aprire un form e scegliere una data. */}
+            <div>
+              <p className="text-zinc-500 text-xs mb-2">Richiama fra</p>
+              <div className="flex gap-2">
+                {[1, 3, 7, 14].map(g => (
+                  <button key={g} onClick={() => onProgrammaFollowUp?.(sale.id, cliente?.id, g, 'call')}
+                          className="flex-1 py-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-700 text-zinc-300 hover:text-white text-sm transition-colors">
+                    {g === 1 ? 'Domani' : `${g} gg`}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Activities Tab */}
-            {activeDetailTab === 'activities' && (
-              <div className="space-y-3">
-                {/* Add Activity Button */}
-                {!showActivityForm ? (
-                  <button onClick={() => setShowActivityForm(true)} className="w-full py-2 border-2 border-dashed border-zinc-700 rounded-xl text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors flex items-center justify-center gap-2">
-                    <Plus className="w-4 h-4" /> Registra attività
+            {/* Temperatura */}
+            <div>
+              <p className="text-zinc-500 text-xs mb-2">Quanto scotta</p>
+              <div className="flex gap-2">
+                {Object.entries(leadLib.TEMPERATURE).map(([id, t]) => (
+                  <button key={id} onClick={() => onUpdateSale(sale.id, { temperatura: id })}
+                          className={`flex-1 py-2.5 rounded-xl text-sm transition-all ${
+                            sale?.temperatura === id ? 'text-white font-medium' : 'bg-zinc-800/60 text-zinc-400 hover:text-white'
+                          }`}
+                          style={sale?.temperatura === id ? { background: `${t.colore}26`, color: t.colore } : {}}>
+                    {t.emoji} {t.label}
                   </button>
-                ) : (
-                  <Card className="border-blue-500/20 bg-blue-500/5">
-                    <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
-                      {activityTypes.map(t => (
-                        <button key={t.id} onClick={() => setActivityForm({...activityForm, tipo: t.id})} className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${activityForm.tipo === t.id ? 'bg-blue-500 text-white' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
-                          {t.icon} {t.label}
-                        </button>
-                      ))}
-                    </div>
-                    <textarea value={activityForm.contenuto} onChange={(e) => setActivityForm({...activityForm, contenuto: e.target.value})} placeholder="Descrivi l'attività..." className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm resize-none" rows={3} />
-                    <div className="flex gap-2 mt-3">
-                      <Button variant="secondary" onClick={() => setShowActivityForm(false)} className="flex-1">Annulla</Button>
-                      <Button onClick={handleAddActivity} className="flex-1" disabled={!activityForm.contenuto.trim()}>Salva</Button>
-                    </div>
-                  </Card>
-                )}
+                ))}
+              </div>
+            </div>
 
-                {/* Activities List */}
-                {activities.length > 0 ? (
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {activities.map(a => {
-                      const aType = activityTypes.find(t => t.id === a.tipo) || activityTypes[5];
-                      return (
-                        <div key={a.id} className="p-3 bg-zinc-800/50 rounded-xl group">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start gap-2">
-                              <span className="text-lg">{aType.icon}</span>
-                              <div>
-                                <p className="text-white text-sm">{a.contenuto}</p>
-                                <p className="text-zinc-500 text-xs mt-1">{a.created_by} • {new Date(a.created_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
-                              </div>
-                            </div>
-                            <button onClick={() => onDeleteActivity(a.id)} className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-red-400 transition-all">
-                              <X className="w-3 h-3" />
+            {/* Stato pipeline */}
+            <div>
+              <p className="text-zinc-500 text-xs mb-2">Stato</p>
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {pipelineStati.slice(0, -1).map(st => (
+                  <button key={st} onClick={() => { onUpdateSale(sale.id, { stato: st }); }}
+                          className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${sale?.stato === st ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+                          style={sale?.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#1a2a45' }}>
+                    {pipelineLabels[st] || st}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Assegnazione: solo admin */}
+            {isAdmin && agenti.length > 0 && (
+              <div>
+                <p className="text-zinc-500 text-xs mb-2">Assegnato a</p>
+                <select value={sale?.assegnato_a || ''}
+                        onChange={(e) => onAssegna?.([sale.id], e.target.value)}
+                        className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#33476a]">
+                  <option value="">Nessuno</option>
+                  {agenti.map(a => <option key={a.nome} value={a.nome}>{a.nome}</option>)}
+                </select>
+              </div>
+            )}
+
+            {['trattativa', 'EOI'].includes(sale?.stato) && (
+              <Button onClick={onConvert} icon={DollarSign} className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white">
+                Registra vendita
+              </Button>
+            )}
+
+            {/* Chiudere un lead perso non e' una sconfitta da nascondere:
+                serve a capire dove si rompe la pipeline. */}
+            {leadLib.eAperto(sale) && (
+              showPerso ? (
+                <Card padding="p-4" className="border-red-500/25 bg-red-500/5 space-y-3">
+                  <p className="text-red-300 text-sm">Perche' si e' perso?</p>
+                  <select value={motivoPerso} onChange={(e) => setMotivoPerso(e.target.value)}
+                          className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm">
+                    {motiviPerdita.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <div className="flex gap-2">
+                    <Button variant="secondary" onClick={() => setShowPerso(false)} className="flex-1">Annulla</Button>
+                    <Button variant="danger" onClick={segnaPerso} className="flex-1">Conferma</Button>
+                  </div>
+                </Card>
+              ) : (
+                <button onClick={() => setShowPerso(true)}
+                        className="w-full text-zinc-500 hover:text-red-400 text-sm py-2 transition-colors">
+                  Segna come perso
+                </button>
+              )
+            )}
+          </div>
+        )}
+
+        {/* ---------- DIARIO ---------- */}
+        {scheda === 'attivita' && (
+          <div className="space-y-3">
+            {!showActivityForm ? (
+              <button onClick={() => setShowActivityForm(true)}
+                      className="w-full py-2.5 border-2 border-dashed border-zinc-700 rounded-xl text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors flex items-center justify-center gap-2">
+                <Plus className="w-4 h-4" /> Registra attivita
+              </button>
+            ) : (
+              <Card className="border-blue-500/20 bg-blue-500/5">
+                <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
+                  {leadLib.TIPI_ATTIVITA.map(t => (
+                    <button key={t.id} onClick={() => setActivityForm({ ...activityForm, tipo: t.id })}
+                            className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${activityForm.tipo === t.id ? 'bg-blue-500 text-white' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
+                      {t.icona} {t.label}
+                    </button>
+                  ))}
+                </div>
+                <textarea value={activityForm.contenuto} onChange={(e) => setActivityForm({ ...activityForm, contenuto: e.target.value })}
+                          placeholder="Com'e' andata?" rows={3}
+                          className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm resize-none" />
+                <div className="flex gap-2 mt-3">
+                  <Button variant="secondary" onClick={() => setShowActivityForm(false)} className="flex-1">Annulla</Button>
+                  <Button onClick={handleAddActivity} className="flex-1" disabled={!activityForm.contenuto.trim()}>Salva</Button>
+                </div>
+              </Card>
+            )}
+
+            {activities.length > 0 ? (
+              <div className="space-y-2 max-h-72 overflow-y-auto">
+                {activities.map(a => {
+                  const tipo = leadLib.TIPI_ATTIVITA.find(t => t.id === a.tipo) || leadLib.TIPI_ATTIVITA[5];
+                  return (
+                    <div key={a.id} className="p-3 bg-zinc-800/50 rounded-xl group">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 min-w-0">
+                          <span className="text-lg shrink-0">{tipo.icona}</span>
+                          <div className="min-w-0">
+                            <p className="text-white text-sm break-words">{a.contenuto}</p>
+                            <p className="text-zinc-500 text-xs mt-1">{a.created_by} • {fmtDateTime(a.created_at)}</p>
+                          </div>
+                        </div>
+                        <button onClick={() => onDeleteActivity(a.id)}
+                                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-red-400 transition-all shrink-0">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-zinc-500 text-sm text-center py-4">Nessuna attivita registrata</p>
+            )}
+
+            {/* Follow-up programmati */}
+            <div className="pt-2 border-t border-zinc-800">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-zinc-500 text-xs">Follow-up programmati ({followUpAperti.length})</p>
+                <button onClick={() => setShowFollowUpForm(!showFollowUpForm)} className="text-zinc-400 hover:text-white text-xs">
+                  {showFollowUpForm ? 'Chiudi' : 'Data precisa'}
+                </button>
+              </div>
+
+              {showFollowUpForm && (
+                <Card className="border-violet-500/20 bg-violet-500/5 mb-2">
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="text-zinc-500 text-xs">Data</label>
+                      <input type="date" value={followUpForm.data_reminder} onChange={(e) => setFollowUpForm({ ...followUpForm, data_reminder: e.target.value })}
+                             className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-zinc-500 text-xs">Ora</label>
+                      <input type="time" value={followUpForm.ora_reminder} onChange={(e) => setFollowUpForm({ ...followUpForm, ora_reminder: e.target.value })}
+                             className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                    </div>
+                  </div>
+                  <textarea value={followUpForm.nota} onChange={(e) => setFollowUpForm({ ...followUpForm, nota: e.target.value })}
+                            placeholder="Cosa devi fare" rows={2}
+                            className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm resize-none" />
+                  <Button onClick={handleAddFollowUp} className="w-full mt-3" disabled={!followUpForm.data_reminder}>Programma</Button>
+                </Card>
+              )}
+
+              {followUps.length > 0 && (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {followUps.map(f => {
+                    const scaduto = new Date(f.data_reminder) < new Date() && !f.completato;
+                    const oggi = isToday(f.data_reminder);
+                    return (
+                      <div key={f.id} className={`p-3 rounded-xl border text-sm ${
+                        f.completato ? 'bg-zinc-800/30 border-zinc-800 opacity-60'
+                        : scaduto ? 'bg-red-500/10 border-red-500/30'
+                        : oggi ? 'bg-violet-500/10 border-violet-500/30'
+                        : 'bg-zinc-800/50 border-zinc-800'}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className={f.completato ? 'text-zinc-500 line-through' : scaduto ? 'text-red-400' : 'text-white'}>
+                              {new Date(f.data_reminder).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                              {f.ora_reminder ? ` alle ${String(f.ora_reminder).slice(0, 5)}` : ''}
+                              {scaduto && ' — in ritardo'}
+                            </p>
+                            {f.nota && <p className="text-zinc-400 text-xs mt-1 break-words">{f.nota}</p>}
+                            {f.esito && <p className="text-emerald-400/70 text-xs mt-1">Esito: {f.esito}</p>}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {!f.completato && (
+                              <button onClick={() => onCompleteFollowUp(f.id)} className="p-1.5 text-zinc-500 hover:text-emerald-400 transition-colors" title="Fatto">
+                                <Check className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button onClick={() => onDeleteFollowUp(f.id)} className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors" title="Elimina">
+                              <X className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-zinc-500 text-sm text-center py-4">Nessuna attività registrata</p>
-                )}
-              </div>
-            )}
-
-            {/* Follow-ups Tab */}
-            {activeDetailTab === 'followups' && (
-              <div className="space-y-3">
-                {/* Add Follow-up Button */}
-                {!showFollowUpForm ? (
-                  <button onClick={() => setShowFollowUpForm(true)} className="w-full py-2 border-2 border-dashed border-zinc-700 rounded-xl text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors flex items-center justify-center gap-2">
-                    <Plus className="w-4 h-4" /> Programma follow-up
-                  </button>
-                ) : (
-                  <Card className="border-purple-500/20 bg-purple-500/5">
-                    <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
-                      {activityTypes.slice(0, 5).map(t => (
-                        <button key={t.id} onClick={() => setFollowUpForm({...followUpForm, tipo: t.id})} className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${followUpForm.tipo === t.id ? 'bg-purple-500 text-white' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
-                          {t.icon} {t.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div>
-                        <label className="text-zinc-500 text-xs">Data</label>
-                        <input type="date" value={followUpForm.data_reminder} onChange={(e) => setFollowUpForm({...followUpForm, data_reminder: e.target.value})} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
                       </div>
-                      <div>
-                        <label className="text-zinc-500 text-xs">Ora (opz.)</label>
-                        <input type="time" value={followUpForm.ora_reminder} onChange={(e) => setFollowUpForm({...followUpForm, ora_reminder: e.target.value})} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
-                      </div>
-                    </div>
-                    <textarea value={followUpForm.nota} onChange={(e) => setFollowUpForm({...followUpForm, nota: e.target.value})} placeholder="Note (opzionale)..." className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm resize-none" rows={2} />
-                    <div className="flex gap-2 mt-3">
-                      <Button variant="secondary" onClick={() => setShowFollowUpForm(false)} className="flex-1">Annulla</Button>
-                      <Button onClick={handleAddFollowUp} className="flex-1 bg-purple-500 hover:bg-purple-600" disabled={!followUpForm.data_reminder}>Salva</Button>
-                    </div>
-                  </Card>
-                )}
-
-                {/* Follow-ups List */}
-                {followUps.length > 0 ? (
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {followUps.map(f => {
-                      const fType = activityTypes.find(t => t.id === f.tipo) || activityTypes[0];
-                      const isOverdue = new Date(f.data_reminder) < new Date() && !f.completato;
-                      const isToday = new Date(f.data_reminder).toDateString() === new Date().toDateString();
-                      return (
-                        <div key={f.id} className={`p-3 rounded-xl border transition-all ${f.completato ? 'bg-zinc-800/30 border-zinc-800 opacity-60' : isOverdue ? 'bg-red-500/10 border-red-500/30' : isToday ? 'bg-purple-500/10 border-purple-500/30' : 'bg-zinc-800/50 border-zinc-800'}`}>
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start gap-2">
-                              <span className="text-lg">{fType.icon}</span>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <p className={`text-sm font-medium ${f.completato ? 'text-zinc-500 line-through' : isOverdue ? 'text-red-400' : 'text-white'}`}>
-                                    {new Date(f.data_reminder).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
-                                    {f.ora_reminder && ` alle ${f.ora_reminder.slice(0,5)}`}
-                                  </p>
-                                  {isToday && !f.completato && <span className="px-1.5 py-0.5 bg-purple-500 text-white text-[10px] font-bold rounded">OGGI</span>}
-                                  {isOverdue && !f.completato && <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded">SCADUTO</span>}
-                                </div>
-                                {f.nota && <p className="text-zinc-400 text-xs mt-1">{f.nota}</p>}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              {!f.completato && (
-                                <button onClick={() => onCompleteFollowUp(f.id)} className="p-1.5 text-zinc-500 hover:text-green-400 transition-colors" title="Completato">
-                                  <Check className="w-4 h-4" />
-                                </button>
-                              )}
-                              <button onClick={() => onDeleteFollowUp(f.id)} className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors" title="Elimina">
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-zinc-500 text-sm text-center py-4">Nessun follow-up programmato</p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Status Change */}
-        {!editing && (
-          <div>
-            <p className="text-zinc-500 text-xs mb-2">Cambia stato</p>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {pipelineStati.slice(0, -1).map(st => (
-                <button key={st} onClick={() => { onUpdateSale(sale.id, { stato: st }); if (st !== sale.stato) onClose(); }} className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${sale?.stato === st ? 'text-white' : 'text-zinc-500 hover:text-white'}`} style={sale?.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#334155' }}>
-                  {pipelineLabels[st] || st}
-                </button>
-              ))}
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Actions */}
-        {!editing && ['prenotato', 'trattativa'].includes(sale?.stato) && (
-          <Button onClick={onConvert} icon={DollarSign} className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white">
-            Registra Vendita
-          </Button>
+        {/* ---------- MESSAGGI ---------- */}
+        {scheda === 'messaggi' && (
+          <MessaggiGhl sale={sale} cliente={cliente} utente={utente} onToast={onToast} />
         )}
 
-        {isAdmin && !editing && (
-          <Button variant="danger" icon={Trash2} className="w-full">Elimina Lead</Button>
+        {/* ---------- DATI ---------- */}
+        {scheda === 'dati' && (
+          <div className="space-y-4">
+            <Card className="border-amber-500/20 bg-amber-500/5">
+              <p className="text-zinc-400 text-sm">Valore</p>
+              <p className="text-2xl font-semibold text-white mt-1">{sale?.valore > 0 ? `${fmt(sale.valore)} AED` : 'Da definire'}</p>
+              {mc > 0 && <p className="text-emerald-400 text-sm mt-1">La tua commissione: {fmt(mc)} AED {sale?.pagato ? '(pagata)' : ''}</p>}
+            </Card>
+
+            {editing ? (
+              <Card className="border-blue-500/20 bg-blue-500/5">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-zinc-500 text-xs">Progetto</label>
+                    <input type="text" value={editForm.progetto} onChange={(e) => setEditForm({ ...editForm, progetto: e.target.value })}
+                           className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-zinc-500 text-xs">Developer</label>
+                      <input type="text" value={editForm.developer} onChange={(e) => setEditForm({ ...editForm, developer: e.target.value })}
+                             className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-zinc-500 text-xs">Zona</label>
+                      <input type="text" value={editForm.zona} onChange={(e) => setEditForm({ ...editForm, zona: e.target.value })}
+                             className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-zinc-500 text-xs">Valore (AED)</label>
+                    <input type="number" value={editForm.valore} onChange={(e) => setEditForm({ ...editForm, valore: e.target.value })}
+                           className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button variant="secondary" onClick={() => setEditing(false)} className="flex-1" disabled={saving}>Annulla</Button>
+                  <Button onClick={handleSave} className="flex-1" disabled={saving}>{saving ? 'Salvataggio...' : 'Salva'}</Button>
+                </div>
+              </Card>
+            ) : (
+              <Card>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-zinc-500 text-xs mb-1">Immobile</p>
+                    <p className="text-white font-medium">{sale?.progetto || 'N/A'}</p>
+                  </div>
+                  <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg bg-zinc-700/50 text-zinc-400 hover:text-white">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div><p className="text-zinc-500 text-xs">Developer</p><p className="text-white text-sm">{sale?.developer || 'N/A'}</p></div>
+                  <div><p className="text-zinc-500 text-xs">Zona</p><p className="text-white text-sm">{sale?.zona || 'N/A'}</p></div>
+                  <div><p className="text-zinc-500 text-xs">Agente</p><p className="text-white text-sm">{sale?.assegnato_a || sale?.agente || 'Nessuno'}</p></div>
+                  <div><p className="text-zinc-500 text-xs">Fonte</p><p className="text-white text-sm">{sale?.fonte || 'N/A'}</p></div>
+                </div>
+                {sale?.note && (
+                  <div className="mt-3 pt-3 border-t border-zinc-800">
+                    <p className="text-zinc-500 text-xs mb-1">Note</p>
+                    <p className="text-zinc-300 text-sm whitespace-pre-wrap break-words">{sale.note}</p>
+                  </div>
+                )}
+                {sale?.perso_motivo && (
+                  <div className="mt-3 pt-3 border-t border-zinc-800">
+                    <p className="text-zinc-500 text-xs mb-1">Motivo della perdita</p>
+                    <p className="text-red-400 text-sm">{sale.perso_motivo}</p>
+                  </div>
+                )}
+              </Card>
+            )}
+          </div>
         )}
       </div>
     </BottomSheet>
@@ -6620,35 +6859,48 @@ function NotificationsPanel({ tasks, unreadIds, onClose, onGoToTask, recentSales
 }
 
 // Password Modal
-function PasswordModal({ currentPassword, onSave, onClose }) {
+function PasswordModal({ obbligatorio = false, onSave, onClose }) {
   const [oldPwd, setOldPwd] = useState('');
   const [newPwd, setNewPwd] = useState('');
   const [confirmPwd, setConfirmPwd] = useState('');
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const save = () => {
-    if (oldPwd !== currentPassword) { setError('Password attuale errata'); return; }
-    if (newPwd.length < 6) { setError('Minimo 6 caratteri'); return; }
-    if (newPwd !== confirmPwd) { setError('Le password non coincidono'); return; }
-    onSave(newPwd);
+  // La password attuale la verifica il database: il client non la conosce piu'.
+  const save = async () => {
+    setError('');
+    if (newPwd.length < 8) { setError('La nuova password deve avere almeno 8 caratteri'); return; }
+    if (newPwd !== confirmPwd) { setError('Le due password non coincidono'); return; }
+    if (newPwd === oldPwd) { setError('La nuova password deve essere diversa da quella attuale'); return; }
+
+    setSaving(true);
+    const esito = await onSave(oldPwd, newPwd);
+    setSaving(false);
+    if (esito && !esito.ok) setError(esito.error || 'Non riuscito');
   };
 
   return (
-    <Modal isOpen onClose={onClose} title="Cambia Password" size="sm">
+    <Modal isOpen onClose={obbligatorio ? () => {} : onClose} title={obbligatorio ? 'Imposta la tua password' : 'Cambia password'} size="sm">
       <div className="space-y-4">
+        {obbligatorio && (
+          <div className="bg-oro-500/10 border border-oro-500/25 text-oro-300 rounded-xl px-4 py-3 text-sm">
+            Questo e' il primo accesso: scegli una password personale prima di continuare.
+          </div>
+        )}
         {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-4 py-3 text-sm">{error}</div>}
-        <Input label="Password attuale" type="password" value={oldPwd} onChange={(e) => setOldPwd(e.target.value)} />
-        <Input label="Nuova password" type="password" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} />
-        <Input label="Conferma password" type="password" value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} />
+        <Input label={obbligatorio ? 'Password ricevuta' : 'Password attuale'} type="password" autoComplete="current-password" value={oldPwd} onChange={(e) => setOldPwd(e.target.value)} />
+        <Input label="Nuova password" type="password" autoComplete="new-password" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} />
+        <Input label="Conferma nuova password" type="password" autoComplete="new-password" value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} />
         <div className="flex gap-3">
-          <Button variant="secondary" onClick={onClose} className="flex-1">Annulla</Button>
-          <Button onClick={save} className="flex-1">Salva</Button>
+          {!obbligatorio && <Button variant="secondary" onClick={onClose} className="flex-1" disabled={saving}>Annulla</Button>}
+          <Button onClick={save} className="flex-1" disabled={saving || !oldPwd || !newPwd}>
+            {saving ? 'Salvataggio...' : 'Salva'}
+          </Button>
         </div>
       </div>
     </Modal>
   );
 }
-
 // Note Modal
 function NoteModal({ task, onSave, onClose }) {
   const [note, setNote] = useState(task?.note || '');
@@ -6661,7 +6913,7 @@ function NoteModal({ task, onSave, onClose }) {
         </Card>
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Nota</label>
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Scrivi una nota..." className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46] h-24 resize-none" autoFocus />
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Scrivi una nota..." className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#33476a] h-24 resize-none" autoFocus />
         </div>
         <p className="text-zinc-600 text-xs">L'admin riceverà una notifica email</p>
         <div className="flex gap-3">
@@ -6707,7 +6959,7 @@ function ClienteModal({ cliente, onSave, onClose }) {
         </div>
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Note</label>
-          <textarea value={form.note || ''} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3F3F46]" />
+          <textarea value={form.note || ''} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#33476a]" />
         </div>
         <div className="flex gap-3 pt-2">
           <Button variant="secondary" onClick={onClose} className="flex-1">Annulla</Button>
@@ -6733,14 +6985,14 @@ function TaskModal({ task, clienti, users, onSave, onClose }) {
         <Input label="Titolo *" value={form.titolo} onChange={(e) => setForm({ ...form, titolo: e.target.value })} autoFocus />
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Descrizione</label>
-          <textarea value={form.descrizione || ''} onChange={(e) => setForm({ ...form, descrizione: e.target.value })} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3F3F46]" />
+          <textarea value={form.descrizione || ''} onChange={(e) => setForm({ ...form, descrizione: e.target.value })} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#33476a]" />
         </div>
         <Input label="Scadenza" type="datetime-local" value={form.scadenza ? form.scadenza.slice(0, 16) : ''} onChange={(e) => setForm({ ...form, scadenza: e.target.value ? new Date(e.target.value).toISOString() : '' })} />
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Priorità</label>
           <div className="flex gap-2">
             {taskPriorita.map(p => (
-              <button key={p} onClick={() => setForm({ ...form, priorita: p })} className={`flex-1 px-3 py-2 rounded-xl text-sm transition-all ${form.priorita === p ? 'text-white' : 'text-zinc-500'}`} style={form.priorita === p ? { background: theme.priority[p]?.bg, color: theme.priority[p]?.color } : { background: '#334155' }}>
+              <button key={p} onClick={() => setForm({ ...form, priorita: p })} className={`flex-1 px-3 py-2 rounded-xl text-sm transition-all ${form.priorita === p ? 'text-white' : 'text-zinc-500'}`} style={form.priorita === p ? { background: theme.priority[p]?.bg, color: theme.priority[p]?.color } : { background: '#24344f' }}>
                 {p}
               </button>
             ))}
@@ -6765,60 +7017,174 @@ function TaskModal({ task, clienti, users, onSave, onClose }) {
 
 // User Modal
 function UserModal({ user, onSave, onClose }) {
-  const [form, setForm] = useState(user || { nome: '', username: '', password: '', email: '', ruolo: 'agente', referente: 'Pellegrino', attivo: true });
+  const [form, setForm] = useState(() => user
+    ? { ...user, password: '' }
+    : { nome: '', username: '', password: auth.generaPassword(), email: '', telefono: '', ruolo: 'agente', referente: 'Pellegrino', attivo: true, commission_pct: '' });
   const [saving, setSaving] = useState(false);
+  const [errore, setErrore] = useState('');
+  // La password in chiaro esiste solo in questo momento: dopo il salvataggio
+  // nel database resta solo l'hash, quindi va consegnata adesso.
+  const [daConsegnare, setDaConsegnare] = useState(null);
+  const [copiato, setCopiato] = useState(false);
+
+  const eAgente = form.ruolo === 'agente';
 
   const save = async () => {
-    if (!form.nome || !form.username || !form.password) { alert('Compila i campi obbligatori'); return; }
+    setErrore('');
+    if (!form.nome?.trim() || !form.username?.trim()) { setErrore('Nome e username sono obbligatori'); return; }
+    if (!user && (form.password || '').length < 8) { setErrore('La password iniziale deve avere almeno 8 caratteri'); return; }
+    if (user && form.password && form.password.length < 8) { setErrore('La nuova password deve avere almeno 8 caratteri'); return; }
+    if (eAgente && form.commission_pct !== '' && form.commission_pct !== null && form.commission_pct !== undefined) {
+      const n = Number(form.commission_pct);
+      if (Number.isNaN(n) || n < 0 || n > 100) { setErrore('La percentuale deve stare fra 0 e 100'); return; }
+    }
+
+    const payload = {
+      ...(user ? { id: user.id } : {}),
+      nome: form.nome.trim(),
+      username: form.username.trim(),
+      email: form.email || '',
+      telefono: form.telefono || '',
+      ruolo: form.ruolo,
+      referente: form.ruolo === 'agente_admin' ? '' : (form.referente || ''),
+      attivo: form.attivo !== false,
+      ...(form.password ? { password: form.password } : {}),
+      ...(eAgente ? { commission_pct: form.commission_pct === '' ? null : Number(form.commission_pct) } : {})
+    };
+
     setSaving(true);
-    await onSave(form);
+    const esito = await onSave(payload);
     setSaving(false);
+    if (!esito?.ok) { setErrore(esito?.error || 'Non riuscito'); return; }
+    if (form.password) {
+      setDaConsegnare({ username: payload.username, password: form.password, nome: payload.nome });
+    }
   };
 
-  return (
-    <Modal isOpen onClose={onClose} title={user ? 'Modifica Utente' : 'Nuovo Utente'}>
-      <div className="space-y-4">
-        <Input label="Nome *" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
-        <Input label="Email" type="email" value={form.email || ''} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Per notifiche" />
-        <div className="grid grid-cols-2 gap-3">
-          <Input label="Username *" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
-          <Input label="Password *" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+  const copiaCredenziali = () => {
+    const testo = `Portale KeyPrime\n${getBaseUrl()}\nUtente: ${daConsegnare.username}\nPassword: ${daConsegnare.password}\n\nAl primo accesso ti verra' chiesto di scegliere una password personale.`;
+    navigator.clipboard.writeText(testo);
+    setCopiato(true);
+    setTimeout(() => setCopiato(false), 2000);
+  };
+
+  // Schermata di consegna: compare dopo il salvataggio.
+  if (daConsegnare) {
+    return (
+      <Modal isOpen onClose={onClose} title="Credenziali da consegnare" size="sm">
+        <div className="space-y-4">
+          <div className="bg-amber-500/10 border border-amber-500/25 text-amber-300 rounded-xl px-4 py-3 text-sm">
+            Copiale adesso: nel database viene salvato solo l'hash, quindi questa password non sara' piu' recuperabile.
+          </div>
+          <Card padding="p-4" className="space-y-2">
+            <div className="flex justify-between"><span className="text-zinc-500 text-sm">Portale</span><span className="text-white text-sm">{getBaseUrl().replace('https://', '')}</span></div>
+            <div className="flex justify-between"><span className="text-zinc-500 text-sm">Utente</span><span className="text-white text-sm font-medium">{daConsegnare.username}</span></div>
+            <div className="flex justify-between"><span className="text-zinc-500 text-sm">Password</span><span className="text-oro-400 text-sm font-mono font-medium">{daConsegnare.password}</span></div>
+          </Card>
+          <p className="text-zinc-500 text-sm">
+            Al primo accesso {daConsegnare.nome.split(' ')[0]} dovra' scegliere una password personale.
+          </p>
+          <div className="flex gap-3">
+            <Button variant="secondary" icon={copiato ? Check : Copy} onClick={copiaCredenziali} className="flex-1">
+              {copiato ? 'Copiate' : 'Copia'}
+            </Button>
+            <Button onClick={onClose} className="flex-1">Fatto</Button>
+          </div>
         </div>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal isOpen onClose={onClose} title={user ? 'Modifica accesso' : 'Nuovo accesso'}>
+      <div className="space-y-4">
+        {errore && <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-4 py-3 text-sm">{errore}</div>}
+
+        <Input label="Nome e cognome *" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Email" type="email" value={form.email || ''} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Per i promemoria" />
+          <Input label="Telefono" value={form.telefono || ''} onChange={(e) => setForm({ ...form, telefono: e.target.value })} placeholder="+39..." />
+        </div>
+
+        <Input label="Username *" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="nome.cognome" />
+
+        <div>
+          <label className="block text-sm text-zinc-400 mb-2">
+            {user ? 'Nuova password (lascia vuoto per non cambiarla)' : 'Password iniziale *'}
+          </label>
+          <div className="flex gap-2">
+            <input
+              value={form.password || ''}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              placeholder={user ? 'Invariata' : ''}
+              className="flex-1 bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm font-mono placeholder:text-zinc-600 focus:outline-none focus:border-[#33476a] transition-all"
+            />
+            <Button variant="secondary" icon={RefreshCw} onClick={() => setForm({ ...form, password: auth.generaPassword() })} title="Genera">Genera</Button>
+          </div>
+          {user && form.password && (
+            <p className="text-amber-400/80 text-xs mt-2">Cambiando la password, le sessioni aperte di questo utente verranno chiuse.</p>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <Select label="Ruolo" value={form.ruolo} onChange={(e) => setForm({ ...form, ruolo: e.target.value })}>
-            <option value="admin">Admin</option>
             <option value="agente">Agente</option>
-            <option value="agente_admin">Agente Admin (70/30)</option>
             <option value="segnalatore">Segnalatore</option>
+            <option value="agente_admin">Agente Admin</option>
+            <option value="admin">Admin</option>
           </Select>
-          <Select label="Referente" value={form.referente} onChange={(e) => setForm({ ...form, referente: e.target.value })} disabled={form.ruolo === 'agente_admin'}>
+          <Select label="Referente" value={form.referente || 'Pellegrino'} onChange={(e) => setForm({ ...form, referente: e.target.value })} disabled={form.ruolo === 'agente_admin'}>
             <option value="Pellegrino">Pellegrino</option>
             <option value="Giovanni">Giovanni</option>
           </Select>
         </div>
+
+        {eAgente && (
+          <div>
+            <label className="block text-sm text-zinc-400 mb-2">Commissione agente</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="number" min="0" max="100"
+                value={form.commission_pct ?? ''}
+                onChange={(e) => setForm({ ...form, commission_pct: e.target.value })}
+                placeholder="70"
+                className="w-28 bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#33476a]"
+              />
+              <span className="text-zinc-500 text-sm">% della commissione sulla vendita (vuoto = 70%, lo standard)</span>
+            </div>
+          </div>
+        )}
+
         {form.ruolo === 'agente_admin' && (
           <Card padding="p-3" className="bg-violet-500/10 border-violet-500/20">
-            <p className="text-violet-400 text-sm">💡 <strong>Agente Admin:</strong> 70% commissione all'agente, 30% a Pellegrino</p>
+            <p className="text-violet-300 text-sm">
+              Agente Admin: quota societaria legata al referente del lead (70/30), non modificabile da qui.
+            </p>
           </Card>
         )}
+        {form.ruolo === 'agente' && (
+          <Card padding="p-3" className="bg-blue-500/10 border-blue-500/20">
+            <p className="text-blue-300 text-sm">
+              Gli agenti entrano nella rotazione automatica dei lead inbound da GHL.
+            </p>
+          </Card>
+        )}
+
         {user && (
           <Card padding="p-3" className="flex items-center gap-3">
-            <input type="checkbox" id="attivo" checked={form.attivo} onChange={(e) => setForm({ ...form, attivo: e.target.checked })} className="w-4 h-4 rounded" />
-            <label htmlFor="attivo" className="text-zinc-300 text-sm">Utente attivo</label>
+            <input type="checkbox" id="attivo" checked={form.attivo !== false} onChange={(e) => setForm({ ...form, attivo: e.target.checked })} className="w-4 h-4 rounded" />
+            <label htmlFor="attivo" className="text-zinc-300 text-sm">Accesso attivo</label>
           </Card>
         )}
+
         <div className="flex gap-3 pt-2">
-          <Button variant="secondary" onClick={onClose} className="flex-1">Annulla</Button>
+          <Button variant="secondary" onClick={onClose} className="flex-1" disabled={saving}>Annulla</Button>
           <Button onClick={save} className="flex-1" disabled={saving}>{saving ? 'Salvataggio...' : 'Salva'}</Button>
         </div>
       </div>
     </Modal>
   );
 }
-
-// ==================== LEAD & SALE FORMS ====================
-
-// Client Search Component
 function ClientSearch({ clienti, onSelect, onCreateNew, selectedClient }) {
   const [search, setSearch] = useState('');
   const [show, setShow] = useState(false);
@@ -6843,13 +7209,13 @@ function ClientSearch({ clienti, onSelect, onCreateNew, selectedClient }) {
     <div className="relative">
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-        <input type="text" placeholder="Cerca cliente..." value={search} onChange={(e) => { setSearch(e.target.value); setShow(true); }} onFocus={() => setShow(true)} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3F3F46]" />
+        <input type="text" placeholder="Cerca cliente..." value={search} onChange={(e) => { setSearch(e.target.value); setShow(true); }} onFocus={() => setShow(true)} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#33476a]" />
       </div>
       
       {show && search.length >= 2 && (
-        <div className="absolute z-10 w-full mt-2 bg-[#1e293b] border border-[#334155] rounded-xl overflow-hidden shadow-xl">
+        <div className="absolute z-10 w-full mt-2 bg-[#121f36] border border-[#24344f] rounded-xl overflow-hidden shadow-xl">
           {filtered.map(c => (
-            <button key={c.id} onClick={() => { onSelect(c); setSearch(''); setShow(false); }} className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-[#334155] last:border-0 flex items-center gap-3 transition-colors">
+            <button key={c.id} onClick={() => { onSelect(c); setSearch(''); setShow(false); }} className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-[#24344f] last:border-0 flex items-center gap-3 transition-colors">
               <Avatar nome={c.nome} cognome={c.cognome} size="sm" />
               <div>
                 <p className="text-white text-sm">{c.nome} {c.cognome}</p>
@@ -6865,7 +7231,7 @@ function ClientSearch({ clienti, onSelect, onCreateNew, selectedClient }) {
       )}
       
       {!search && (
-        <button onClick={onCreateNew} className="w-full mt-3 border border-dashed border-[#3F3F46] rounded-xl py-3 text-zinc-500 text-sm flex items-center justify-center gap-2 hover:border-amber-500 hover:text-amber-400 transition-colors">
+        <button onClick={onCreateNew} className="w-full mt-3 border border-dashed border-[#33476a] rounded-xl py-3 text-zinc-500 text-sm flex items-center justify-center gap-2 hover:border-amber-500 hover:text-amber-400 transition-colors">
           <UserPlus className="w-4 h-4" /> Crea nuovo cliente
         </button>
       )}
@@ -6891,12 +7257,12 @@ function SelectWithOther({ value, onChange, options, placeholder, label }) {
       <select value={showCustom ? 'Altro' : value} onChange={(e) => {
         if (e.target.value === 'Altro') { setShowCustom(true); setCustomValue(''); onChange(''); }
         else { setShowCustom(false); onChange(e.target.value); }
-      }} className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3F3F46] appearance-none">
+      }} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#33476a] appearance-none">
         <option value="">{placeholder}</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
       {showCustom && (
-        <input type="text" value={customValue} onChange={(e) => { setCustomValue(e.target.value); onChange(e.target.value); }} placeholder="Specifica..." className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-4 py-3 text-white text-sm mt-2 focus:outline-none focus:border-[#3F3F46]" autoFocus />
+        <input type="text" value={customValue} onChange={(e) => { setCustomValue(e.target.value); onChange(e.target.value); }} placeholder="Specifica..." className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm mt-2 focus:outline-none focus:border-[#33476a]" autoFocus />
       )}
     </div>
   );
@@ -6939,7 +7305,7 @@ function LeadForm({ type, userName, clienti, onSubmit }) {
         <ClientSearch clienti={clienti} selectedClient={selectedClient} onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }} onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }} />
         
         {showNewClient && !selectedClient && (
-          <div className="mt-4 pt-4 border-t border-[#334155] space-y-3">
+          <div className="mt-4 pt-4 border-t border-[#24344f] space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Input placeholder="Nome *" value={form.cliente_nome} onChange={(e) => setForm({ ...form, cliente_nome: e.target.value })} />
               <Input placeholder="Cognome" value={form.cliente_cognome} onChange={(e) => setForm({ ...form, cliente_cognome: e.target.value })} />
@@ -6976,7 +7342,7 @@ function LeadForm({ type, userName, clienti, onSubmit }) {
         <h4 className="text-white font-medium mb-4">Stato iniziale</h4>
         <div className="flex flex-wrap gap-2">
           {pipelineStati.slice(0, 4).map(st => (
-            <button key={st} type="button" onClick={() => setForm({ ...form, stato: st })} className={`px-4 py-2 rounded-xl text-sm transition-all ${form.stato === st ? 'text-white' : 'text-zinc-500'}`} style={form.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#334155' }}>
+            <button key={st} type="button" onClick={() => setForm({ ...form, stato: st })} className={`px-4 py-2 rounded-xl text-sm transition-all ${form.stato === st ? 'text-white' : 'text-zinc-500'}`} style={form.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#24344f' }}>
               {pipelineLabels[st] || st}
             </button>
           ))}
@@ -7029,7 +7395,7 @@ function SaleForm({ type, userName, clienti, onSubmit }) {
         <ClientSearch clienti={clienti} selectedClient={selectedClient} onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }} onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }} />
         
         {showNewClient && !selectedClient && (
-          <div className="mt-4 pt-4 border-t border-[#334155] space-y-3">
+          <div className="mt-4 pt-4 border-t border-[#24344f] space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Input placeholder="Nome *" value={form.nuovo_cliente_nome} onChange={(e) => setForm({ ...form, nuovo_cliente_nome: e.target.value })} />
               <Input placeholder="Cognome" value={form.nuovo_cliente_cognome} onChange={(e) => setForm({ ...form, nuovo_cliente_cognome: e.target.value })} />
@@ -7180,20 +7546,20 @@ function ROICalculator() {
     <div className="space-y-4">
       {/* Emirate Filter */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        <button onClick={()=>setEmirate('all')} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate==='all'?'bg-emerald-500 text-white':'bg-[#334155] text-zinc-400 hover:bg-[#475569]'}`}>🇦🇪 Tutti</button>
+        <button onClick={()=>setEmirate('all')} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate==='all'?'bg-emerald-500 text-white':'bg-[#24344f] text-zinc-400 hover:bg-[#475569]'}`}>🇦🇪 Tutti</button>
         {['Dubai','Abu Dhabi','RAK','Sharjah','Ajman','UAQ'].map(em=>(
-          <button key={em} onClick={()=>setEmirate(em)} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate===em?'bg-emerald-500 text-white':'bg-[#334155] text-zinc-400 hover:bg-[#475569]'}`}>
+          <button key={em} onClick={()=>setEmirate(em)} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate===em?'bg-emerald-500 text-white':'bg-[#24344f] text-zinc-400 hover:bg-[#475569]'}`}>
             {em==='RAK'?'🏝️':em==='Dubai'?'🌆':em==='Abu Dhabi'?'🏛️':em==='Sharjah'?'📚':em==='Ajman'?'🏠':'⛵'} {em}
           </button>
         ))}
       </div>
 
       {/* Inputs */}
-      <div className="bg-[#1e293b] rounded-xl p-4 border border-[#334155]">
+      <div className="bg-[#121f36] rounded-xl p-4 border border-[#24344f]">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <div className="col-span-2">
             <label className="text-zinc-500 text-xs block mb-1">Zona</label>
-            <select value={z} onChange={e=>setZ(e.target.value)} className="w-full bg-[#334155] border-none rounded-lg px-3 py-2 text-sm text-white">
+            <select value={z} onChange={e=>setZ(e.target.value)} className="w-full bg-[#24344f] border-none rounded-lg px-3 py-2 text-sm text-white">
               {Object.entries(filteredZones).map(([em, cats])=>(
                 <optgroup key={em} label={`━━ ${em} ━━`}>
                   {Object.entries(cats || {}).map(([cat, list])=>(
@@ -7208,21 +7574,21 @@ function ROICalculator() {
           </div>
           <div>
             <label className="text-zinc-500 text-xs block mb-1">Prezzo (AED)</label>
-            <input type="number" value={price} onChange={e=>setPrice(+e.target.value)} className="w-full bg-[#334155] border-none rounded-lg px-3 py-2 text-sm text-white"/>
+            <input type="number" value={price} onChange={e=>setPrice(+e.target.value)} className="w-full bg-[#24344f] border-none rounded-lg px-3 py-2 text-sm text-white"/>
           </div>
           <div>
             <label className="text-zinc-500 text-xs block mb-1">Sqft</label>
-            <input type="number" value={sqft} onChange={e=>setSqft(+e.target.value)} className="w-full bg-[#334155] border-none rounded-lg px-3 py-2 text-sm text-white"/>
+            <input type="number" value={sqft} onChange={e=>setSqft(+e.target.value)} className="w-full bg-[#24344f] border-none rounded-lg px-3 py-2 text-sm text-white"/>
           </div>
           <div>
             <label className="text-zinc-500 text-xs block mb-1">Camere</label>
-            <select value={br} onChange={e=>setBr(+e.target.value)} className="w-full bg-[#334155] border-none rounded-lg px-3 py-2 text-sm text-white">
+            <select value={br} onChange={e=>setBr(+e.target.value)} className="w-full bg-[#24344f] border-none rounded-lg px-3 py-2 text-sm text-white">
               {['Studio','1BR','2BR','3BR','4+BR'].map((l,i)=><option key={i} value={i}>{l}</option>)}
             </select>
           </div>
           <div>
             <label className="text-zinc-500 text-xs block mb-1">Mercato</label>
-            <select value={mkt} onChange={e=>setMkt(e.target.value)} className="w-full bg-[#334155] border-none rounded-lg px-3 py-2 text-sm text-white">
+            <select value={mkt} onChange={e=>setMkt(e.target.value)} className="w-full bg-[#24344f] border-none rounded-lg px-3 py-2 text-sm text-white">
               <option value="offplan">🏗️ Off-Plan</option>
               <option value="secondary">🏢 Secondary</option>
             </select>
@@ -7233,14 +7599,14 @@ function ROICalculator() {
           {mkt === 'secondary' && (
             <div>
               <label className="text-zinc-500 text-xs block mb-1">Età Edificio</label>
-              <select value={age} onChange={e=>setAge(e.target.value)} className="w-full bg-[#334155] border-none rounded-lg px-3 py-2 text-sm text-white">
+              <select value={age} onChange={e=>setAge(e.target.value)} className="w-full bg-[#24344f] border-none rounded-lg px-3 py-2 text-sm text-white">
                 <option value="new">🆕 {d.ageNew}</option>
                 {d.ageMid && <option value="mid">📅 {d.ageMid}</option>}
                 {d.ageOld && <option value="old">🏚️ {d.ageOld}</option>}
               </select>
             </div>
           )}
-          <div className="bg-[#334155]/50 rounded-lg p-2">
+          <div className="bg-[#24344f]/50 rounded-lg p-2">
             <p className="text-zinc-500 text-xs">{d.emirate} • {d.cat}</p>
             <p className="text-white font-medium text-sm">{d.e} {z}</p>
           </div>
@@ -7271,7 +7637,7 @@ function ROICalculator() {
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto">
         {['overview','rental','capital','costs'].map(t=>(
-          <button key={t} onClick={()=>setTab(t)} className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${tab===t?'bg-emerald-500 text-white':'bg-[#334155] text-zinc-400 hover:bg-[#475569]'}`}>
+          <button key={t} onClick={()=>setTab(t)} className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${tab===t?'bg-emerald-500 text-white':'bg-[#24344f] text-zinc-400 hover:bg-[#475569]'}`}>
             {t==='overview'?'📊 Overview':t==='rental'?'🏠 Rental':t==='capital'?'📈 Capital':'💰 Costi'}
           </button>
         ))}
@@ -7297,14 +7663,14 @@ function ROICalculator() {
             <p className="text-xs text-zinc-500 mt-1">Costi/Anno</p>
           </div>
           
-          <div className="col-span-2 bg-[#1e293b] rounded-xl p-4 border border-[#334155]">
+          <div className="col-span-2 bg-[#121f36] rounded-xl p-4 border border-[#24344f]">
             <p className="text-zinc-400 text-xs mb-3">Revenue Annuo Netto</p>
             <div className="space-y-2">
               <div className="flex justify-between items-center"><span className="text-zinc-400">🏠 Long Term</span><span className="text-blue-400 font-bold text-lg">{fmt(ltNet)} AED</span></div>
               <div className="flex justify-between items-center"><span className="text-zinc-400">🏖️ Short Term</span><span className="text-purple-400 font-bold text-lg">{fmt(stNet)} AED</span></div>
             </div>
           </div>
-          <div className="col-span-2 bg-[#1e293b] rounded-xl p-4 border border-[#334155]">
+          <div className="col-span-2 bg-[#121f36] rounded-xl p-4 border border-[#24344f]">
             <p className="text-zinc-400 text-xs mb-3">Capital Gain</p>
             <div className="space-y-2">
               <div className="flex justify-between items-center"><span className="text-zinc-400">Valore Futuro</span><span className="text-emerald-400 font-bold text-lg">{fmt(futVal)} AED</span></div>
@@ -7312,10 +7678,10 @@ function ROICalculator() {
             </div>
           </div>
           
-          <div className="col-span-full bg-[#1e293b] rounded-xl p-4 border border-[#334155]">
+          <div className="col-span-full bg-[#121f36] rounded-xl p-4 border border-[#24344f]">
             <p className="text-zinc-400 text-xs mb-3">ROI Totale 3 anni (rent + appreciation)</p>
             <div className="flex items-center gap-4">
-              <div className="flex-1 bg-[#334155] rounded-full h-4 overflow-hidden">
+              <div className="flex-1 bg-[#24344f] rounded-full h-4 overflow-hidden">
                 <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 transition-all" style={{width:`${Math.min(((ltNet*3+profit)/price)*100, 100)}%`}}/>
               </div>
               <span className="text-white font-bold text-xl">{(((ltNet*3+profit)/price)*100).toFixed(0)}%</span>
@@ -7327,7 +7693,7 @@ function ROICalculator() {
       {/* Rental Tab */}
       {tab === 'rental' && (
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="bg-[#1e293b] rounded-xl p-4 border border-blue-500/30">
+          <div className="bg-[#121f36] rounded-xl p-4 border border-blue-500/30">
             <h3 className="font-semibold text-white mb-4">🏠 Long Term Rental</h3>
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-blue-500/10 rounded-lg p-3 text-center">
@@ -7340,14 +7706,14 @@ function ROICalculator() {
               </div>
             </div>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Affitto Annuo</span><span className="text-white">{fmt(rent)} AED</span></div>
-              <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Mensile</span><span className="text-white">{fmt(rent/12)} AED</span></div>
-              <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">(-) Costi Annui</span><span className="text-red-400">-{fmt(costs)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Affitto Annuo</span><span className="text-white">{fmt(rent)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Mensile</span><span className="text-white">{fmt(rent/12)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">(-) Costi Annui</span><span className="text-red-400">-{fmt(costs)} AED</span></div>
               <div className="flex justify-between py-2 font-medium"><span className="text-white">= Netto Annuo</span><span className="text-emerald-400">{fmt(ltNet)} AED</span></div>
             </div>
           </div>
           
-          <div className="bg-[#1e293b] rounded-xl p-4 border border-purple-500/30">
+          <div className="bg-[#121f36] rounded-xl p-4 border border-purple-500/30">
             <h3 className="font-semibold text-white mb-4">🏖️ Short Term / Airbnb</h3>
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-purple-500/10 rounded-lg p-3 text-center">
@@ -7360,9 +7726,9 @@ function ROICalculator() {
               </div>
             </div>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Tariffa/Notte</span><span className="text-white">{fmt(d.night*roiBrMult.night[br])} AED</span></div>
-              <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Occupancy Media</span><span className="text-white">{d.occ}%</span></div>
-              <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Revenue Lordo</span><span className="text-white">{fmt(stGross)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Tariffa/Notte</span><span className="text-white">{fmt(d.night*roiBrMult.night[br])} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Occupancy Media</span><span className="text-white">{d.occ}%</span></div>
+              <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Revenue Lordo</span><span className="text-white">{fmt(stGross)} AED</span></div>
               <div className="flex justify-between py-2 font-medium"><span className="text-white">= Netto Annuo</span><span className="text-emerald-400">{fmt(stNet)} AED</span></div>
             </div>
           </div>
@@ -7371,18 +7737,18 @@ function ROICalculator() {
 
       {/* Capital Tab */}
       {tab === 'capital' && (
-        <div className="bg-[#1e293b] rounded-xl p-4 border border-emerald-500/30">
+        <div className="bg-[#121f36] rounded-xl p-4 border border-emerald-500/30">
           <h3 className="font-semibold text-white mb-4">📈 Capital Appreciation - {mkt === 'offplan' ? 'Off-Plan' : 'Secondary'}</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div className="bg-emerald-500/10 rounded-lg p-3 text-center">
               <p className="text-2xl font-bold text-emerald-400">+{appr.toFixed(0)}%</p>
               <p className="text-xs text-zinc-500">Apprezzamento</p>
             </div>
-            <div className="bg-[#334155] rounded-lg p-3 text-center">
+            <div className="bg-[#24344f] rounded-lg p-3 text-center">
               <p className="text-xl font-bold text-white">{fmt(profit)}</p>
               <p className="text-xs text-zinc-500">Profitto (AED)</p>
             </div>
-            <div className="bg-[#334155] rounded-lg p-3 text-center">
+            <div className="bg-[#24344f] rounded-lg p-3 text-center">
               <p className="text-xl font-bold text-white">{fmt(futVal)}</p>
               <p className="text-xs text-zinc-500">Valore Futuro</p>
             </div>
@@ -7394,10 +7760,10 @@ function ROICalculator() {
             )}
           </div>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Prezzo Acquisto</span><span className="text-white">{fmt(price)} AED</span></div>
-            {mkt === 'offplan' && <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">(-) Launch Discount {disc}%</span><span className="text-emerald-400">-{fmt(price-effPrice)} AED</span></div>}
-            <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">Prezzo Effettivo</span><span className="text-white">{fmt(effPrice)} AED</span></div>
-            <div className="flex justify-between py-2 border-b border-[#334155]"><span className="text-zinc-400">(+) Apprezzamento {appr.toFixed(0)}%</span><span className="text-emerald-400">+{fmt(profit)} AED</span></div>
+            <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Prezzo Acquisto</span><span className="text-white">{fmt(price)} AED</span></div>
+            {mkt === 'offplan' && <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">(-) Launch Discount {disc}%</span><span className="text-emerald-400">-{fmt(price-effPrice)} AED</span></div>}
+            <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Prezzo Effettivo</span><span className="text-white">{fmt(effPrice)} AED</span></div>
+            <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">(+) Apprezzamento {appr.toFixed(0)}%</span><span className="text-emerald-400">+{fmt(profit)} AED</span></div>
             <div className="flex justify-between py-2 font-medium text-lg"><span className="text-white">= Valore Futuro</span><span className="text-emerald-400">{fmt(futVal)} AED</span></div>
           </div>
         </div>
@@ -7405,23 +7771,23 @@ function ROICalculator() {
 
       {/* Costs Tab */}
       {tab === 'costs' && (
-        <div className="bg-[#1e293b] rounded-xl p-4 border border-red-500/30">
+        <div className="bg-[#121f36] rounded-xl p-4 border border-red-500/30">
           <h3 className="font-semibold text-white mb-4">💰 Breakdown Costi Annuali</h3>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between py-3 border-b border-[#334155]">
+            <div className="flex justify-between py-3 border-b border-[#24344f]">
               <span className="text-zinc-400">Service Charge ({sc} × {sqft} sqft)</span>
               <span className="text-amber-400 font-bold">{fmt(sc*sqft*a.sc)} AED</span>
             </div>
-            <div className="flex justify-between py-3 border-b border-[#334155]">
+            <div className="flex justify-between py-3 border-b border-[#24344f]">
               <span className="text-zinc-400">DEWA (Utilities)</span>
               <span className="text-blue-400 font-bold">{fmt(d.dewa*roiBrMult.dewa[br])} AED</span>
             </div>
-            <div className="flex justify-between py-3 border-b border-[#334155]">
+            <div className="flex justify-between py-3 border-b border-[#24344f]">
               <span className="text-zinc-400">Assicurazione</span>
               <span className="text-green-400 font-bold">~1,000 AED</span>
             </div>
             {a.maint > 0 && (
-              <div className="flex justify-between py-3 border-b border-[#334155]">
+              <div className="flex justify-between py-3 border-b border-[#24344f]">
                 <span className="text-zinc-400">Manutenzione (edificio {age})</span>
                 <span className="text-red-400 font-bold">{fmt(a.maint)} AED</span>
               </div>
