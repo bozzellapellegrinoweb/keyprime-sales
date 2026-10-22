@@ -33,7 +33,7 @@ const initNativePlugins = async () => {
     try {
       // Status bar dark with app background
       await StatusBar.setStyle({ style: Style.Dark });
-      await StatusBar.setBackgroundColor({ color: '#0b1526' });
+      await StatusBar.setBackgroundColor({ color: '#0d1116' });
       
       // Keyboard listeners for better UX
       Keyboard.addListener('keyboardWillShow', () => {
@@ -72,8 +72,11 @@ const sendPushNotification = async (title, message, url = null, target = { type:
 const ADMIN_EMAIL = 'bozzellapellegrino@gmail.com';
 
 // Leaflet Config (no token needed - free!)
-const LEAFLET_TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-const LEAFLET_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+// Mappa: i basemap CARTO hanno iniziato a marchiare i tile con "API KEY
+// REQUIRED" per l'uso senza chiave, rendendo la mappa illeggibile. Il canvas
+// scuro di Esri non richiede registrazione e si accorda al tema dell'app.
+const LEAFLET_TILE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+const LEAFLET_ATTRIBUTION = '&copy; <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a>, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 
 // Dubai Areas with coordinates for map
 const DUBAI_AREAS_COORDS = {
@@ -140,13 +143,13 @@ const sendEmail = async (to, subject, html) => {
 const APP_URL = 'https://portal.keyprimere.com';
 // ── Email template helpers ──────────────────────────────────────────────────
 const kpEmail = (accentColor, badge, title, rows, url = APP_URL) =>
-  `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px"><tr><td align="center"><table cellpadding="0" cellspacing="0" style="max-width:560px;width:100%"><tr><td style="background:#121f36;border-radius:12px 12px 0 0;padding:20px 32px;text-align:center"><span style="font-size:20px;font-weight:800;color:white;letter-spacing:-0.5px;font-family:Georgia,serif">KEY<span style="color:#f59e0b">PRIME</span></span></td></tr><tr><td style="background:${accentColor};height:4px;font-size:1px;line-height:4px">&nbsp;</td></tr><tr><td style="background:white;padding:32px 32px 28px;border-radius:0 0 12px 12px"><p style="margin:0 0 6px;font-size:11px;font-weight:700;color:${accentColor};text-transform:uppercase;letter-spacing:1.5px">${badge}</p><h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#0b1526;line-height:1.3">${title}</h1><table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #f1f5f9">${rows}</table><a href="${url}" style="display:inline-block;margin-top:28px;padding:13px 28px;background:#121f36;color:white;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;letter-spacing:0.2px">Apri KeyPrime &rarr;</a></td></tr><tr><td style="padding:18px;text-align:center"><p style="margin:0;font-size:11px;color:#94a3b8">KeyPrime Sales &middot; <a href="mailto:info@keyprimere.com" style="color:#94a3b8;text-decoration:none">info@keyprimere.com</a></p></td></tr></table></td></tr></table></body></html>`;
+  `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px"><tr><td align="center"><table cellpadding="0" cellspacing="0" style="max-width:560px;width:100%"><tr><td style="background:#141920;border-radius:12px 12px 0 0;padding:20px 32px;text-align:center"><span style="font-size:20px;font-weight:800;color:white;letter-spacing:-0.5px;font-family:Georgia,serif">KEY<span style="color:#f59e0b">PRIME</span></span></td></tr><tr><td style="background:${accentColor};height:4px;font-size:1px;line-height:4px">&nbsp;</td></tr><tr><td style="background:white;padding:32px 32px 28px;border-radius:0 0 12px 12px"><p style="margin:0 0 6px;font-size:11px;font-weight:700;color:${accentColor};text-transform:uppercase;letter-spacing:1.5px">${badge}</p><h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#0d1116;line-height:1.3">${title}</h1><table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #f1f5f9">${rows}</table><a href="${url}" style="display:inline-block;margin-top:28px;padding:13px 28px;background:#141920;color:white;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;letter-spacing:0.2px">Apri KeyPrime &rarr;</a></td></tr><tr><td style="padding:18px;text-align:center"><p style="margin:0;font-size:11px;color:#94a3b8">KeyPrime Sales &middot; <a href="mailto:info@keyprimere.com" style="color:#94a3b8;text-decoration:none">info@keyprimere.com</a></p></td></tr></table></td></tr></table></body></html>`;
 const kpRow = (label, value) =>
-  `<tr><td style="padding:11px 0;border-bottom:1px solid #f1f5f9"><span style="display:block;font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">${label}</span><span style="display:block;margin-top:3px;font-size:15px;color:#0b1526;font-weight:500">${value}</span></td></tr>`;
+  `<tr><td style="padding:11px 0;border-bottom:1px solid #f1f5f9"><span style="display:block;font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">${label}</span><span style="display:block;margin-top:3px;font-size:15px;color:#0d1116;font-weight:500">${value}</span></td></tr>`;
 const kpBig = (value, color) =>
   `<tr><td style="padding:14px 0 10px;border-bottom:1px solid #f1f5f9"><span style="font-size:30px;font-weight:800;color:${color}">${value}</span></td></tr>`;
 const kpNote = (text) =>
-  `<tr><td style="padding:14px 16px;background:#f8fafc;border-radius:8px;margin-top:8px;border-left:3px solid #e2e8f0"><span style="font-size:14px;color:#24344f;line-height:1.5">${text}</span></td></tr>`;
+  `<tr><td style="padding:14px 16px;background:#f8fafc;border-radius:8px;margin-top:8px;border-left:3px solid #e2e8f0"><span style="font-size:14px;color:#2b323d;line-height:1.5">${text}</span></td></tr>`;
 // ─────────────────────────────────────────────────────────────────────────────
 
 const notifyTaskCompleted = async (task, agentName) => {
@@ -252,9 +255,9 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
       <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#121f36] border border-[#24344f] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-scaleIn">
+      <div className="relative bg-[#141920] border border-[#2b323d] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-scaleIn">
         {/* Search Input */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-[#24344f]">
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-[#2b323d]">
           <Search className="w-5 h-5 text-zinc-500" />
           <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca lead, clienti, task..." className="flex-1 bg-transparent text-white text-lg placeholder:text-zinc-600 focus:outline-none" />
           <kbd className="hidden sm:flex items-center gap-1 px-2 py-1 bg-zinc-700/50 rounded text-xs text-zinc-500">ESC</kbd>
@@ -329,7 +332,7 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
         </div>
         
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-[#24344f] flex items-center justify-between text-xs text-zinc-600">
+        <div className="px-4 py-3 border-t border-[#2b323d] flex items-center justify-between text-xs text-zinc-600">
           <span>KeyPrime Search</span>
           <div className="flex items-center gap-2">
             <span>Naviga con</span>
@@ -359,14 +362,14 @@ const generateDashboardPDF = (totals, sales, vendite, byAgente, byZona) => {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; max-width: 900px; margin: 0 auto; color: #1a1a1a; }
     .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #f0f0f0; }
-    .logo { font-size: 28px; font-weight: 700; color: #121f36; }
+    .logo { font-size: 28px; font-weight: 700; color: #141920; }
     .logo span { color: #A78BFA; }
     .date { color: #666; font-size: 14px; }
     h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
     h2 { font-size: 16px; font-weight: 600; color: #666; margin: 32px 0 16px; text-transform: uppercase; letter-spacing: 0.5px; }
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
     .stat { background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%); padding: 20px; border-radius: 12px; text-align: center; }
-    .stat-value { font-size: 28px; font-weight: 700; color: #121f36; }
+    .stat-value { font-size: 28px; font-weight: 700; color: #141920; }
     .stat-value.purple { color: #A78BFA; }
     .stat-value.green { color: #34D399; }
     .stat-value.blue { color: #60A5FA; }
@@ -792,7 +795,7 @@ function PushTab({ users }) {
     }
   };
 
-  const inputCls = 'w-full bg-[#121f36] border border-[#24344f] rounded-lg px-3 py-2.5 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-colors';
+  const inputCls = 'w-full bg-[#141920] border border-[#2b323d] rounded-lg px-3 py-2.5 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-colors';
   const activeUsers = users.filter(u => u.ruolo !== 'admin');
 
   return (
@@ -827,7 +830,7 @@ function PushTab({ users }) {
                 { v: 'user', label: '👤 Utente' },
               ].map(opt => (
                 <button key={opt.v} onClick={() => setTarget(opt.v)}
-                  className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${target === opt.v ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'bg-[#121f36] border-[#24344f] text-zinc-400 hover:border-zinc-500'}`}>
+                  className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${target === opt.v ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'bg-[#141920] border-[#2b323d] text-zinc-400 hover:border-zinc-500'}`}>
                   {opt.label}
                 </button>
               ))}
@@ -2031,7 +2034,7 @@ export default function App() {
   // ==================== LOGIN VIEW ====================
   if (view === 'login') {
     return (
-      <div className="min-h-screen bg-[#0b1526] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#0d1116] flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
           <div className="text-center mb-10">
             <img src="/logo.png" alt="KeyPrime" className="h-20 mx-auto mb-4" />
@@ -2085,8 +2088,8 @@ export default function App() {
     // Form View (same for mobile/desktop)
     if (showForm) {
       return (
-        <div className="min-h-screen bg-[#0b1526]">
-          <div className="sticky top-0 z-40 bg-[#0b1526]/95 backdrop-blur-xl border-b border-[#24344f] px-4 py-4">
+        <div className="min-h-screen bg-[#0d1116]">
+          <div className="sticky top-0 z-40 bg-[#0d1116]/95 backdrop-blur-xl border-b border-[#2b323d] px-4 py-4">
             <div className="flex items-center justify-between max-w-lg mx-auto">
               <button onClick={() => setShowForm(null)} className="text-zinc-400 hover:text-white flex items-center gap-2 transition-colors">
                 <ChevronLeft className="w-5 h-5" />Indietro
@@ -2099,7 +2102,7 @@ export default function App() {
             {showForm === 'lead' && <LeadForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addLead} />}
             {showForm === 'vendita' && <SaleForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addSale} />}
           </div>
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0b1526]/95 backdrop-blur-xl border-t border-[#24344f]">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0d1116]/95 backdrop-blur-xl border-t border-[#2b323d]">
             <Button onClick={() => document.getElementById('submitBtn')?.click()} className="w-full py-4" disabled={submitting}>
               {submitting ? (
                 <span className="flex items-center justify-center gap-2">
@@ -2115,9 +2118,9 @@ export default function App() {
     }
 
     return (
-      <div className="min-h-screen bg-[#0b1526] lg:flex">
+      <div className="min-h-screen bg-[#0d1116] lg:flex">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-[#24344f] bg-[#121f36] p-4 fixed h-full">
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#2b323d] bg-[#141920] p-4 fixed h-full">
           <div className="mb-8">
             <img src="/logo.png" alt="KeyPrime" className="h-16" />
           </div>
@@ -2126,7 +2129,7 @@ export default function App() {
               <NavItem key={t.id} icon={t.icon} label={t.label} active={activeTab === t.id} onClick={() => setActiveTab(t.id)} accent={t.accent} badge={t.badge} isNew={t.isNew} />
             ))}
           </nav>
-          <div className="pt-4 border-t border-[#24344f]">
+          <div className="pt-4 border-t border-[#2b323d]">
             <div className="flex items-center gap-3 px-2 py-2">
               <Avatar nome={user?.nome} size="sm" />
               <div className="flex-1 min-w-0">
@@ -2141,7 +2144,7 @@ export default function App() {
         {/* Main Content */}
         <div className="flex-1 lg:ml-64 pb-24 lg:pb-0">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-40 bg-[#0b1526]/95 backdrop-blur-xl border-b border-[#24344f]">
+          <div className="lg:hidden sticky top-0 z-40 bg-[#0d1116]/95 backdrop-blur-xl border-b border-[#2b323d]">
             <div className="flex items-center justify-between px-4 py-4">
               <img src="/logo.png" alt="KeyPrime" className="h-12" />
               <div className="flex items-center gap-3">
@@ -2158,7 +2161,7 @@ export default function App() {
           </div>
 
           {/* Desktop Header */}
-          <div className="hidden lg:block sticky top-0 z-40 bg-[#0b1526]/95 backdrop-blur-xl border-b border-[#24344f]">
+          <div className="hidden lg:block sticky top-0 z-40 bg-[#0d1116]/95 backdrop-blur-xl border-b border-[#2b323d]">
             <div className="flex items-center justify-between px-6 py-4">
               <div>
                 <h1 className="text-xl font-semibold text-white">{activeTab === 'oggi' ? `Ciao ${(user?.nome || '').split(' ')[0]}` : tabs.find(t => t.id === activeTab)?.label}</h1>
@@ -2173,11 +2176,11 @@ export default function App() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white bg-[#24344f] rounded-xl">
+                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white bg-[#2b323d] rounded-xl">
                   <Bell className="w-5 h-5" />
                   {notificationCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
                 </button>
-                <button onClick={refreshAllData} className="p-2 text-zinc-400 hover:text-white bg-[#24344f] rounded-xl" title="Aggiorna">
+                <button onClick={refreshAllData} className="p-2 text-zinc-400 hover:text-white bg-[#2b323d] rounded-xl" title="Aggiorna">
                   <RefreshCw className="w-5 h-5" />
                 </button>
                 <Button onClick={() => setShowForm('lead')} icon={Plus}>Nuovo Lead</Button>
@@ -2215,7 +2218,7 @@ export default function App() {
                   <div className="grid grid-cols-5 gap-2">
                     {pipelineStati.map(st => (
                       <div key={st} className="text-center">
-                        <div className="rounded-xl py-3 px-2" style={{ background: theme.status[st]?.bg || '#24344f' }}>
+                        <div className="rounded-xl py-3 px-2" style={{ background: theme.status[st]?.bg || '#2b323d' }}>
                           <p className="text-2xl font-bold" style={{ color: theme.status[st]?.color || '#fff' }}>{byStato[st]?.length || 0}</p>
                         </div>
                         <p className="text-xs text-zinc-500 mt-2">{pipelineLabels[st] || st}</p>
@@ -2397,7 +2400,7 @@ export default function App() {
 
           {/* Barra mobile: solo le schede primarie, il resto sotto "Altro".
               Con dieci voci affiancate le etichette diventavano illeggibili. */}
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0b1526]/95 backdrop-blur-xl border-t border-[#24344f] px-2 py-2 z-30">
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0d1116]/95 backdrop-blur-xl border-t border-[#2b323d] px-2 py-2 z-30">
             <div className="flex justify-around items-end">
               {tabs.filter(t => t.primaria).map(t => (
                 <button key={t.id} onClick={() => { setActiveTab(t.id); setMobileMenuOpen(false); }}
@@ -2423,7 +2426,7 @@ export default function App() {
           {mobileMenuOpen && (
             <div className="lg:hidden fixed inset-0 z-40">
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
-              <div className="absolute bottom-0 left-0 right-0 bg-[#121f36] border-t border-[#24344f] rounded-t-3xl p-4 pb-8 animate-slideUp">
+              <div className="absolute bottom-0 left-0 right-0 bg-[#141920] border-t border-[#2b323d] rounded-t-3xl p-4 pb-8 animate-slideUp">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-white font-semibold">Altre sezioni</h3>
                   <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-500 hover:text-white"><X className="w-5 h-5" /></button>
@@ -2558,9 +2561,9 @@ export default function App() {
     ];
 
     return (
-      <div className="min-h-screen bg-[#0b1526] flex">
+      <div className="min-h-screen bg-[#0d1116] flex">
         {/* Sidebar - Desktop */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-[#24344f] bg-[#121f36] p-4">
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#2b323d] bg-[#141920] p-4">
           <div className="mb-8">
             <img src="/logo.png" alt="KeyPrime" className="h-20" />
           </div>
@@ -2571,7 +2574,7 @@ export default function App() {
             ))}
           </nav>
           
-          <div className="border-t border-[#24344f] pt-4 mt-4">
+          <div className="border-t border-[#2b323d] pt-4 mt-4">
             <div className="flex items-center gap-3 px-4 py-3">
               <Avatar nome={user?.nome} size="sm" />
               <div className="flex-1 min-w-0">
@@ -2587,7 +2590,7 @@ export default function App() {
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-40 bg-[#0b1526]/95 backdrop-blur-xl border-b border-[#24344f]">
+          <div className="lg:hidden sticky top-0 z-40 bg-[#0d1116]/95 backdrop-blur-xl border-b border-[#2b323d]">
             <div className="flex items-center justify-between px-4 py-4">
               <button onClick={() => setMobileMenuOpen(true)} className="text-zinc-400"><Menu className="w-6 h-6" /></button>
               <img src="/logo.png" alt="KeyPrime" className="h-16" />
@@ -3126,7 +3129,7 @@ export default function App() {
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <div className="absolute inset-0 bg-zinc-800/60" onClick={() => setMobileMenuOpen(false)} />
-            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#121f36] p-4 animate-slideRight">
+            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#141920] p-4 animate-slideRight">
               <div className="flex items-center justify-between mb-8">
                 <img src="/logo.png" alt="KeyPrime" className="h-16" />
                 <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-400"><X className="w-5 h-5" /></button>
@@ -3191,9 +3194,9 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input type="text" placeholder="Cerca progetto, cliente, agente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50" />
+          <input type="text" placeholder="Cerca progetto, cliente, agente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50" />
         </div>
-        <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50">
+        <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50">
           <option value="">Tutti gli stati</option>
           {pipelineStati.map(s => <option key={s} value={s}>{pipelineLabels[s] || s}</option>)}
         </select>
@@ -3203,7 +3206,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#24344f]">
+              <tr className="border-b border-[#2b323d]">
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Data</th>
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Progetto</th>
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Zona</th>
@@ -3217,7 +3220,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
                 <th className="text-center text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#24344f]">
+            <tbody className="divide-y divide-[#2b323d]">
               {sales.map(s => (
                 <tr key={s.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-4 py-3 text-sm text-zinc-400">{fmtShort(s.data)}</td>
@@ -3710,9 +3713,9 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
         <div className="flex items-center gap-3 flex-wrap flex-1">
           <div className="relative min-w-[250px]">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input type="text" placeholder="Cerca cliente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50" />
+            <input type="text" placeholder="Cerca cliente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50" />
           </div>
-          <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none">
+          <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none">
             <option value="">Tutti gli stati</option>
             {clienteStati.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
@@ -3938,7 +3941,7 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-[#24344f]">
+      <div className="flex gap-2 border-b border-[#2b323d]">
         {['info', 'lead', 'task'].map(t => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${tab === t ? 'text-white border-amber-500' : 'text-zinc-500 border-transparent hover:text-white'}`}>
             {t === 'info' ? 'Informazioni' : t === 'lead' ? `Lead (${sales.length})` : `Task (${tasks.length})`}
@@ -3958,8 +3961,8 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
             <div><p className="text-zinc-500 text-xs mb-1">Agente Rif.</p><p className="text-white">{cliente.agente_riferimento || '-'}</p></div>
             <div><p className="text-zinc-500 text-xs mb-1">Fonte</p><p className="text-white">{cliente.fonte || '-'}</p></div>
           </div>
-          {cliente.note && <div className="mt-4 pt-4 border-t border-[#24344f]"><p className="text-zinc-500 text-xs mb-1">Note</p><p className="text-white text-sm">{cliente.note}</p></div>}
-          <div className="mt-4 pt-4 border-t border-[#24344f]">
+          {cliente.note && <div className="mt-4 pt-4 border-t border-[#2b323d]"><p className="text-zinc-500 text-xs mb-1">Note</p><p className="text-white text-sm">{cliente.note}</p></div>}
+          <div className="mt-4 pt-4 border-t border-[#2b323d]">
             <p className="text-zinc-500 text-xs mb-2">Stato</p>
             <div className="flex flex-wrap gap-2">
               {clienteStati.map(s => (
@@ -4282,7 +4285,7 @@ function AgentDetailView({ agent, sales, onBack }) {
   }, {});
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0b1526] overflow-auto">
+    <div className="fixed inset-0 z-50 bg-[#0d1116] overflow-auto">
       <div className="max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
@@ -4474,7 +4477,10 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
 
         window.L.tileLayer(LEAFLET_TILE_URL, {
           attribution: LEAFLET_ATTRIBUTION,
-          maxZoom: 19
+          // Il canvas Esri copre fino allo zoom 16; oltre, Leaflet riusa
+          // l'ultimo livello disponibile invece di mostrare riquadri vuoti.
+          maxZoom: 19,
+          maxNativeZoom: 16
         }).addTo(map.current);
 
         markersLayer.current = window.L.layerGroup().addTo(map.current);
@@ -5119,16 +5125,20 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         )}
 
         <Card className="mb-4">
-          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto, zona o developer..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-3">
-            <select value={filters.emirate} onChange={(e) => setFilters(f => ({ ...f, emirate: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">🇦🇪 Emirato</option>{emirates.map(e => <option key={e} value={e}>{e}</option>)}</select>
-            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{availableZones.map(a => <option key={a} value={a}>{a}</option>)}</select>
-            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
-            <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
-            <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
-            <select value={filters.deliveryYear} onChange={(e) => setFilters(f => ({ ...f, deliveryYear: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Consegna</option>{deliveryYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
-            <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
-            <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto, zona o developer..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
+          {/* Nove colonne uguali schiacciavano ogni filtro sotto la larghezza
+              della propria etichetta ("Tutte le zo…"). Cinque per riga danno
+              a ciascuno lo spazio per leggersi, e i nove controlli vanno
+              semplicemente a capo. */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <select value={filters.emirate} onChange={(e) => setFilters(f => ({ ...f, emirate: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">🇦🇪 Emirato</option>{emirates.map(e => <option key={e} value={e}>{e}</option>)}</select>
+            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{availableZones.map(a => <option key={a} value={a}>{a}</option>)}</select>
+            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
+            <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
+            <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
+            <select value={filters.deliveryYear} onChange={(e) => setFilters(f => ({ ...f, deliveryYear: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Consegna</option>{deliveryYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
+            <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
             <Button onClick={() => { setSelectedAreaProjects(null); searchListings(1); }} icon={Search} disabled={loading}>{loading ? '...' : 'Cerca'}</Button>
           </div>
           {/* Sorting and active filters */}
@@ -5255,9 +5265,9 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         )}
 
         {viewMode === 'map' && (
-          <div className="fixed inset-0 z-50 bg-[#0b1526]">
+          <div className="fixed inset-0 z-50 bg-[#0d1116]">
             {/* Header */}
-            <div className="absolute top-0 left-0 right-0 z-20 bg-[#0b1526]/95 backdrop-blur border-b border-zinc-800">
+            <div className="absolute top-0 left-0 right-0 z-20 bg-[#0d1116]/95 backdrop-blur border-b border-zinc-800">
               <div className="px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <img src="/logo.png" alt="KeyPrime" className="h-8 lg:h-10" />
@@ -5293,7 +5303,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
               {/* Desktop: Sidebar + Map */}
               <div className="hidden lg:flex h-full">
                 {/* Left Sidebar */}
-                <div className="w-96 h-full bg-[#121f36] border-r border-zinc-800 flex flex-col">
+                <div className="w-96 h-full bg-[#141920] border-r border-zinc-800 flex flex-col">
                   <div className="p-3 border-b border-zinc-800">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -5342,13 +5352,13 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                 </div>
                 
                 {/* Bottom Carousel */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#0b1526] via-[#0b1526]/95 to-transparent pt-8 pb-4">
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#0d1116] via-[#0d1116]/95 to-transparent pt-8 pb-4">
                   <div className="flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory scrollbar-hide">
                     {displayProjects.map(project => (
                       <div 
                         key={project.project_id} 
                         onClick={() => setSelectedListing(project)}
-                        className={'flex-shrink-0 w-72 bg-[#121f36] rounded-xl p-3 border transition-all snap-start ' + (selectedListing?.project_id === project.project_id ? 'border-orange-500 scale-[1.02]' : 'border-zinc-800')}
+                        className={'flex-shrink-0 w-72 bg-[#141920] rounded-xl p-3 border transition-all snap-start ' + (selectedListing?.project_id === project.project_id ? 'border-orange-500 scale-[1.02]' : 'border-zinc-800')}
                       >
                         <div className="flex gap-3">
                           <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700">
@@ -5735,7 +5745,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4">
       <div className="absolute inset-0 bg-zinc-800/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#121f36] border border-[#24344f] rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-scaleIn">
+      <div className="relative bg-[#141920] border border-[#2b323d] rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-scaleIn">
         
         {/* Hero Image Section with Gallery */}
         <div className="relative h-72 md:h-80">
@@ -5748,7 +5758,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           )}
           
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#121f36] via-transparent to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#141920] via-transparent to-black/30" />
           
           {/* Top controls */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
@@ -6230,7 +6240,7 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-zinc-800/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#121f36] border border-[#24344f] rounded-2xl w-full max-w-md animate-scaleIn">
+      <div className="relative bg-[#141920] border border-[#2b323d] rounded-2xl w-full max-w-md animate-scaleIn">
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
           <h3 className="text-lg font-semibold text-white">Crea Lead da Annuncio</h3>
           <button onClick={onClose} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
@@ -6314,7 +6324,7 @@ function LoginForm({ onLogin, loading }) {
       <div>
         <label className="block text-sm text-zinc-400 mb-2">Password</label>
         <div className="relative">
-          <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 pr-12 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#33476a] transition-all" />
+          <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 pr-12 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3d4858] transition-all" />
           <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors">
             {showPwd ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
@@ -6521,7 +6531,7 @@ function LeadDetailSheet({
                 {pipelineStati.slice(0, -1).map(st => (
                   <button key={st} onClick={() => { onUpdateSale(sale.id, { stato: st }); }}
                           className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${sale?.stato === st ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
-                          style={sale?.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#1a2a45' }}>
+                          style={sale?.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#1b212b' }}>
                     {pipelineLabels[st] || st}
                   </button>
                 ))}
@@ -6534,7 +6544,7 @@ function LeadDetailSheet({
                 <p className="text-zinc-500 text-xs mb-2">Assegnato a</p>
                 <select value={sale?.assegnato_a || ''}
                         onChange={(e) => onAssegna?.([sale.id], e.target.value)}
-                        className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#33476a]">
+                        className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3d4858]">
                   <option value="">Nessuno</option>
                   {agenti.map(a => <option key={a.nome} value={a.nome}>{a.nome}</option>)}
                 </select>
@@ -6554,7 +6564,7 @@ function LeadDetailSheet({
                 <Card padding="p-4" className="border-red-500/25 bg-red-500/5 space-y-3">
                   <p className="text-red-300 text-sm">Perche' si e' perso?</p>
                   <select value={motivoPerso} onChange={(e) => setMotivoPerso(e.target.value)}
-                          className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm">
+                          className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm">
                     {motiviPerdita.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                   <div className="flex gap-2">
@@ -6925,7 +6935,7 @@ function NoteModal({ task, onSave, onClose }) {
         </Card>
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Nota</label>
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Scrivi una nota..." className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#33476a] h-24 resize-none" autoFocus />
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Scrivi una nota..." className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3d4858] h-24 resize-none" autoFocus />
         </div>
         <p className="text-zinc-600 text-xs">L'admin riceverà una notifica email</p>
         <div className="flex gap-3">
@@ -6971,7 +6981,7 @@ function ClienteModal({ cliente, onSave, onClose }) {
         </div>
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Note</label>
-          <textarea value={form.note || ''} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#33476a]" />
+          <textarea value={form.note || ''} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3d4858]" />
         </div>
         <div className="flex gap-3 pt-2">
           <Button variant="secondary" onClick={onClose} className="flex-1">Annulla</Button>
@@ -6997,14 +7007,14 @@ function TaskModal({ task, clienti, users, onSave, onClose }) {
         <Input label="Titolo *" value={form.titolo} onChange={(e) => setForm({ ...form, titolo: e.target.value })} autoFocus />
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Descrizione</label>
-          <textarea value={form.descrizione || ''} onChange={(e) => setForm({ ...form, descrizione: e.target.value })} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#33476a]" />
+          <textarea value={form.descrizione || ''} onChange={(e) => setForm({ ...form, descrizione: e.target.value })} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3d4858]" />
         </div>
         <Input label="Scadenza" type="datetime-local" value={form.scadenza ? form.scadenza.slice(0, 16) : ''} onChange={(e) => setForm({ ...form, scadenza: e.target.value ? new Date(e.target.value).toISOString() : '' })} />
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Priorità</label>
           <div className="flex gap-2">
             {taskPriorita.map(p => (
-              <button key={p} onClick={() => setForm({ ...form, priorita: p })} className={`flex-1 px-3 py-2 rounded-xl text-sm transition-all ${form.priorita === p ? 'text-white' : 'text-zinc-500'}`} style={form.priorita === p ? { background: theme.priority[p]?.bg, color: theme.priority[p]?.color } : { background: '#24344f' }}>
+              <button key={p} onClick={() => setForm({ ...form, priorita: p })} className={`flex-1 px-3 py-2 rounded-xl text-sm transition-all ${form.priorita === p ? 'text-white' : 'text-zinc-500'}`} style={form.priorita === p ? { background: theme.priority[p]?.bg, color: theme.priority[p]?.color } : { background: '#2b323d' }}>
                 {p}
               </button>
             ))}
@@ -7129,7 +7139,7 @@ function UserModal({ user, onSave, onClose }) {
               value={form.password || ''}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               placeholder={user ? 'Invariata' : ''}
-              className="flex-1 bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm font-mono placeholder:text-zinc-600 focus:outline-none focus:border-[#33476a] transition-all"
+              className="flex-1 bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm font-mono placeholder:text-zinc-600 focus:outline-none focus:border-[#3d4858] transition-all"
             />
             <Button variant="secondary" icon={RefreshCw} onClick={() => setForm({ ...form, password: auth.generaPassword() })} title="Genera">Genera</Button>
           </div>
@@ -7160,7 +7170,7 @@ function UserModal({ user, onSave, onClose }) {
                 value={form.commission_pct ?? ''}
                 onChange={(e) => setForm({ ...form, commission_pct: e.target.value })}
                 placeholder="70"
-                className="w-28 bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#33476a]"
+                className="w-28 bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3d4858]"
               />
               <span className="text-zinc-500 text-sm">% della commissione sulla vendita (vuoto = 70%, lo standard)</span>
             </div>
@@ -7221,13 +7231,13 @@ function ClientSearch({ clienti, onSelect, onCreateNew, selectedClient }) {
     <div className="relative">
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-        <input type="text" placeholder="Cerca cliente..." value={search} onChange={(e) => { setSearch(e.target.value); setShow(true); }} onFocus={() => setShow(true)} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#33476a]" />
+        <input type="text" placeholder="Cerca cliente..." value={search} onChange={(e) => { setSearch(e.target.value); setShow(true); }} onFocus={() => setShow(true)} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3d4858]" />
       </div>
       
       {show && search.length >= 2 && (
-        <div className="absolute z-10 w-full mt-2 bg-[#121f36] border border-[#24344f] rounded-xl overflow-hidden shadow-xl">
+        <div className="absolute z-10 w-full mt-2 bg-[#141920] border border-[#2b323d] rounded-xl overflow-hidden shadow-xl">
           {filtered.map(c => (
-            <button key={c.id} onClick={() => { onSelect(c); setSearch(''); setShow(false); }} className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-[#24344f] last:border-0 flex items-center gap-3 transition-colors">
+            <button key={c.id} onClick={() => { onSelect(c); setSearch(''); setShow(false); }} className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-[#2b323d] last:border-0 flex items-center gap-3 transition-colors">
               <Avatar nome={c.nome} cognome={c.cognome} size="sm" />
               <div>
                 <p className="text-white text-sm">{c.nome} {c.cognome}</p>
@@ -7243,7 +7253,7 @@ function ClientSearch({ clienti, onSelect, onCreateNew, selectedClient }) {
       )}
       
       {!search && (
-        <button onClick={onCreateNew} className="w-full mt-3 border border-dashed border-[#33476a] rounded-xl py-3 text-zinc-500 text-sm flex items-center justify-center gap-2 hover:border-amber-500 hover:text-amber-400 transition-colors">
+        <button onClick={onCreateNew} className="w-full mt-3 border border-dashed border-[#3d4858] rounded-xl py-3 text-zinc-500 text-sm flex items-center justify-center gap-2 hover:border-amber-500 hover:text-amber-400 transition-colors">
           <UserPlus className="w-4 h-4" /> Crea nuovo cliente
         </button>
       )}
@@ -7269,12 +7279,12 @@ function SelectWithOther({ value, onChange, options, placeholder, label }) {
       <select value={showCustom ? 'Altro' : value} onChange={(e) => {
         if (e.target.value === 'Altro') { setShowCustom(true); setCustomValue(''); onChange(''); }
         else { setShowCustom(false); onChange(e.target.value); }
-      }} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#33476a] appearance-none">
+      }} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3d4858] appearance-none">
         <option value="">{placeholder}</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
       {showCustom && (
-        <input type="text" value={customValue} onChange={(e) => { setCustomValue(e.target.value); onChange(e.target.value); }} placeholder="Specifica..." className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm mt-2 focus:outline-none focus:border-[#33476a]" autoFocus />
+        <input type="text" value={customValue} onChange={(e) => { setCustomValue(e.target.value); onChange(e.target.value); }} placeholder="Specifica..." className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm mt-2 focus:outline-none focus:border-[#3d4858]" autoFocus />
       )}
     </div>
   );
@@ -7317,7 +7327,7 @@ function LeadForm({ type, userName, clienti, onSubmit }) {
         <ClientSearch clienti={clienti} selectedClient={selectedClient} onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }} onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }} />
         
         {showNewClient && !selectedClient && (
-          <div className="mt-4 pt-4 border-t border-[#24344f] space-y-3">
+          <div className="mt-4 pt-4 border-t border-[#2b323d] space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Input placeholder="Nome *" value={form.cliente_nome} onChange={(e) => setForm({ ...form, cliente_nome: e.target.value })} />
               <Input placeholder="Cognome" value={form.cliente_cognome} onChange={(e) => setForm({ ...form, cliente_cognome: e.target.value })} />
@@ -7354,7 +7364,7 @@ function LeadForm({ type, userName, clienti, onSubmit }) {
         <h4 className="text-white font-medium mb-4">Stato iniziale</h4>
         <div className="flex flex-wrap gap-2">
           {pipelineStati.slice(0, 4).map(st => (
-            <button key={st} type="button" onClick={() => setForm({ ...form, stato: st })} className={`px-4 py-2 rounded-xl text-sm transition-all ${form.stato === st ? 'text-white' : 'text-zinc-500'}`} style={form.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#24344f' }}>
+            <button key={st} type="button" onClick={() => setForm({ ...form, stato: st })} className={`px-4 py-2 rounded-xl text-sm transition-all ${form.stato === st ? 'text-white' : 'text-zinc-500'}`} style={form.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#2b323d' }}>
               {pipelineLabels[st] || st}
             </button>
           ))}
@@ -7407,7 +7417,7 @@ function SaleForm({ type, userName, clienti, onSubmit }) {
         <ClientSearch clienti={clienti} selectedClient={selectedClient} onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }} onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }} />
         
         {showNewClient && !selectedClient && (
-          <div className="mt-4 pt-4 border-t border-[#24344f] space-y-3">
+          <div className="mt-4 pt-4 border-t border-[#2b323d] space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Input placeholder="Nome *" value={form.nuovo_cliente_nome} onChange={(e) => setForm({ ...form, nuovo_cliente_nome: e.target.value })} />
               <Input placeholder="Cognome" value={form.nuovo_cliente_cognome} onChange={(e) => setForm({ ...form, nuovo_cliente_cognome: e.target.value })} />
@@ -7558,20 +7568,20 @@ function ROICalculator() {
     <div className="space-y-4">
       {/* Emirate Filter */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        <button onClick={()=>setEmirate('all')} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate==='all'?'bg-emerald-500 text-white':'bg-[#24344f] text-zinc-400 hover:bg-[#475569]'}`}>🇦🇪 Tutti</button>
+        <button onClick={()=>setEmirate('all')} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate==='all'?'bg-emerald-500 text-white':'bg-[#2b323d] text-zinc-400 hover:bg-[#475569]'}`}>🇦🇪 Tutti</button>
         {['Dubai','Abu Dhabi','RAK','Sharjah','Ajman','UAQ'].map(em=>(
-          <button key={em} onClick={()=>setEmirate(em)} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate===em?'bg-emerald-500 text-white':'bg-[#24344f] text-zinc-400 hover:bg-[#475569]'}`}>
+          <button key={em} onClick={()=>setEmirate(em)} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate===em?'bg-emerald-500 text-white':'bg-[#2b323d] text-zinc-400 hover:bg-[#475569]'}`}>
             {em==='RAK'?'🏝️':em==='Dubai'?'🌆':em==='Abu Dhabi'?'🏛️':em==='Sharjah'?'📚':em==='Ajman'?'🏠':'⛵'} {em}
           </button>
         ))}
       </div>
 
       {/* Inputs */}
-      <div className="bg-[#121f36] rounded-xl p-4 border border-[#24344f]">
+      <div className="bg-[#141920] rounded-xl p-4 border border-[#2b323d]">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <div className="col-span-2">
             <label className="text-zinc-500 text-xs block mb-1">Zona</label>
-            <select value={z} onChange={e=>setZ(e.target.value)} className="w-full bg-[#24344f] border-none rounded-lg px-3 py-2 text-sm text-white">
+            <select value={z} onChange={e=>setZ(e.target.value)} className="w-full bg-[#2b323d] border-none rounded-lg px-3 py-2 text-sm text-white">
               {Object.entries(filteredZones).map(([em, cats])=>(
                 <optgroup key={em} label={`━━ ${em} ━━`}>
                   {Object.entries(cats || {}).map(([cat, list])=>(
@@ -7586,21 +7596,21 @@ function ROICalculator() {
           </div>
           <div>
             <label className="text-zinc-500 text-xs block mb-1">Prezzo (AED)</label>
-            <input type="number" value={price} onChange={e=>setPrice(+e.target.value)} className="w-full bg-[#24344f] border-none rounded-lg px-3 py-2 text-sm text-white"/>
+            <input type="number" value={price} onChange={e=>setPrice(+e.target.value)} className="w-full bg-[#2b323d] border-none rounded-lg px-3 py-2 text-sm text-white"/>
           </div>
           <div>
             <label className="text-zinc-500 text-xs block mb-1">Sqft</label>
-            <input type="number" value={sqft} onChange={e=>setSqft(+e.target.value)} className="w-full bg-[#24344f] border-none rounded-lg px-3 py-2 text-sm text-white"/>
+            <input type="number" value={sqft} onChange={e=>setSqft(+e.target.value)} className="w-full bg-[#2b323d] border-none rounded-lg px-3 py-2 text-sm text-white"/>
           </div>
           <div>
             <label className="text-zinc-500 text-xs block mb-1">Camere</label>
-            <select value={br} onChange={e=>setBr(+e.target.value)} className="w-full bg-[#24344f] border-none rounded-lg px-3 py-2 text-sm text-white">
+            <select value={br} onChange={e=>setBr(+e.target.value)} className="w-full bg-[#2b323d] border-none rounded-lg px-3 py-2 text-sm text-white">
               {['Studio','1BR','2BR','3BR','4+BR'].map((l,i)=><option key={i} value={i}>{l}</option>)}
             </select>
           </div>
           <div>
             <label className="text-zinc-500 text-xs block mb-1">Mercato</label>
-            <select value={mkt} onChange={e=>setMkt(e.target.value)} className="w-full bg-[#24344f] border-none rounded-lg px-3 py-2 text-sm text-white">
+            <select value={mkt} onChange={e=>setMkt(e.target.value)} className="w-full bg-[#2b323d] border-none rounded-lg px-3 py-2 text-sm text-white">
               <option value="offplan">🏗️ Off-Plan</option>
               <option value="secondary">🏢 Secondary</option>
             </select>
@@ -7611,14 +7621,14 @@ function ROICalculator() {
           {mkt === 'secondary' && (
             <div>
               <label className="text-zinc-500 text-xs block mb-1">Età Edificio</label>
-              <select value={age} onChange={e=>setAge(e.target.value)} className="w-full bg-[#24344f] border-none rounded-lg px-3 py-2 text-sm text-white">
+              <select value={age} onChange={e=>setAge(e.target.value)} className="w-full bg-[#2b323d] border-none rounded-lg px-3 py-2 text-sm text-white">
                 <option value="new">🆕 {d.ageNew}</option>
                 {d.ageMid && <option value="mid">📅 {d.ageMid}</option>}
                 {d.ageOld && <option value="old">🏚️ {d.ageOld}</option>}
               </select>
             </div>
           )}
-          <div className="bg-[#24344f]/50 rounded-lg p-2">
+          <div className="bg-[#2b323d]/50 rounded-lg p-2">
             <p className="text-zinc-500 text-xs">{d.emirate} • {d.cat}</p>
             <p className="text-white font-medium text-sm">{d.e} {z}</p>
           </div>
@@ -7649,7 +7659,7 @@ function ROICalculator() {
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto">
         {['overview','rental','capital','costs'].map(t=>(
-          <button key={t} onClick={()=>setTab(t)} className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${tab===t?'bg-emerald-500 text-white':'bg-[#24344f] text-zinc-400 hover:bg-[#475569]'}`}>
+          <button key={t} onClick={()=>setTab(t)} className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${tab===t?'bg-emerald-500 text-white':'bg-[#2b323d] text-zinc-400 hover:bg-[#475569]'}`}>
             {t==='overview'?'📊 Overview':t==='rental'?'🏠 Rental':t==='capital'?'📈 Capital':'💰 Costi'}
           </button>
         ))}
@@ -7675,14 +7685,14 @@ function ROICalculator() {
             <p className="text-xs text-zinc-500 mt-1">Costi/Anno</p>
           </div>
           
-          <div className="col-span-2 bg-[#121f36] rounded-xl p-4 border border-[#24344f]">
+          <div className="col-span-2 bg-[#141920] rounded-xl p-4 border border-[#2b323d]">
             <p className="text-zinc-400 text-xs mb-3">Revenue Annuo Netto</p>
             <div className="space-y-2">
               <div className="flex justify-between items-center"><span className="text-zinc-400">🏠 Long Term</span><span className="text-blue-400 font-bold text-lg">{fmt(ltNet)} AED</span></div>
               <div className="flex justify-between items-center"><span className="text-zinc-400">🏖️ Short Term</span><span className="text-purple-400 font-bold text-lg">{fmt(stNet)} AED</span></div>
             </div>
           </div>
-          <div className="col-span-2 bg-[#121f36] rounded-xl p-4 border border-[#24344f]">
+          <div className="col-span-2 bg-[#141920] rounded-xl p-4 border border-[#2b323d]">
             <p className="text-zinc-400 text-xs mb-3">Capital Gain</p>
             <div className="space-y-2">
               <div className="flex justify-between items-center"><span className="text-zinc-400">Valore Futuro</span><span className="text-emerald-400 font-bold text-lg">{fmt(futVal)} AED</span></div>
@@ -7690,10 +7700,10 @@ function ROICalculator() {
             </div>
           </div>
           
-          <div className="col-span-full bg-[#121f36] rounded-xl p-4 border border-[#24344f]">
+          <div className="col-span-full bg-[#141920] rounded-xl p-4 border border-[#2b323d]">
             <p className="text-zinc-400 text-xs mb-3">ROI Totale 3 anni (rent + appreciation)</p>
             <div className="flex items-center gap-4">
-              <div className="flex-1 bg-[#24344f] rounded-full h-4 overflow-hidden">
+              <div className="flex-1 bg-[#2b323d] rounded-full h-4 overflow-hidden">
                 <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 transition-all" style={{width:`${Math.min(((ltNet*3+profit)/price)*100, 100)}%`}}/>
               </div>
               <span className="text-white font-bold text-xl">{(((ltNet*3+profit)/price)*100).toFixed(0)}%</span>
@@ -7705,7 +7715,7 @@ function ROICalculator() {
       {/* Rental Tab */}
       {tab === 'rental' && (
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="bg-[#121f36] rounded-xl p-4 border border-blue-500/30">
+          <div className="bg-[#141920] rounded-xl p-4 border border-blue-500/30">
             <h3 className="font-semibold text-white mb-4">🏠 Long Term Rental</h3>
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-blue-500/10 rounded-lg p-3 text-center">
@@ -7718,14 +7728,14 @@ function ROICalculator() {
               </div>
             </div>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Affitto Annuo</span><span className="text-white">{fmt(rent)} AED</span></div>
-              <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Mensile</span><span className="text-white">{fmt(rent/12)} AED</span></div>
-              <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">(-) Costi Annui</span><span className="text-red-400">-{fmt(costs)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Affitto Annuo</span><span className="text-white">{fmt(rent)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Mensile</span><span className="text-white">{fmt(rent/12)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">(-) Costi Annui</span><span className="text-red-400">-{fmt(costs)} AED</span></div>
               <div className="flex justify-between py-2 font-medium"><span className="text-white">= Netto Annuo</span><span className="text-emerald-400">{fmt(ltNet)} AED</span></div>
             </div>
           </div>
           
-          <div className="bg-[#121f36] rounded-xl p-4 border border-purple-500/30">
+          <div className="bg-[#141920] rounded-xl p-4 border border-purple-500/30">
             <h3 className="font-semibold text-white mb-4">🏖️ Short Term / Airbnb</h3>
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-purple-500/10 rounded-lg p-3 text-center">
@@ -7738,9 +7748,9 @@ function ROICalculator() {
               </div>
             </div>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Tariffa/Notte</span><span className="text-white">{fmt(d.night*roiBrMult.night[br])} AED</span></div>
-              <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Occupancy Media</span><span className="text-white">{d.occ}%</span></div>
-              <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Revenue Lordo</span><span className="text-white">{fmt(stGross)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Tariffa/Notte</span><span className="text-white">{fmt(d.night*roiBrMult.night[br])} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Occupancy Media</span><span className="text-white">{d.occ}%</span></div>
+              <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Revenue Lordo</span><span className="text-white">{fmt(stGross)} AED</span></div>
               <div className="flex justify-between py-2 font-medium"><span className="text-white">= Netto Annuo</span><span className="text-emerald-400">{fmt(stNet)} AED</span></div>
             </div>
           </div>
@@ -7749,18 +7759,18 @@ function ROICalculator() {
 
       {/* Capital Tab */}
       {tab === 'capital' && (
-        <div className="bg-[#121f36] rounded-xl p-4 border border-emerald-500/30">
+        <div className="bg-[#141920] rounded-xl p-4 border border-emerald-500/30">
           <h3 className="font-semibold text-white mb-4">📈 Capital Appreciation - {mkt === 'offplan' ? 'Off-Plan' : 'Secondary'}</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div className="bg-emerald-500/10 rounded-lg p-3 text-center">
               <p className="text-2xl font-bold text-emerald-400">+{appr.toFixed(0)}%</p>
               <p className="text-xs text-zinc-500">Apprezzamento</p>
             </div>
-            <div className="bg-[#24344f] rounded-lg p-3 text-center">
+            <div className="bg-[#2b323d] rounded-lg p-3 text-center">
               <p className="text-xl font-bold text-white">{fmt(profit)}</p>
               <p className="text-xs text-zinc-500">Profitto (AED)</p>
             </div>
-            <div className="bg-[#24344f] rounded-lg p-3 text-center">
+            <div className="bg-[#2b323d] rounded-lg p-3 text-center">
               <p className="text-xl font-bold text-white">{fmt(futVal)}</p>
               <p className="text-xs text-zinc-500">Valore Futuro</p>
             </div>
@@ -7772,10 +7782,10 @@ function ROICalculator() {
             )}
           </div>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Prezzo Acquisto</span><span className="text-white">{fmt(price)} AED</span></div>
-            {mkt === 'offplan' && <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">(-) Launch Discount {disc}%</span><span className="text-emerald-400">-{fmt(price-effPrice)} AED</span></div>}
-            <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">Prezzo Effettivo</span><span className="text-white">{fmt(effPrice)} AED</span></div>
-            <div className="flex justify-between py-2 border-b border-[#24344f]"><span className="text-zinc-400">(+) Apprezzamento {appr.toFixed(0)}%</span><span className="text-emerald-400">+{fmt(profit)} AED</span></div>
+            <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Prezzo Acquisto</span><span className="text-white">{fmt(price)} AED</span></div>
+            {mkt === 'offplan' && <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">(-) Launch Discount {disc}%</span><span className="text-emerald-400">-{fmt(price-effPrice)} AED</span></div>}
+            <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Prezzo Effettivo</span><span className="text-white">{fmt(effPrice)} AED</span></div>
+            <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">(+) Apprezzamento {appr.toFixed(0)}%</span><span className="text-emerald-400">+{fmt(profit)} AED</span></div>
             <div className="flex justify-between py-2 font-medium text-lg"><span className="text-white">= Valore Futuro</span><span className="text-emerald-400">{fmt(futVal)} AED</span></div>
           </div>
         </div>
@@ -7783,23 +7793,23 @@ function ROICalculator() {
 
       {/* Costs Tab */}
       {tab === 'costs' && (
-        <div className="bg-[#121f36] rounded-xl p-4 border border-red-500/30">
+        <div className="bg-[#141920] rounded-xl p-4 border border-red-500/30">
           <h3 className="font-semibold text-white mb-4">💰 Breakdown Costi Annuali</h3>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between py-3 border-b border-[#24344f]">
+            <div className="flex justify-between py-3 border-b border-[#2b323d]">
               <span className="text-zinc-400">Service Charge ({sc} × {sqft} sqft)</span>
               <span className="text-amber-400 font-bold">{fmt(sc*sqft*a.sc)} AED</span>
             </div>
-            <div className="flex justify-between py-3 border-b border-[#24344f]">
+            <div className="flex justify-between py-3 border-b border-[#2b323d]">
               <span className="text-zinc-400">DEWA (Utilities)</span>
               <span className="text-blue-400 font-bold">{fmt(d.dewa*roiBrMult.dewa[br])} AED</span>
             </div>
-            <div className="flex justify-between py-3 border-b border-[#24344f]">
+            <div className="flex justify-between py-3 border-b border-[#2b323d]">
               <span className="text-zinc-400">Assicurazione</span>
               <span className="text-green-400 font-bold">~1,000 AED</span>
             </div>
             {a.maint > 0 && (
-              <div className="flex justify-between py-3 border-b border-[#24344f]">
+              <div className="flex justify-between py-3 border-b border-[#2b323d]">
                 <span className="text-zinc-400">Manutenzione (edificio {age})</span>
                 <span className="text-red-400 font-bold">{fmt(a.maint)} AED</span>
               </div>

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <meta name="theme-color" content="#0b1526" />
+    <meta name="theme-color" content="#0d1116" />
     <meta name="description" content="KeyPrime Real Estate Sales Management System" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -33,32 +33,38 @@
       // navy del marchio KeyPrime. L'app usa quelle classi in centinaia di
       // punti: ridefinirle qui ricolora tutto in modo coerente, senza
       // riscrivere le classi una per una.
+      // Palette dell'interfaccia.
+      //
+      // Il fondo e' un grigio scuro quasi neutro, con una punta appena fredda.
+      // Un blu saturo a tutto schermo affatica la vista, e spegne l'oro del
+      // marchio invece di farlo risaltare: l'accento vive meglio su una tela
+      // neutra. Le classi zinc-* e slate-* usate in tutta l'app leggono da qui.
       tailwind.config = {
         theme: {
           extend: {
             colors: {
               oro: {
-                50:  '#fbf7ec', 100: '#f5ecd2', 200: '#ead8a5',
-                300: '#dfc478', 400: '#d4b662', 500: '#c9a84c',
-                600: '#a98a33', 700: '#856c28', 800: '#5f4d1d', 900: '#3b3012'
+                50:  '#fbf8ef', 100: '#f6eed6', 200: '#ecdcac',
+                300: '#dfc579', 400: '#d3b257', 500: '#c9a84c',
+                600: '#a98a33', 700: '#836a27', 800: '#5c4a1c', 900: '#3a2f12'
               },
               navy: {
-                50:  '#f6f7f9', 100: '#eceff4', 200: '#d4dae6',
-                300: '#aeb8cd', 400: '#7d8aa8', 500: '#5d6b8a',
-                600: '#44516a', 700: '#2b3a54', 800: '#1a2a45',
-                900: '#121f36', 950: '#0b1526'
+                50:  '#f5f7fa', 100: '#e9edf3', 200: '#cfd6e0',
+                300: '#a7b2c2', 400: '#78859a', 500: '#56637a',
+                600: '#3d4858', 700: '#2b3340', 800: '#1b212b', 900: '#141920',
+                950: '#0d1116'
               },
               zinc: {
-                50:  '#f6f7f9', 100: '#eceff4', 200: '#d4dae6',
-                300: '#aeb8cd', 400: '#9aa8c0', 500: '#6d7d98',
-                600: '#4c5a74', 700: '#33476a', 800: '#1a2a45',
-                900: '#121f36', 950: '#0b1526'
+                50:  '#f7f9fb', 100: '#eef1f5', 200: '#dde2e9',
+                300: '#c2c9d4', 400: '#9aa3b2', 500: '#6f7889',
+                600: '#4c5464', 700: '#2b323d', 800: '#1b212b',
+                900: '#141920', 950: '#0d1116'
               },
               slate: {
-                50:  '#f6f7f9', 100: '#eceff4', 200: '#d4dae6',
-                300: '#aeb8cd', 400: '#9aa8c0', 500: '#6d7d98',
-                600: '#4c5a74', 700: '#33476a', 800: '#1a2a45',
-                900: '#121f36', 950: '#0b1526'
+                50:  '#f7f9fb', 100: '#eef1f5', 200: '#dde2e9',
+                300: '#c2c9d4', 400: '#9aa3b2', 500: '#6f7889',
+                600: '#4c5464', 700: '#2b323d', 800: '#1b212b',
+                900: '#141920', 950: '#0d1116'
               }
             },
             fontFamily: {
@@ -70,6 +76,23 @@
     </script>
     
     <style>
+      /* Il menu a tendina di un <select> non lo disegna la pagina: lo disegna
+         il sistema operativo. Senza color-scheme lo costruisce in chiaro, e le
+         voci risultano illeggibili su un'interfaccia scura. Questa riga e'
+         quella che le rende leggibili, non le classi sul <select>. */
+      :root { color-scheme: dark; }
+
+      /* Ripiego per i browser che impaginano le opzioni da se'. */
+      select option {
+        background-color: #1b212b;
+        color: #f2f5f8;
+      }
+
+      /* La freccia nativa la disegna gia' il browser in versione scura grazie
+         a color-scheme: sostituirla con una immagine di sfondo obbligava ad
+         aggiungere spazio a destra, e nelle barre di filtro strette questo
+         troncava le etichette ("Tutte le zo…"). Si lascia quella nativa. */
+
       /* Safe area for iOS notch */
       :root {
         --sat: env(safe-area-inset-top);
@@ -126,7 +149,7 @@
       button, a { -webkit-user-select: none; user-select: none; }
     </style>
   </head>
-  <body class="bg-[#0b1526]">
+  <body class="bg-[#0d1116]">
     <noscript>Devi abilitare JavaScript per usare questa app.</noscript>
     <div id="root"></div>
   </body>

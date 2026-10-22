@@ -112,7 +112,7 @@ export default function LeadInbox({
                   }`}
                   style={{ borderColor: vistaEffettiva === s.id ? s.colore : 'transparent' }}>
             <p className="text-zinc-500 text-xs lg:text-sm">{s.label}</p>
-            <p className="text-2xl font-semibold mt-1" style={{ color: s.conta > 0 ? s.colore : '#6d7d98' }}>
+            <p className="text-2xl font-semibold mt-1" style={{ color: s.conta > 0 ? s.colore : '#6f7889' }}>
               {s.conta}
             </p>
           </button>

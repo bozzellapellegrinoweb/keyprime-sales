@@ -40,7 +40,7 @@ export const StatusBadge = ({ status, type = 'pipeline' }) => {
 
 // Card Component
 export const Card = ({ children, className = '', hover = false, onClick, padding = 'p-5' }) => (
-  <div onClick={onClick} className={`bg-[#121f36] border border-[#24344f] rounded-2xl ${padding} ${hover ? 'hover:border-[#33476a] hover:bg-[#1a2a45] cursor-pointer transition-all duration-200' : ''} ${className}`}>
+  <div onClick={onClick} className={`bg-[#141920] border border-[#2b323d] rounded-2xl ${padding} ${hover ? 'hover:border-[#3d4858] hover:bg-[#1b212b] cursor-pointer transition-all duration-200' : ''} ${className}`}>
     {children}
   </div>
 );
@@ -106,7 +106,7 @@ export const EmptyState = ({ icon: Icon, title, description, action, onAction })
     </div>
     <h3 className="text-lg font-medium text-white mb-2">{title}</h3>
     <p className="text-zinc-500 text-sm mb-6 max-w-sm mx-auto">{description}</p>
-    {action && <button onClick={onAction} className="px-5 py-2.5 bg-oro-500 text-[#0b1526] rounded-xl font-semibold text-sm hover:bg-oro-400 transition-colors">{action}</button>}
+    {action && <button onClick={onAction} className="px-5 py-2.5 bg-oro-500 text-[#0d1116] rounded-xl font-semibold text-sm hover:bg-oro-400 transition-colors">{action}</button>}
   </Card>
 );
 
@@ -114,7 +114,7 @@ export const EmptyState = ({ icon: Icon, title, description, action, onAction })
 export const Input = ({ label, ...props }) => (
   <div>
     {label && <label className="block text-sm text-zinc-400 mb-2">{label}</label>}
-    <input {...props} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#33476a] focus:ring-1 focus:ring-[#33476a] transition-all" />
+    <input {...props} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3d4858] focus:ring-1 focus:ring-[#3d4858] transition-all" />
   </div>
 );
 
@@ -122,7 +122,7 @@ export const Input = ({ label, ...props }) => (
 export const Select = ({ label, children, ...props }) => (
   <div>
     {label && <label className="block text-sm text-zinc-400 mb-2">{label}</label>}
-    <select {...props} className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#33476a] transition-all appearance-none cursor-pointer">
+    <select {...props} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3d4858] transition-all appearance-none cursor-pointer">
       {children}
     </select>
   </div>
@@ -131,7 +131,7 @@ export const Select = ({ label, children, ...props }) => (
 // Button
 export const Button = ({ children, variant = 'primary', size = 'md', icon: Icon, className = '', ...props }) => {
   const variants = {
-    primary: 'bg-oro-500 text-[#0b1526] hover:bg-oro-400 font-semibold',
+    primary: 'bg-oro-500 text-[#0d1116] hover:bg-oro-400 font-semibold',
     secondary: 'bg-zinc-700/50 text-white hover:bg-zinc-700',
     ghost: 'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5',
     danger: 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
@@ -151,8 +151,8 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative bg-[#121f36] border border-[#24344f] rounded-2xl w-full ${sizes[size]} max-h-[85vh] overflow-hidden animate-scaleIn`}>
-        <div className="flex items-center justify-between p-5 border-b border-[#24344f]">
+      <div className={`relative bg-[#141920] border border-[#2b323d] rounded-2xl w-full ${sizes[size]} max-h-[85vh] overflow-hidden animate-scaleIn`}>
+        <div className="flex items-center justify-between p-5 border-b border-[#2b323d]">
           <h3 className="text-lg font-semibold text-white">{title}</h3>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
         </div>
@@ -168,8 +168,8 @@ export const BottomSheet = ({ isOpen, onClose, title, children }) => {
   return (
     <div className="fixed inset-0 z-50 md:flex md:items-center md:justify-center md:p-4">
       <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="absolute bottom-0 left-0 right-0 md:relative md:max-w-lg md:w-full bg-[#121f36] border-t md:border border-[#24344f] rounded-t-3xl md:rounded-2xl max-h-[90vh] overflow-hidden animate-slideUp">
-        <div className="flex items-center justify-between p-5 border-b border-[#24344f]">
+      <div className="absolute bottom-0 left-0 right-0 md:relative md:max-w-lg md:w-full bg-[#141920] border-t md:border border-[#2b323d] rounded-t-3xl md:rounded-2xl max-h-[90vh] overflow-hidden animate-slideUp">
+        <div className="flex items-center justify-between p-5 border-b border-[#2b323d]">
           <h3 className="text-lg font-semibold text-white">{title}</h3>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
         </div>

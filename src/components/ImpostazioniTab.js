@@ -131,7 +131,7 @@ export default function ImpostazioniTab({ impostazioni, onRicarica, onToast, age
               <label className="block text-sm text-zinc-400 mb-2">Pipeline KeyPrime</label>
               <select value={ghl.pipeline_id || ''}
                       onChange={(e) => setGhl({ ...ghl, pipeline_id: e.target.value || null, stage_map: {} })}
-                      className="w-full bg-[#121f36] border border-[#24344f] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#33476a]">
+                      className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3d4858]">
                 <option value="">Nessuna (solo tag)</option>
                 {pipelines.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
               </select>
@@ -144,7 +144,7 @@ export default function ImpostazioniTab({ impostazioni, onRicarica, onToast, age
                     <span className="text-sm text-zinc-400 w-32 shrink-0">{st.label}</span>
                     <select value={(ghl.stage_map || {})[st.id] || ''}
                             onChange={(e) => setGhl({ ...ghl, stage_map: { ...(ghl.stage_map || {}), [st.id]: e.target.value || undefined } })}
-                            className="flex-1 bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-[#33476a]">
+                            className="flex-1 bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-[#3d4858]">
                       <option value="">Non mappato</option>
                       {pipelineScelta.stages.map((sg) => <option key={sg.id} value={sg.id}>{sg.nome}</option>)}
                     </select>
@@ -167,7 +167,7 @@ export default function ImpostazioniTab({ impostazioni, onRicarica, onToast, age
                 </div>
                 <select value={(ghl.workflows || {})[sq.chiave] || ''}
                         onChange={(e) => setGhl({ ...ghl, workflows: { ...(ghl.workflows || {}), [sq.chiave]: e.target.value || undefined } })}
-                        className="flex-1 bg-[#121f36] border border-[#24344f] rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-[#33476a]">
+                        className="flex-1 bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-[#3d4858]">
                   <option value="">Non collegata</option>
                   {workflows.map((w) => <option key={w.id} value={w.id}>{w.nome}</option>)}
                 </select>

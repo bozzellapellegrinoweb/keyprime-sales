@@ -13,7 +13,7 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,
-      backgroundColor: '#0b1526',
+      backgroundColor: '#0d1116',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
@@ -22,7 +22,7 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#0b1526',
+      backgroundColor: '#0d1116',
     },
     Keyboard: {
       resize: 'body',
@@ -36,7 +36,7 @@ const config: CapacitorConfig = {
     scheme: 'KeyPrime',
   },
   android: {
-    backgroundColor: '#0b1526',
+    backgroundColor: '#0d1116',
     allowMixedContent: true,
   },
 };
