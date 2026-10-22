@@ -21,6 +21,7 @@ import WorkQueue from './components/WorkQueue';
 import LeadInbox from './components/LeadInbox';
 import MessaggiGhl from './components/MessaggiGhl';
 import ImpostazioniTab from './components/ImpostazioniTab';
+import ControlloAccessi from './components/ControlloAccessi';
 import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List, ExternalLink, Calculator } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -1708,7 +1709,16 @@ export default function App() {
     }
   };
 
-  const deleteSale = async (id) => { if (!window.confirm('Eliminare questo lead?')) return; await supabase.from('sales').delete().eq('id', id); showToast('Eliminato'); loadSales(); };
+  // Ogni eliminazione ora controlla l'esito: prima l'app annunciava
+  // "Eliminato" anche quando il database aveva rifiutato la cancellazione.
+  const deleteSale = async (id, skipConfirm = false) => {
+    if (!skipConfirm && !window.confirm('Eliminare questo lead? Spariscono anche le attivita e i follow-up collegati.')) return;
+    const esito = await leadLib.eliminaLead(id);
+    if (!esito.ok) { showToast(esito.error, 'error'); return; }
+    setShowLeadDetail(null);
+    await loadSales();
+    showToast('Lead eliminato');
+  };
 
   // Cliente Handlers
   const createCliente = async (d) => {
@@ -1736,12 +1746,36 @@ export default function App() {
     if (showClienteDetail?.id === id) setShowClienteDetail(prev => ({ ...prev, ...d }));
     showToast('Salvato');
   };
-  const deleteCliente = async (id, skipConfirm = false) => { 
-    if (!skipConfirm && !window.confirm('Eliminare?')) return; 
-    await supabase.from('clienti').delete().eq('id', id); 
-    await loadClienti(); 
-    setShowClienteDetail(null); 
-    showToast('Eliminato');
+  // Un cliente con lead, offerte o immobili salvati non si puo' cancellare
+  // finche' quelle righe esistono: i vincoli del database lo impediscono, a
+  // protezione dello storico vendite. Qui si dice esattamente cosa andrebbe
+  // perso, e solo dopo conferma si rimuove tutto nell'ordine giusto.
+  const deleteCliente = async (id, skipConfirm = false) => {
+    const dip = await leadLib.dipendenzeCliente(id);
+    const collegati = dip.ok
+      ? [
+          dip.lead ? `${dip.lead} lead` : null,
+          dip.offerte ? `${dip.offerte} offerte` : null,
+          dip.immobili_salvati ? `${dip.immobili_salvati} immobili salvati` : null,
+          dip.task ? `${dip.task} task` : null
+        ].filter(Boolean)
+      : [];
+
+    if (!skipConfirm) {
+      const avviso = collegati.length
+        ? `Eliminando questo cliente spariscono anche: ${collegati.join(', ')}.` +
+          (dip.lead_venduti ? `\n\nATTENZIONE: ${dip.lead_venduti} sono vendite chiuse, e usciranno dalle commissioni.` : '') +
+          '\n\nProcedere?'
+        : 'Eliminare questo cliente?';
+      if (!window.confirm(avviso)) return;
+    }
+
+    const esito = await leadLib.eliminaCliente(id);
+    if (!esito.ok) { showToast(esito.error, 'error'); return; }
+
+    await Promise.all([loadClienti(), loadSales(), loadOfferte(), loadSavedListings()]);
+    setShowClienteDetail(null);
+    showToast('Cliente eliminato');
   };
 
   // Task Handlers
@@ -1765,7 +1799,13 @@ export default function App() {
     showToast('Completato!'); loadTasks(); 
   };
   const addTaskNote = async (id, note) => { const task = tasks.find(t => t.id === id); await supabase.from('tasks').update({ note }).eq('id', id); if (task && user?.ruolo !== 'admin') await notifyTaskNote(task, user?.nome, note); loadTasks(); setShowNoteModal(null); showToast('Nota inviata'); };
-  const deleteTask = async (id) => { if (!window.confirm('Eliminare?')) return; await supabase.from('tasks').delete().eq('id', id); loadTasks(); };
+  const deleteTask = async (id) => {
+    if (!window.confirm('Eliminare questo task?')) return;
+    const { error } = await supabase.from('tasks').delete().eq('id', id);
+    if (error) { showToast(error.message, 'error'); return; }
+    loadTasks();
+    showToast('Task eliminato');
+  };
 
   // Activity Handlers (Lead Notes/Activities)
   const addActivity = async (saleId, tipo, contenuto) => {
@@ -1778,9 +1818,10 @@ export default function App() {
     loadActivities();
     showToast('Attività registrata');
   };
-  const deleteActivity = async (id) => { 
-    await supabase.from('lead_activities').delete().eq('id', id); 
-    loadActivities(); 
+  const deleteActivity = async (id) => {
+    const { error } = await supabase.from('lead_activities').delete().eq('id', id);
+    if (error) { showToast(error.message, 'error'); return; }
+    loadActivities();
   };
 
   // Follow-up Handlers
@@ -1797,9 +1838,10 @@ export default function App() {
     loadFollowUps();
     showToast('Follow-up completato');
   };
-  const deleteFollowUp = async (id) => { 
-    await supabase.from('follow_ups').delete().eq('id', id); 
-    loadFollowUps(); 
+  const deleteFollowUp = async (id) => {
+    const { error } = await supabase.from('follow_ups').delete().eq('id', id);
+    if (error) { showToast(error.message, 'error'); return; }
+    loadFollowUps();
   };
 
   // Programma il prossimo contatto e porta la data sul lead, cosi' la coda di
@@ -1962,7 +2004,8 @@ export default function App() {
   };
   const deleteOfferta = async (id) => {
     if (!window.confirm('Eliminare questa offerta?')) return;
-    await supabase.from('offerte').delete().eq('id', id);
+    const { error } = await supabase.from('offerte').delete().eq('id', id);
+    if (error) { showToast(error.message, 'error'); return; }
     await loadOfferte();
     showToast('Offerta eliminata');
   };
@@ -2557,6 +2600,7 @@ export default function App() {
       { id: 'followups', icon: Clock, label: 'Follow-up', accent: '#A855F7', badge: todayFollowUps.length + overdueFollowUps.length },
       { id: 'push', icon: Bell, label: 'Notifiche', accent: '#f59e0b' },
       { id: 'utenti', icon: Users, label: 'Team', accent: theme.sections.utenti.accent },
+      { id: 'accessi', icon: Key, label: 'Controllo accessi', accent: '#F472B6' },
       { id: 'impostazioni', icon: Settings, label: 'Impostazioni', accent: theme.sections.ghl.accent }
     ];
 
@@ -2625,8 +2669,7 @@ export default function App() {
                 <p className="text-zinc-500 text-sm mt-1">
                   {activeTab === 'dashboard' && 'Panoramica generale'}
                   {activeTab === 'inbox' && (daAssegnare + daLavorare > 0 ? `${daAssegnare} senza agente, ${daLavorare} mai contattati` : 'Tutti i lead sono presi in carico')}
-                  {activeTab === 'vendite' && `${sales.length} transazioni totali`}
-                  {activeTab === 'pipeline' && 'Gestisci il flusso di vendita'}
+                                    {activeTab === 'pipeline' && 'Gestisci il flusso di vendita'}
                   {activeTab === 'crm' && `${clienti.length} clienti in database`}
                   {activeTab === 'offplan' && `Progetti Off-Plan • ${savedListings.length} salvati`}
                   {activeTab === 'calculator' && 'Calcola rendimenti immobiliari UAE'}
@@ -2634,7 +2677,9 @@ export default function App() {
                   {activeTab === 'followups' && `${todayFollowUps.length + overdueFollowUps.length} follow-up da gestire`}
                   {activeTab === 'commissioni' && `${fmt(totals.comm)} AED commissioni totali`}
                   {activeTab === 'utenti' && `${users.length} membri del team`}
+                  {activeTab === 'accessi' && 'Permessi per ruolo, sessioni aperte e compensi'}
                   {activeTab === 'impostazioni' && 'Collegamento GHL, tempi di reazione e distribuzione lead'}
+                  {activeTab === 'vendite' && 'Solo gli affari chiusi'}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -3112,6 +3157,15 @@ export default function App() {
             )}
 
             {/* TEAM */}
+            {activeTab === 'accessi' && (
+              <ControlloAccessi
+                users={users}
+                sales={sales}
+                onToast={showToast}
+                onModificaUtente={setShowUserModal}
+              />
+            )}
+
             {activeTab === 'impostazioni' && (
               <ImpostazioniTab
                 impostazioni={impostazioni}
@@ -3189,17 +3243,55 @@ export default function App() {
 
 // Vendite Tab
 function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loading }) {
+  // "Vendite" mostrava l'intera pipeline, trattative comprese: una sezione con
+  // questo nome deve contenere le vendite. Qui restano solo gli affari chiusi
+  // (SPA firmato e incassato); chi vuole vedere la pipeline ha la scheda
+  // Pipeline. L'interruttore sotto permette comunque di includere gli EOI,
+  // che sono impegni presi ma non ancora firmati.
+  const [includiEOI, setIncludiEOI] = useState(false);
+
+  const chiuse = sales.filter(s =>
+    s.stato === 'venduto' || s.stato === 'incassato' || (includiEOI && s.stato === 'EOI'));
+
+  const valore = chiuse.reduce((t, s) => t + Number(s.valore || 0), 0);
+  const commissioni = chiuse.reduce((t, s) => t + Number(s.valore || 0) * (s.commission_pct || 5) / 100, 0);
+  const incassate = chiuse.filter(s => s.stato === 'incassato')
+    .reduce((t, s) => t + Number(s.valore || 0) * (s.commission_pct || 5) / 100, 0);
+  const daPagare = chiuse.filter(s => !s.pagato)
+    .reduce((t, s) => t + Number(s.valore || 0) * (s.commission_pct || 5) / 100, 0);
+
   return (
     <div className="space-y-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card padding="p-4">
+          <p className="text-zinc-500 text-sm">Vendite chiuse</p>
+          <p className="text-2xl font-semibold text-white mt-1">{chiuse.length}</p>
+        </Card>
+        <Card padding="p-4">
+          <p className="text-zinc-500 text-sm">Volume venduto</p>
+          <p className="text-2xl font-semibold text-emerald-400 mt-1">{fmt(valore)}</p>
+          <p className="text-zinc-600 text-xs mt-0.5">AED</p>
+        </Card>
+        <Card padding="p-4">
+          <p className="text-zinc-500 text-sm">Commissioni generate</p>
+          <p className="text-2xl font-semibold mt-1" style={{ color: BRAND.oro }}>{fmt(commissioni)}</p>
+          <p className="text-zinc-600 text-xs mt-0.5">di cui incassate {fmt(incassate)}</p>
+        </Card>
+        <Card padding="p-4">
+          <p className="text-zinc-500 text-sm">Da liquidare agli agenti</p>
+          <p className={`text-2xl font-semibold mt-1 ${daPagare > 0 ? 'text-amber-400' : 'text-zinc-500'}`}>{fmt(daPagare)}</p>
+        </Card>
+      </div>
+
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input type="text" placeholder="Cerca progetto, cliente, agente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50" />
         </div>
-        <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50">
-          <option value="">Tutti gli stati</option>
-          {pipelineStati.map(s => <option key={s} value={s}>{pipelineLabels[s] || s}</option>)}
-        </select>
+        <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-2.5">
+          <input type="checkbox" checked={includiEOI} onChange={(e) => setIncludiEOI(e.target.checked)} className="w-4 h-4 rounded" />
+          Includi gli EOI
+        </label>
       </div>
 
       <Card padding="p-0" className="overflow-hidden">
@@ -3221,7 +3313,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
               </tr>
             </thead>
             <tbody className="divide-y divide-[#2b323d]">
-              {sales.map(s => (
+              {chiuse.map(s => (
                 <tr key={s.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-4 py-3 text-sm text-zinc-400">{fmtShort(s.data)}</td>
                   <td className="px-4 py-3">
@@ -3247,17 +3339,17 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
                   <td className="px-4 py-3 text-sm text-zinc-400">{s.agente || s.segnalatore || '-'}</td>
                   <td className="px-4 py-3 text-right text-sm font-medium text-white">{s.valore > 0 ? fmt(s.valore) : '-'}</td>
                   <td className="px-4 py-3 text-center">
-                    <select value={s.commission_pct || 5} onChange={(e) => updateSale(s.id, { commission_pct: parseInt(e.target.value) })} className="bg-zinc-700/50 rounded px-2 py-1 text-xs text-white w-14 focus:outline-none">
+                    <select value={s.commission_pct || 5} onChange={(e) => updateSale(s.id, { commission_pct: parseInt(e.target.value) })} className="bg-zinc-700/50 rounded px-2 py-1 text-xs text-white min-w-[58px] focus:outline-none">
                       {commissions.map(c => <option key={c} value={c}>{c}%</option>)}
                     </select>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <select value={s.stato || 'lead'} onChange={(e) => updateSale(s.id, { stato: e.target.value })} className="rounded px-2 py-1 text-xs text-white w-20 focus:outline-none" style={{ background: theme.status[s.stato || 'lead']?.bg, color: theme.status[s.stato || 'lead']?.color }}>
+                    <select value={s.stato || 'lead'} onChange={(e) => updateSale(s.id, { stato: e.target.value })} className="rounded px-2 py-1 text-xs text-white min-w-[116px] focus:outline-none" style={{ background: theme.status[s.stato || 'lead']?.bg, color: theme.status[s.stato || 'lead']?.color }}>
                       {pipelineStati.map(st => <option key={st} value={st} className="bg-zinc-800">{pipelineLabels[st] || st}</option>)}
                     </select>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <select value={s.referente || ''} onChange={(e) => updateSale(s.id, { referente: e.target.value || null })} className={`rounded px-2 py-1 text-xs font-medium w-12 focus:outline-none ${s.referente === 'Pellegrino' ? 'bg-green-500/20 text-green-400' : s.referente === 'Giovanni' ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-700/50 text-zinc-500'}`}>
+                    <select value={s.referente || ''} onChange={(e) => updateSale(s.id, { referente: e.target.value || null })} className={`rounded px-2 py-1 text-xs font-medium min-w-[52px] focus:outline-none ${s.referente === 'Pellegrino' ? 'bg-green-500/20 text-green-400' : s.referente === 'Giovanni' ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-700/50 text-zinc-500'}`}>
                       <option value="">-</option>
                       <option value="Pellegrino">P</option>
                       <option value="Giovanni">G</option>
@@ -3338,7 +3430,8 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
   const handleBulkAction = (action, value) => {
     if (action === 'delete') {
       if (window.confirm(`Eliminare ${selectedIds.length} lead?`)) {
-        selectedIds.forEach(id => onDelete(id));
+        // la conferma e' gia' stata chiesta qui sopra, una volta sola
+        selectedIds.forEach(id => onDelete(id, true));
         setSelectedIds([]);
       }
     } else if (action === 'status') {
