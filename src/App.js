@@ -2745,7 +2745,7 @@ export default function App() {
                     { id: '90', label: '90 giorni' },
                     { id: '365', label: 'Anno' }
                   ].map(p => (
-                    <button key={p.id} onClick={() => setPeriodFilter(p.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${periodFilter === p.id ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700/50 text-zinc-400 hover:text-ink'}`}>
+                    <button key={p.id} onClick={() => setPeriodFilter(p.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${periodFilter === p.id ? 'bg-ink text-white' : 'bg-zinc-700/50 text-zinc-400 hover:text-ink'}`}>
                       {p.label}
                     </button>
                   ))}
@@ -2753,32 +2753,32 @@ export default function App() {
 
                 {/* Main Stats */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Card className="border-emerald-500/20 bg-emerald-500/5">
+                  <Card className="border-oro-500/30 bg-oro-500/5">
                     <p className="text-zinc-400 text-sm">Commissioni Totali</p>
-                    <p className="text-3xl font-bold text-emerald-400 mt-2">{fmt(totals.comm)}</p>
+                    <p className="text-3xl font-bold text-ink mt-2">{fmt(totals.comm)}</p>
                     <p className="text-zinc-500 text-xs mt-1">AED</p>
                   </Card>
-                  <Card className="border-green-500/20">
+                  <Card className="border-zinc-700">
                     <p className="text-zinc-400 text-sm">💰 Pellegrino</p>
-                    <p className="text-2xl font-bold text-green-400 mt-2">{fmt(totals.pell + totals.agPell)}</p>
+                    <p className="text-2xl font-bold text-ink mt-2">{fmt(totals.pell + totals.agPell)}</p>
                     <p className="text-zinc-500 text-xs mt-1">Totale reale</p>
                     <div className="mt-2 pt-2 border-t border-zinc-700/50 space-y-1">
-                      <div className="flex justify-between text-xs"><span className="text-zinc-500">Quota KeyPrime</span><span className="text-green-400/70">{fmt(totals.pell)}</span></div>
-                      {totals.agPell > 0 && <div className="flex justify-between text-xs"><span className="text-zinc-500">Comm. agente</span><span className="text-green-400/70">{fmt(totals.agPell)}</span></div>}
+                      <div className="flex justify-between text-xs"><span className="text-zinc-500">Quota KeyPrime</span><span className="text-zinc-400">{fmt(totals.pell)}</span></div>
+                      {totals.agPell > 0 && <div className="flex justify-between text-xs"><span className="text-zinc-500">Comm. agente</span><span className="text-zinc-400">{fmt(totals.agPell)}</span></div>}
                     </div>
                   </Card>
-                  <Card className="border-orange-500/20">
+                  <Card className="border-zinc-700">
                     <p className="text-zinc-400 text-sm">💰 Giovanni</p>
-                    <p className="text-2xl font-bold text-orange-400 mt-2">{fmt(totals.giov + totals.agGiov)}</p>
+                    <p className="text-2xl font-bold text-ink mt-2">{fmt(totals.giov + totals.agGiov)}</p>
                     <p className="text-zinc-500 text-xs mt-1">Totale reale</p>
                     <div className="mt-2 pt-2 border-t border-zinc-700/50 space-y-1">
-                      <div className="flex justify-between text-xs"><span className="text-zinc-500">Quota KeyPrime</span><span className="text-orange-400/70">{fmt(totals.giov)}</span></div>
-                      {totals.agGiov > 0 && <div className="flex justify-between text-xs"><span className="text-zinc-500">Comm. agente</span><span className="text-orange-400/70">{fmt(totals.agGiov)}</span></div>}
+                      <div className="flex justify-between text-xs"><span className="text-zinc-500">Quota KeyPrime</span><span className="text-zinc-400">{fmt(totals.giov)}</span></div>
+                      {totals.agGiov > 0 && <div className="flex justify-between text-xs"><span className="text-zinc-500">Comm. agente</span><span className="text-zinc-400">{fmt(totals.agGiov)}</span></div>}
                     </div>
                   </Card>
                   <Card>
                     <p className="text-zinc-400 text-sm">Agenti (70%)</p>
-                    <p className="text-2xl font-bold text-blue-400 mt-2">{fmt(totals.ag)}</p>
+                    <p className="text-2xl font-bold text-ink mt-2">{fmt(totals.ag)}</p>
                     <p className="text-zinc-500 text-xs mt-1">Da pagare</p>
                   </Card>
                 </div>
@@ -2795,8 +2795,8 @@ export default function App() {
                     <Card>
                       <h3 className="text-ink font-semibold mb-4">Stato Incasso Commissioni</h3>
                       <div className="grid grid-cols-3 gap-4 mb-4">
-                        <div className="text-center p-4 bg-emerald-500/10 rounded-xl">
-                          <p className="text-emerald-400 text-2xl font-bold">{fmt(commTot)}</p>
+                        <div className="text-center p-4 bg-zinc-800 rounded-xl">
+                          <p className="text-ink text-2xl font-bold">{fmt(commTot)}</p>
                           <p className="text-zinc-500 text-xs mt-1">Totale</p>
                         </div>
                         <div className="text-center p-4 bg-green-500/10 rounded-xl">
@@ -2808,11 +2808,11 @@ export default function App() {
                           <p className="text-zinc-500 text-xs mt-1">Da incassare ({vendutoSales.length} vendite)</p>
                         </div>
                       </div>
-                      <div className="relative h-4 bg-zinc-700/50 rounded-full overflow-hidden">
-                        <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-500" style={{ width: `${pctIncassato}%` }} />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-xs font-medium text-ink drop-shadow">{pctIncassato.toFixed(0)}% incassato</span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-2.5 bg-zinc-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-oro-500 rounded-full transition-all duration-500" style={{ width: `${pctIncassato}%` }} />
                         </div>
+                        <span className="text-xs font-semibold text-ink shrink-0 tabular-nums">{pctIncassato.toFixed(0)}% incassato</span>
                       </div>
                     </Card>
                   );
@@ -2830,8 +2830,8 @@ export default function App() {
                     <Card>
                       <h3 className="text-ink font-semibold mb-4">Stato Pagamenti</h3>
                       <div className="grid grid-cols-3 gap-4 mb-4">
-                        <div className="text-center p-4 bg-emerald-500/10 rounded-xl">
-                          <p className="text-emerald-400 text-2xl font-bold">{fmt(maturate)}</p>
+                        <div className="text-center p-4 bg-zinc-800 rounded-xl">
+                          <p className="text-ink text-2xl font-bold">{fmt(maturate)}</p>
                           <p className="text-zinc-500 text-xs mt-1">Maturate</p>
                         </div>
                         <div className="text-center p-4 bg-green-500/10 rounded-xl">
@@ -2844,11 +2844,11 @@ export default function App() {
                         </div>
                       </div>
                       {/* Progress bar */}
-                      <div className="relative h-4 bg-zinc-700/50 rounded-full overflow-hidden">
-                        <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-500" style={{ width: `${percentPaid}%` }} />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-xs font-medium text-ink drop-shadow">{percentPaid.toFixed(0)}% pagato</span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-2.5 bg-zinc-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-oro-500 rounded-full transition-all duration-500" style={{ width: `${percentPaid}%` }} />
                         </div>
+                        <span className="text-xs font-semibold text-ink shrink-0 tabular-nums">{percentPaid.toFixed(0)}% pagato</span>
                       </div>
                     </Card>
                   );
@@ -4478,7 +4478,7 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
               <h3 className="text-ink font-semibold truncate">{popupProject.title}</h3>
               <p className="text-zinc-400 text-sm truncate">{popupProject.location?.full_name || popupProject.location?.name}</p>
               <div className="flex items-center justify-between mt-3">
-                <p className="text-orange-400 font-bold">{popupProject.price_from > 0 ? 'AED ' + formatPrice(popupProject.price_from) : 'TBD'}</p>
+                <p className="text-oro-400 font-bold">{popupProject.price_from > 0 ? 'AED ' + formatPrice(popupProject.price_from) : 'TBD'}</p>
                 {popupProject.url ? (
                   <a href={popupProject.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg flex items-center gap-1">
                     <ExternalLink className="w-3.5 h-3.5" /> PropertyFinder
@@ -4568,7 +4568,7 @@ function ProjectCardCompact({ project, isSelected, onClick, onHover }) {
           <p className="text-ink font-medium text-sm truncate">{project.title}</p>
           <p className="text-zinc-500 text-xs truncate">{project.location?.full_name}</p>
           <div className="flex items-center gap-2 mt-1.5">
-            <p className="text-orange-400 font-bold text-sm">{project.price_from > 0 ? 'AED ' + formatPrice(project.price_from) : 'TBD'}</p>
+            <p className="text-oro-400 font-bold text-sm">{project.price_from > 0 ? 'AED ' + formatPrice(project.price_from) : 'TBD'}</p>
             {formatBedrooms(project.bedrooms) && <span className="text-zinc-500 text-xs">• {formatBedrooms(project.bedrooms)}</span>}
           </div>
           <div className="flex items-center gap-2 mt-1">
@@ -4986,7 +4986,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                 </div>
                 <div>
                   <p className="text-zinc-500 text-xs">Prezzo Medio</p>
-                  <p className="text-orange-400 text-xl font-bold">AED {(stats.avgPrice / 1000000).toFixed(1)}M</p>
+                  <p className="text-oro-400 text-xl font-bold">AED {(stats.avgPrice / 1000000).toFixed(1)}M</p>
                 </div>
               </div>
             </Card>
@@ -5050,7 +5050,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                       <div className="relative h-40 -mx-4 -mt-4 mb-3 overflow-hidden">
                         {project.images?.[0]?.medium_image_url ? <img src={project.images[0].medium_image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /> : <div className="w-full h-full bg-zinc-700/50 flex items-center justify-center"><Building2 className="w-12 h-12 text-zinc-600" /></div>}
                         <div className="absolute top-2 left-2 flex gap-1">
-                          <span className={'px-2 py-1 text-white text-xs font-medium rounded-lg ' + (project.construction_phase_key === 'completed' ? 'bg-green-500/90' : project.construction_phase_key === 'under_construction' ? 'bg-orange-500/90' : 'bg-blue-500/90')}>{project.construction_phase_key === 'completed' ? 'Completato' : project.construction_phase_key === 'under_construction' ? 'In Costruzione' : 'Lancio'}</span>
+                          <span className={'px-2 py-1 text-white text-xs font-medium rounded-lg ' + (project.construction_phase_key === 'completed' ? 'bg-emerald-500/90' : project.construction_phase_key === 'under_construction' ? 'bg-navy-500/90' : 'bg-oro-500/90 !text-ink')}>{project.construction_phase_key === 'completed' ? 'Completato' : project.construction_phase_key === 'under_construction' ? 'In Costruzione' : 'Lancio'}</span>
                           {project.hotness_level >= 80 && <span className="px-2 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-medium rounded-lg">🔥</span>}
                         </div>
                         {formatDelivery(project.delivery_date) && <div className="absolute top-2 right-12 px-2 py-1 bg-zinc-800/70 text-ink text-xs rounded-lg">{formatDelivery(project.delivery_date)}</div>}
@@ -5064,7 +5064,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                           {project.payment_plans && <span>{formatPaymentPlan(project.payment_plans)}</span>}
                         </div>
                         <div className="flex items-center justify-between pt-2">
-                          <p className="text-orange-400 font-semibold">{project.price_from > 0 ? 'da AED ' + formatPrice(project.price_from) : 'Prezzo TBD'}</p>
+                          <p className="text-oro-400 font-semibold">{project.price_from > 0 ? 'da AED ' + formatPrice(project.price_from) : 'Prezzo TBD'}</p>
                           {project.developer?.name && <span className="text-zinc-500 text-xs truncate max-w-[100px]">{project.developer.name}</span>}
                         </div>
                       </div>
@@ -5189,7 +5189,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-ink text-sm truncate">{project.title}</h3>
                             <p className="text-xs text-zinc-500 truncate">{project.location?.full_name}</p>
-                            <p className="text-orange-400 font-semibold text-sm mt-1">{project.price_from > 0 ? 'From ' + formatPrice(project.price_from) : 'TBD'}</p>
+                            <p className="text-oro-400 font-semibold text-sm mt-1">{project.price_from > 0 ? 'From ' + formatPrice(project.price_from) : 'TBD'}</p>
                             <div className="flex items-center gap-2 text-xs text-zinc-500">
                               {formatBedrooms(project.bedrooms) && <span>{formatBedrooms(project.bedrooms)}</span>}
                               {formatDelivery(project.delivery_date) && <span>• {formatDelivery(project.delivery_date)}</span>}
@@ -5240,7 +5240,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-ink text-sm line-clamp-1">{project.title}</h3>
                             <p className="text-xs text-zinc-500 line-clamp-1">{project.location?.full_name}</p>
-                            <p className="text-orange-400 font-bold mt-1">{project.price_from > 0 ? 'From ' + formatPrice(project.price_from) : 'TBD'}</p>
+                            <p className="text-oro-400 font-bold mt-1">{project.price_from > 0 ? 'From ' + formatPrice(project.price_from) : 'TBD'}</p>
                             <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
                               {formatBedrooms(project.bedrooms) && <span>{formatBedrooms(project.bedrooms)}</span>}
                               {formatDelivery(project.delivery_date) && <span>• {formatDelivery(project.delivery_date)}</span>}
@@ -5719,7 +5719,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                   return (
                     <div key={idx} className="bg-zinc-800/50 border border-zinc-700/30 rounded-lg p-3 text-center">
                       <p className="text-zinc-400 text-xs mb-1">{bed === 0 ? 'Studio' : bed + ' BR'}</p>
-                      <p className="text-orange-400 font-semibold">da {formatPrice(estimatedPrice)}</p>
+                      <p className="text-oro-400 font-semibold">da {formatPrice(estimatedPrice)}</p>
                     </div>
                   );
                 })}
@@ -6122,7 +6122,7 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
             <div className="flex-1 min-w-0">
               <p className="text-ink text-sm font-medium line-clamp-1">{listing.title}</p>
               <p className="text-zinc-500 text-xs line-clamp-1">{listing.location?.path_name}</p>
-              <p className="text-orange-400 text-sm font-medium mt-1">AED {parseFloat(listing.price).toLocaleString()}</p>
+              <p className="text-oro-400 text-sm font-medium mt-1">AED {parseFloat(listing.price).toLocaleString()}</p>
             </div>
           </div>
           
