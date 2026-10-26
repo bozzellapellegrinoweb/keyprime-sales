@@ -1,12 +1,20 @@
-// Design system del portale.
+// Design system del portale — tema chiaro, identita' KeyPrime.
 //
-// I colori seguono l'identita' KeyPrime: navy profondo come superficie e oro
-// come accento di marca (gli stessi usati nelle offerte PDF). Prima la UI
-// mescolava viola, grigio zinc e ambra senza legame con il marchio.
+// Due regole tengono insieme tutto il resto.
 //
-// La scala neutra e' ridefinita anche nella configurazione Tailwind dentro
-// public/index.html: le classi zinc-* di tutta l'app prendono da la' le
-// tonalita' navy, quindi un cambio di palette si fa in un posto solo.
+// 1. UN accento solo. Prima la UI usava dieci famiglie di colore (viola, rosa,
+//    blu, smeraldo, ambra, arancio, ciano, rosso, porpora, verde) in quasi
+//    cinquecento punti: quando e' colorato tutto non risalta niente. Qui
+//    l'accento e' l'oro del marchio, la gerarchia la fanno la dimensione delle
+//    card e il riempimento, non la tinta.
+//
+// 2. Il contrasto si misura, non si guarda. Ogni valore qui sotto e' stato
+//    verificato contro le due superfici chiare (card bianca e piano pagina).
+//    Il numero accanto e' il rapporto WCAG sulla card.
+//
+// Conseguenza pratica piu' importante: l'oro pieno #c9a84c sta a 2.29:1 sul
+// bianco. Non puo' fare testo ne' tratti sottili — riempie, e sopra ci va il
+// navy (7.47:1). Per scrivere in oro serve la tonalita' scura, #836a27.
 
 export const BRAND = {
   navy: '#0f1c35',
@@ -15,63 +23,98 @@ export const BRAND = {
   oroScuro: '#a98a33'
 };
 
+// Rampa navy: scala ordinata, non una tinta categoriale. Serve dove il dato ha
+// un ordine (gli stadi della pipeline), e come inchiostro. Verificata come
+// rampa ordinale: luminosita' monotona, salti >= 0.06, estremo chiaro a 2.41:1.
+export const RAMPA_NAVY = ['#9aa8bf', '#6f82a0', '#4d6383', '#2b3f59', '#0f1c35'];
+
 export const theme = {
-  // Tela neutra scura: il blu saturo a tutto schermo affatica la vista e
-  // spegne l'oro invece di farlo risaltare.
+  // Superfici: piano caldo, card bianche. Il contrasto fra le due e' quello
+  // che fa "staccare" le card senza bisogno di ombre pesanti.
   bg: {
-    primary: '#0d1116',    // pagina
-    secondary: '#141920',  // card e barre laterali
-    tertiary: '#1b212b',   // superfici sopraelevate
-    elevated: '#222935'    // hover
+    primary: '#edebe6',    // piano pagina
+    secondary: '#ffffff',  // card
+    tertiary: '#f6f4f0',   // superfici dentro una card
+    elevated: '#faf9f7'    // hover
   },
   border: {
-    subtle: '#2b323d',
-    default: '#3d4858',
-    strong: '#4c5464'
+    subtle: '#e4e0d8',
+    default: '#d8d3c9',
+    strong: '#c3bcae'
   },
   text: {
-    primary: '#f2f5f8',
-    secondary: '#9aa3b2',
-    tertiary: '#6f7889',
-    muted: '#4c5464'
+    primary: '#141c2b',    // 17.06:1
+    secondary: '#566274',  //  6.19:1
+    tertiary: '#7d8794',   //  3.64:1 — solo etichette, mai testo lungo
+    muted: '#9aa2ad'       //  decorativo
   },
-  // Un accento per sezione: serve a orientarsi a colpo d'occhio fra le schede.
-  sections: {
-    dashboard:   { accent: BRAND.oro, bg: 'rgba(201,168,76,0.10)', border: 'rgba(201,168,76,0.24)' },
-    oggi:        { accent: '#f97316', bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.24)' },
-    inbox:       { accent: '#ef4444', bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.24)' },
-    vendite:     { accent: '#34D399', bg: 'rgba(52,211,153,0.10)', border: 'rgba(52,211,153,0.24)' },
-    pipeline:    { accent: '#60A5FA', bg: 'rgba(96,165,250,0.10)', border: 'rgba(96,165,250,0.24)' },
-    crm:         { accent: '#A78BFA', bg: 'rgba(167,139,250,0.10)',border: 'rgba(167,139,250,0.24)' },
-    tasks:       { accent: '#F472B6', bg: 'rgba(244,114,182,0.10)',border: 'rgba(244,114,182,0.24)' },
-    utenti:      { accent: '#94A3B8', bg: 'rgba(148,163,184,0.10)',border: 'rgba(148,163,184,0.24)' },
-    offplan:     { accent: '#22D3EE', bg: 'rgba(34,211,238,0.10)', border: 'rgba(34,211,238,0.24)' },
-    calculator:  { accent: '#10B981', bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.24)' },
-    commissioni: { accent: '#34D399', bg: 'rgba(52,211,153,0.10)', border: 'rgba(52,211,153,0.24)' },
-    offerte:     { accent: '#06B6D4', bg: 'rgba(6,182,212,0.10)',  border: 'rgba(6,182,212,0.24)' },
-    ghl:         { accent: '#8B5CF6', bg: 'rgba(139,92,246,0.10)', border: 'rgba(139,92,246,0.24)' }
+  // Accento di marca. Tre ruoli distinti, perche' lo stesso oro non puo'
+  // fare riempimento e testo: il primo e' troppo chiaro per leggersi.
+  accento: {
+    fill: '#c9a84c',       // riempimenti, barre, tratti spessi
+    fillScuro: '#0f1c35',  // la card in evidenza: navy di marca, testo bianco a 17:1
+    inkSuFill: '#141c2b',  // 7.47:1 sopra il riempimento oro
+    mark: '#a98a33',       // tratti e punti sui grafici — 3.30:1
+    text: '#836a27',       // testo e icone in oro — 5.18:1
+    wash: 'rgba(201,168,76,0.12)',
+    bordo: 'rgba(201,168,76,0.30)'
   },
+  // Tutte le sezioni condividono l'accento: a orientare e' lo stato attivo
+  // nella barra laterale, non una tinta diversa per scheda. Le chiavi restano
+  // per non rompere i punti che le leggono.
+  sections: new Proxy({}, {
+    get: () => ({
+      // Vale sia scritto sia riempito: 5.18:1 sulla card, e 5.18:1 col
+      // bianco sopra. L'oro pieno non reggerebbe il secondo caso.
+      accent: '#836a27',
+      bg: 'rgba(201,168,76,0.12)',
+      border: 'rgba(201,168,76,0.30)'
+    })
+  }),
+  // Stadi della pipeline: hanno un ordine, quindi una rampa, non cinque tinte.
   status: {
-    lead:        { color: '#9aa3b2', bg: 'rgba(154,163,178,0.16)' },
-    trattativa:  { color: '#60A5FA', bg: 'rgba(96,165,250,0.16)' },
-    EOI:         { color: BRAND.oro, bg: 'rgba(201,168,76,0.16)' },
-    prenotato:   { color: BRAND.oro, bg: 'rgba(201,168,76,0.16)' }, // storico
-    venduto:     { color: '#34D399', bg: 'rgba(52,211,153,0.16)' },
-    incassato:   { color: '#10B981', bg: 'rgba(16,185,129,0.18)' },
-    perso:       { color: '#ef4444', bg: 'rgba(239,68,68,0.16)' }
+    lead:       { color: '#4d6383', bg: 'rgba(154,168,191,0.22)', fill: RAMPA_NAVY[0], ink: '#141c2b' },
+    trattativa: { color: '#4d6383', bg: 'rgba(111,130,160,0.22)', fill: RAMPA_NAVY[1], ink: '#ffffff' },
+    EOI:        { color: '#2b3f59', bg: 'rgba(77,99,131,0.20)',   fill: RAMPA_NAVY[2], ink: '#ffffff' },
+    prenotato:  { color: '#2b3f59', bg: 'rgba(77,99,131,0.20)',   fill: RAMPA_NAVY[2], ink: '#ffffff' }, // storico
+    venduto:    { color: '#836a27', bg: 'rgba(201,168,76,0.22)',  fill: '#c9a84c',     ink: '#141c2b' },
+    incassato:  { color: '#047804', bg: 'rgba(12,163,12,0.16)',   fill: '#0ca30c',     ink: '#ffffff' },
+    perso:      { color: '#d03b3b', bg: 'rgba(208,59,59,0.14)',   fill: '#d03b3b',     ink: '#ffffff' }
+  },
+  // Stati riservati. Non sono mai una "serie in piu'": accompagnano sempre
+  // un'icona e un'etichetta, perche' attenzione e serio stanno sotto 3:1 e il
+  // colore da solo non basta a dire cosa sta succedendo.
+  stato: {
+    buono:      { fill: '#0ca30c', text: '#047804', bg: 'rgba(12,163,12,0.14)' },
+    attenzione: { fill: '#fab219', text: '#8a6000', bg: 'rgba(250,178,25,0.18)' },
+    serio:      { fill: '#ec835a', text: '#9c4418', bg: 'rgba(236,131,90,0.18)' },
+    critico:    { fill: '#d03b3b', text: '#b32d2d', bg: 'rgba(208,59,59,0.14)' }
+  },
+  // Variazione rispetto al periodo precedente.
+  delta: {
+    su:  { text: '#047804', bg: 'rgba(12,163,12,0.14)' },
+    giu: { text: '#b32d2d', bg: 'rgba(208,59,59,0.12)' },
+    pari:{ text: '#566274', bg: 'rgba(86,98,116,0.10)' }
   },
   priority: {
-    bassa:   { color: '#9aa3b2', bg: 'rgba(154,163,178,0.16)' },
-    normale: { color: '#60A5FA', bg: 'rgba(96,165,250,0.16)' },
-    alta:    { color: BRAND.oro, bg: 'rgba(201,168,76,0.16)' },
-    urgente: { color: '#EF4444', bg: 'rgba(239,68,68,0.16)' }
+    bassa:   { color: '#7d8794', bg: 'rgba(125,135,148,0.14)' },
+    normale: { color: '#4d6383', bg: 'rgba(77,99,131,0.14)' },
+    alta:    { color: '#836a27', bg: 'rgba(201,168,76,0.18)' },
+    urgente: { color: '#b32d2d', bg: 'rgba(208,59,59,0.14)' }
   },
   // Quanto scotta un lead nella coda di lavoro.
   gravita: {
-    critica: { color: '#ef4444', bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.35)' },
-    alta:    { color: '#f97316', bg: 'rgba(249,115,22,0.12)', border: 'rgba(249,115,22,0.32)' },
-    media:   { color: BRAND.oro, bg: 'rgba(201,168,76,0.10)', border: 'rgba(201,168,76,0.28)' },
-    bassa:   { color: '#9aa3b2', bg: 'rgba(154,163,178,0.10)',border: 'rgba(154,163,178,0.24)' }
+    critica: { color: '#b32d2d', bg: 'rgba(208,59,59,0.12)',  border: 'rgba(208,59,59,0.34)' },
+    alta:    { color: '#9c4418', bg: 'rgba(236,131,90,0.14)', border: 'rgba(236,131,90,0.34)' },
+    media:   { color: '#836a27', bg: 'rgba(201,168,76,0.14)', border: 'rgba(201,168,76,0.32)' },
+    bassa:   { color: '#7d8794', bg: 'rgba(125,135,148,0.10)',border: 'rgba(125,135,148,0.24)' }
+  },
+  // Cromature dei grafici.
+  grafico: {
+    superficie: '#ffffff',
+    griglia: '#ece8e0',
+    asse: '#d8d3c9',
+    deEnfasi: '#dcd8d0'
   }
 };
 

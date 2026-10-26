@@ -128,7 +128,7 @@ export default function LeadInbox({
               <div key={a.nome} className="flex items-center gap-2 bg-zinc-800/60 rounded-xl px-3 py-2">
                 <Avatar nome={a.nome} size="sm" />
                 <div>
-                  <p className="text-white text-sm leading-tight">{a.nome}</p>
+                  <p className="text-ink text-sm leading-tight">{a.nome}</p>
                   <p className="text-zinc-500 text-xs">{carico[a.nome] || 0} {(carico[a.nome] || 0) === 1 ? 'aperto' : 'aperti'}</p>
                 </div>
               </div>
@@ -149,7 +149,7 @@ export default function LeadInbox({
 
             <div className="flex-1 flex flex-col sm:flex-row gap-2">
               <select value={agenteScelto} onChange={(e) => setAgenteScelto(e.target.value)}
-                      className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-zinc-600">
+                      className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-ink text-sm focus:outline-none focus:border-zinc-600">
                 <option value="">Assegna a...</option>
                 {agenti.map((a) => (
                   <option key={a.nome} value={a.nome}>{a.nome} ({carico[a.nome] || 0} {(carico[a.nome] || 0) === 1 ? 'aperto' : 'aperti'})</option>
@@ -194,7 +194,7 @@ export default function LeadInbox({
                          className="w-4 h-4 rounded mt-1 shrink-0" />
                   <button onClick={() => onApriLead(l)} className="flex-1 min-w-0 text-left">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-white font-medium truncate">
+                      <p className="text-ink font-medium truncate">
                         {nomeCliente(l.cliente_id) || l.progetto}
                       </p>
                       <StatusBadge status={l.stato || 'lead'} />
