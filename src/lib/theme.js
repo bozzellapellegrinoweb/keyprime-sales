@@ -64,7 +64,9 @@ export const theme = {
   // per non rompere i punti che le leggono.
   sections: new Proxy({}, {
     get: () => ({
-      accent: '#a98a33',
+      // Vale sia scritto sia riempito: 5.18:1 sulla card, e 5.18:1 col
+      // bianco sopra. L'oro pieno non reggerebbe il secondo caso.
+      accent: '#836a27',
       bg: 'rgba(201,168,76,0.12)',
       border: 'rgba(201,168,76,0.30)'
     })

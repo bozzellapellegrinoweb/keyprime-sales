@@ -213,7 +213,7 @@ alter table public.user_credentials drop column if exists password;
 -- 2. Utenti e lead creati solo per collaudare login, rotazione e follow-up.
 --    Sono gia' disattivati e rinominati "DA ELIMINARE"; questo li toglie.
 delete from public.user_credentials
-where username in ('__selftest__', '__selftest_agente__', '__collaudo__');
+where username in ('__selftest__', '__selftest_agente__', '__collaudo__', '__anteprima_tema__');
 
 -- Il lead di prova porta con se' follow-up e attivita' create nel collaudo
 -- (le chiavi esterne sono in cascata).
@@ -224,10 +224,43 @@ delete from public.sales where progetto = '__TEST ROTAZIONE - eliminabile__';
 
 ## 6. Utenti di collaudo rimasti
 
-Tre utenti usati per le verifiche (`__selftest__`, `__selftest_agente__`,
-`__collaudo__`) sono **disattivati** e rinominati "DA ELIMINARE": non possono
-accedere e non compaiono nelle rotazioni. Restano visibili nella scheda Team
-finché non esegui la query del punto 5.
+Quattro utenti usati per le verifiche (`__selftest__`, `__selftest_agente__`,
+`__collaudo__`, `__anteprima_tema__`) sono **disattivati** e rinominati
+"DA ELIMINARE": non possono accedere e non compaiono nelle rotazioni. La
+password di `__anteprima_tema__` — usato per fotografare le schermate del
+tema chiaro — è stata sostituita con una stringa casuale non riutilizzabile.
+Restano visibili nella scheda Team finché non esegui la query del punto 5.
+
+---
+
+## 6bis. La palette dell'interfaccia
+
+Il portale è su **tema chiaro**: piano `#edebe6`, card bianche, inchiostro
+navy `#141c2b`, accento oro `#c9a84c`.
+
+Le classi Tailwind dell'app leggono le tonalità da `public/index.html`, dove
+le scale sono ridefinite: cambiare la palette si fa **lì**, in un posto solo,
+non riscrivendo le classi. Le dieci famiglie di colore che l'app usava sono
+state ricondotte a cinque, e ognuna ha un significato:
+
+| Famiglie Tailwind | Diventano | Ruolo |
+|---|---|---|
+| zinc, slate, gray, neutral, stone | neutri rovesciati | testo e superfici |
+| violet, purple, indigo, blue, cyan, sky | navy | inchiostro e ordine |
+| amber, yellow | oro | accento di marca |
+| emerald, green, teal, lime | verde | esito positivo |
+| red, rose | rosso | errore e ritardo |
+| orange, pink, fuchsia | arancio | attenzione |
+
+Le scale neutre sono **rovesciate di proposito**: l'app usa `text-zinc-400/500`
+per il testo e `bg-zinc-700/800` per le superfici tenui, quindi su fondo
+chiaro servono grigi medi in basso e tinte chiarissime in alto.
+
+Regola da non rompere: **l'oro pieno non regge il testo bianco** (2,29:1).
+I riempimenti oro portano il navy; per scrivere in oro si usa `#836a27`.
+
+I token usati dal codice JavaScript (non dalle classi) stanno in
+`src/lib/theme.js`, con il rapporto di contrasto annotato accanto a ciascuno.
 
 ---
 

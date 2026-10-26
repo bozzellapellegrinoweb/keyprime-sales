@@ -70,7 +70,7 @@ export default function WorkQueue({
                     <Avatar nome={c?.nome || voce.titolo} cognome={c?.cognome} size="md" />
                     <div className="flex-1 min-w-0">
                       <button onClick={() => voce.lead && onApriLead(voce.lead)} className="text-left block w-full">
-                        <p className="text-white font-medium truncate">{voce.titolo}</p>
+                        <p className="text-ink font-medium truncate">{voce.titolo}</p>
                         {voce.sottotitolo && voce.sottotitolo !== voce.titolo && (
                           <p className="text-zinc-500 text-sm truncate">{voce.sottotitolo}</p>
                         )}
@@ -84,7 +84,7 @@ export default function WorkQueue({
                       </div>
                     </div>
                     {voce.lead && (
-                      <button onClick={() => onApriLead(voce.lead)} className="text-zinc-600 hover:text-white shrink-0 p-1">
+                      <button onClick={() => onApriLead(voce.lead)} className="text-zinc-600 hover:text-ink shrink-0 p-1">
                         <ChevronRight className="w-5 h-5" />
                       </button>
                     )}
@@ -94,7 +94,7 @@ export default function WorkQueue({
                   <div className="flex gap-2 mt-3">
                     {c?.telefono && (
                       <a href={`tel:${c.telefono}`}
-                         className="flex-1 bg-zinc-700/50 hover:bg-zinc-700 text-white rounded-xl py-2.5 flex items-center justify-center gap-2 text-sm transition-colors">
+                         className="flex-1 bg-zinc-700/50 hover:bg-zinc-700 text-ink rounded-xl py-2.5 flex items-center justify-center gap-2 text-sm transition-colors">
                         <Phone className="w-4 h-4" />Chiama
                       </a>
                     )}
@@ -149,7 +149,7 @@ function PannelloEsito({ voce, onEseguito, onRimanda }) {
         {TIPI_ATTIVITA.map((t) => (
           <button key={t.id} onClick={() => setTipo(t.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${
-                    tipo === t.id ? 'bg-oro-500 text-navy-950 font-medium' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'
+                    tipo === t.id ? 'bg-oro-500 text-navy-950 font-medium' : 'bg-zinc-700/50 text-zinc-400 hover:text-ink'
                   }`}>
             {t.icona} {t.label}
           </button>
@@ -160,7 +160,7 @@ function PannelloEsito({ voce, onEseguito, onRimanda }) {
         value={nota} onChange={(e) => setNota(e.target.value)}
         placeholder="Com'e' andata? (budget, tempi, obiezioni...)"
         rows={2}
-        className="w-full bg-zinc-800/60 border border-zinc-700 rounded-xl px-3 py-2 text-white text-sm resize-none placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
+        className="w-full bg-zinc-800/60 border border-zinc-700 rounded-xl px-3 py-2 text-ink text-sm resize-none placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
       />
 
       <div>
@@ -169,7 +169,7 @@ function PannelloEsito({ voce, onEseguito, onRimanda }) {
           {RIMANDA.map((r) => (
             <button key={r.giorni} onClick={() => setProssimo(r.giorni)}
                     className={`flex-1 py-2 rounded-lg text-xs transition-all ${
-                      prossimo === r.giorni ? 'bg-zinc-700 text-white font-medium' : 'bg-zinc-800/60 text-zinc-400 hover:text-white'
+                      prossimo === r.giorni ? 'bg-zinc-700 text-ink font-medium' : 'bg-zinc-800/60 text-zinc-400 hover:text-ink'
                     }`}>
               {r.label}
             </button>
@@ -187,7 +187,7 @@ function PannelloEsito({ voce, onEseguito, onRimanda }) {
       </div>
 
       <button onClick={() => onRimanda(1)} disabled={salvando}
-              className="w-full text-zinc-500 hover:text-white text-xs py-1 flex items-center justify-center gap-1.5 transition-colors">
+              className="w-full text-zinc-500 hover:text-ink text-xs py-1 flex items-center justify-center gap-1.5 transition-colors">
         <Clock className="w-3 h-3" /> Non ora, ricordamelo domani
       </button>
     </div>

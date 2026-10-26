@@ -76,7 +76,7 @@ export default function ControlloAccessi({ users = [], sales = [], onToast, onMo
         {schede.map(s => (
           <button key={s.id} onClick={() => setScheda(s.id)}
                   className={`px-4 py-2 rounded-xl text-sm flex items-center gap-2 whitespace-nowrap transition-all ${
-                    scheda === s.id ? 'bg-oro-500 text-[#0d1116] font-semibold' : 'bg-zinc-800/60 text-zinc-400 hover:text-white'
+                    scheda === s.id ? 'bg-oro-500 text-[#141c2b] font-semibold' : 'bg-zinc-800/60 text-zinc-400 hover:text-ink'
                   }`}>
             <s.icona className="w-4 h-4" />{s.label}
           </button>
@@ -106,7 +106,7 @@ function TabellaPermessi({ users }) {
   return (
     <Card padding="p-0" className="overflow-hidden">
       <div className="p-4 border-b border-zinc-800">
-        <h3 className="text-white font-semibold">Cosa vede e cosa puo' fare ciascun ruolo</h3>
+        <h3 className="text-ink font-semibold">Cosa vede e cosa puo' fare ciascun ruolo</h3>
         <p className="text-zinc-500 text-sm mt-1">
           "Solo suoi" significa che la persona vede esclusivamente i lead e i clienti
           assegnati a lei. Il ruolo si cambia dalla scheda Team.
@@ -119,7 +119,7 @@ function TabellaPermessi({ users }) {
               <th className="text-left py-3 px-4 text-zinc-400 font-medium">Funzione</th>
               {RUOLI.map(r => (
                 <th key={r.id} className="py-3 px-3 text-center min-w-[110px]">
-                  <div className="text-white font-medium">{r.label}</div>
+                  <div className="text-ink font-medium">{r.label}</div>
                   <div className="text-zinc-600 text-xs font-normal">{conta(r.id)} attivi</div>
                 </th>
               ))}
@@ -175,7 +175,7 @@ function Sessioni({ sessioni, caricando, onAggiorna, onDisconnetti }) {
                 <Avatar nome={s.nome} size="md" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-white font-medium truncate">{s.nome}</p>
+                    <p className="text-ink font-medium truncate">{s.nome}</p>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-700/60 text-zinc-300">{s.ruolo}</span>
                     {s.sessioni > 1 && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300">
@@ -241,7 +241,7 @@ function Compensi({ users, sales, onModificaUtente }) {
             <Avatar nome={u.nome} size="md" />
             <div className="flex-1 min-w-[160px]">
               <div className="flex items-center gap-2">
-                <p className="text-white font-medium">{u.nome}</p>
+                <p className="text-ink font-medium">{u.nome}</p>
                 {!u.attivo && <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">disattivato</span>}
               </div>
               <p className="text-zinc-500 text-sm">{regola} • {vendite} vendite</p>

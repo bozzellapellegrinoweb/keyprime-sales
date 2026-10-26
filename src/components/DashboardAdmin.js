@@ -95,13 +95,13 @@ function Tendenza({ punti, colore, altezza = 34, animato }) {
   const L = 108, A = altezza;
   const max = Math.max(...punti), min = Math.min(...punti);
   const campo = max - min || 1;
-  const x = (i) => (i / (punti.length - 1)) * (L - 6) + 3;
-  const y = (v) => A - 4 - ((v - min) / campo) * (A - 8);
+  const x = (i) => (i / (punti.length - 1)) * (L - 14) + 7;
+  const y = (v) => A - 7 - ((v - min) / campo) * (A - 14);
   const d = punti.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   const ultimo = punti.length - 1;
 
   return (
-    <svg width={L} height={A} viewBox={`0 0 ${L} ${A}`} aria-hidden="true" style={{ display: 'block', overflow: 'visible' }}>
+    <svg width={L} height={A} viewBox={`0 0 ${L} ${A}`} aria-hidden="true" style={{ display: 'block' }}>
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={colore} stopOpacity="0.16" />
@@ -312,19 +312,20 @@ function serie(elenco, leggiValore) {
   return secchi.map((v) => (somma += v));
 }
 
-function variazione(elenco, leggiValore) {
-  const conData = elenco
+function variazione(tutti, giorni, leggiValore, filtra) {
+  if (!giorni) return null;   // su "Tutto" non esiste un periodo precedente
+  const ora = Date.now();
+  const durata = giorni * 864e5;
+  const somma = (da, a) => tutti
+    .filter(filtra)
     .map((s) => ({ t: new Date(s.data || s.created_at).getTime(), v: leggiValore(s) }))
-    .filter((x) => Number.isFinite(x.t));
-  if (conData.length < 4) return null;
+    .filter((x) => Number.isFinite(x.t) && x.t >= da && x.t < a)
+    .reduce((t, x) => t + x.v, 0);
 
-  const da = Math.min(...conData.map((x) => x.t));
-  const a = Math.max(...conData.map((x) => x.t));
-  const meta = da + (a - da) / 2;
-  const prima = conData.filter((x) => x.t < meta).reduce((s, x) => s + x.v, 0);
-  const dopo = conData.filter((x) => x.t >= meta).reduce((s, x) => s + x.v, 0);
-  if (!prima) return null;
-  return ((dopo - prima) / prima) * 100;
+  const precedente = somma(ora - durata * 2, ora - durata);
+  if (!precedente) return null;   // senza base il confronto non dice nulla
+  const attuale = somma(ora - durata, ora + 864e5);
+  return ((attuale - precedente) / precedente) * 100;
 }
 
 /* ── Dashboard ───────────────────────────────────────────────────────────── */
@@ -350,6 +351,11 @@ export default function DashboardAdmin({
 
   const commissioni = Number(totals.comm || 0);
   const commissioniMostrate = useConteggio(commissioni, animato);
+
+  const giorni = Number(periodFilter) || null;
+  const tutto = (s) => true;
+  const inTrattativa = (s) => s.stato === 'trattativa';
+  const eVenduta = (s) => s.stato === 'venduto' || s.stato === 'incassato';
 
   const periodi = [
     { id: 'all', label: 'Tutto' },
@@ -407,17 +413,18 @@ export default function DashboardAdmin({
 
       {/* Quattro numeri di testa */}
       <div className="kp-griglia-tessere">
-        <Tessera etichetta="Lead nel periodo" valore={periodSales.length} icona={Target}
-                 pct={variazione(periodSales, uno)} punti={serieLead} ritardo={0} animato={animato}
+        <Tessera etichetta={giorni ? `Lead ultimi ${giorni} giorni` : 'Lead totali'}
+                 valore={periodSales.length} icona={Target}
+                 pct={variazione(sales, giorni, uno, tutto)} punti={serieLead} ritardo={0} animato={animato}
                  onClick={() => onVai?.('pipeline')} />
         <Tessera etichetta="Volume in trattativa" valore={fmt(volTrattativa)} suffisso="AED" icona={TrendingUp}
-                 pct={variazione(periodSales.filter((s) => s.stato === 'trattativa'), valore)}
+                 pct={variazione(sales, giorni, valore, inTrattativa)}
                  punti={serieTratt} ritardo={60} animato={animato} onClick={() => onVai?.('pipeline')} />
         <Tessera etichetta="Vendite chiuse" valore={vendite.length} icona={DollarSign}
-                 pct={variazione(vendite, uno)} punti={serieVendite} ritardo={120} animato={animato}
+                 pct={variazione(sales, giorni, uno, eVenduta)} punti={serieVendite} ritardo={120} animato={animato}
                  onClick={() => onVai?.('vendite')} />
         <Tessera etichetta="Volume potenziale" valore={fmt(totals.valore)} suffisso="AED" icona={Wallet}
-                 pct={variazione(periodSales, valore)} punti={serieVolume} pieno ritardo={180} animato={animato}
+                 pct={variazione(sales, giorni, valore, tutto)} punti={serieVolume} pieno ritardo={180} animato={animato}
                  onClick={() => onVai?.('vendite')} />
       </div>
 
@@ -572,7 +579,7 @@ const CSS_DASHBOARD = `
 .kp-avviso-testo > span:last-child { font-size: 12px; }
 
 .kp-griglia-tessere { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
-.kp-tessera { display: flex; flex-direction: column; gap: 12px; }
+.kp-tessera { display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
 .kp-tessera-testa { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; font-weight: 500; }
 .kp-pastiglia { width: 26px; height: 26px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .kp-tessera-corpo { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }

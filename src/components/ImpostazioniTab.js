@@ -77,7 +77,7 @@ export default function ImpostazioniTab({ impostazioni, onRicarica, onToast, age
       <Card>
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
-            <h3 className="text-white font-semibold flex items-center gap-2">
+            <h3 className="text-ink font-semibold flex items-center gap-2">
               <Link2 className="w-5 h-5" style={{ color: theme.sections.ghl.accent }} />
               GoHighLevel
             </h3>
@@ -101,7 +101,7 @@ export default function ImpostazioniTab({ impostazioni, onRicarica, onToast, age
 
       {/* ---------- Webhook in ingresso ---------- */}
       <Card>
-        <h3 className="text-white font-semibold mb-1">Lead in ingresso da GHL</h3>
+        <h3 className="text-ink font-semibold mb-1">Lead in ingresso da GHL</h3>
         <p className="text-zinc-500 text-sm mb-4">
           In GHL, nel workflow che raccoglie i lead, aggiungi un'azione <strong>Webhook</strong> con questo
           indirizzo e l'header indicato. Ogni lead che arriva viene aperto nel portale, assegnato a rotazione
@@ -117,7 +117,7 @@ export default function ImpostazioniTab({ impostazioni, onRicarica, onToast, age
 
       {/* ---------- Mappatura pipeline ---------- */}
       <Card>
-        <h3 className="text-white font-semibold mb-1">Pipeline e stage</h3>
+        <h3 className="text-ink font-semibold mb-1">Pipeline e stage</h3>
         <p className="text-zinc-500 text-sm mb-4">
           Collegando gli stage, ogni cambio di stato nel portale sposta l'opportunita' anche su GHL.
           Senza mappatura il portale applica solo i tag, e le automazioni GHL possono reagire a quelli.
@@ -131,7 +131,7 @@ export default function ImpostazioniTab({ impostazioni, onRicarica, onToast, age
               <label className="block text-sm text-zinc-400 mb-2">Pipeline KeyPrime</label>
               <select value={ghl.pipeline_id || ''}
                       onChange={(e) => setGhl({ ...ghl, pipeline_id: e.target.value || null, stage_map: {} })}
-                      className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3d4858]">
+                      className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-4 py-3 text-ink text-sm focus:outline-none focus:border-[#d8d3c9]">
                 <option value="">Nessuna (solo tag)</option>
                 {pipelines.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
               </select>
@@ -144,7 +144,7 @@ export default function ImpostazioniTab({ impostazioni, onRicarica, onToast, age
                     <span className="text-sm text-zinc-400 w-32 shrink-0">{st.label}</span>
                     <select value={(ghl.stage_map || {})[st.id] || ''}
                             onChange={(e) => setGhl({ ...ghl, stage_map: { ...(ghl.stage_map || {}), [st.id]: e.target.value || undefined } })}
-                            className="flex-1 bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-[#3d4858]">
+                            className="flex-1 bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:outline-none focus:border-[#d8d3c9]">
                       <option value="">Non mappato</option>
                       {pipelineScelta.stages.map((sg) => <option key={sg.id} value={sg.id}>{sg.nome}</option>)}
                     </select>
@@ -158,7 +158,7 @@ export default function ImpostazioniTab({ impostazioni, onRicarica, onToast, age
         {/* ---------- Sequenze ---------- */}
         {workflows.length > 0 && (
           <div className="mt-5 pt-5 border-t border-zinc-800 space-y-2">
-            <p className="text-white font-medium mb-2">Sequenze di nurturing</p>
+            <p className="text-ink font-medium mb-2">Sequenze di nurturing</p>
             {SEQUENZE.map((sq) => (
               <div key={sq.chiave} className="flex items-center gap-3">
                 <div className="w-44 shrink-0">
@@ -167,7 +167,7 @@ export default function ImpostazioniTab({ impostazioni, onRicarica, onToast, age
                 </div>
                 <select value={(ghl.workflows || {})[sq.chiave] || ''}
                         onChange={(e) => setGhl({ ...ghl, workflows: { ...(ghl.workflows || {}), [sq.chiave]: e.target.value || undefined } })}
-                        className="flex-1 bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-[#3d4858]">
+                        className="flex-1 bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:outline-none focus:border-[#d8d3c9]">
                   <option value="">Non collegata</option>
                   {workflows.map((w) => <option key={w.id} value={w.id}>{w.nome}</option>)}
                 </select>
@@ -185,7 +185,7 @@ export default function ImpostazioniTab({ impostazioni, onRicarica, onToast, age
 
       {/* ---------- SLA ---------- */}
       <Card>
-        <h3 className="text-white font-semibold flex items-center gap-2 mb-1">
+        <h3 className="text-ink font-semibold flex items-center gap-2 mb-1">
           <Clock className="w-5 h-5" style={{ color: theme.sections.oggi.accent }} />
           Tempi di reazione
         </h3>
@@ -208,7 +208,7 @@ export default function ImpostazioniTab({ impostazioni, onRicarica, onToast, age
 
       {/* ---------- Rotazione ---------- */}
       <Card>
-        <h3 className="text-white font-semibold flex items-center gap-2 mb-1">
+        <h3 className="text-ink font-semibold flex items-center gap-2 mb-1">
           <Users className="w-5 h-5" style={{ color: theme.sections.pipeline.accent }} />
           Distribuzione automatica
         </h3>
@@ -280,7 +280,7 @@ function RigaCopiabile({ etichetta, valore, onCopia, copiato }) {
         <p className="text-zinc-500 text-xs">{etichetta}</p>
         <p className="text-zinc-200 text-sm font-mono truncate">{valore}</p>
       </div>
-      <button onClick={onCopia} className="p-2 text-zinc-500 hover:text-white transition-colors shrink-0">
+      <button onClick={onCopia} className="p-2 text-zinc-500 hover:text-ink transition-colors shrink-0">
         {copiato ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
       </button>
     </div>

@@ -23,6 +23,7 @@ import MessaggiGhl from './components/MessaggiGhl';
 import ImpostazioniTab from './components/ImpostazioniTab';
 import ControlloAccessi from './components/ControlloAccessi';
 import { generaOffertaPdf, proprietaCompilata } from './lib/offertaPdf';
+import DashboardAdmin from './components/DashboardAdmin';
 import { istantaneaCatalogo, trimestreAnno, etichettaFase } from './lib/offerta';
 import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List, ExternalLink, Calculator } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
@@ -257,12 +258,12 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
   
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
-      <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#141920] border border-[#2b323d] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-scaleIn">
+      <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#ffffff] border border-[#e4e0d8] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-scaleIn">
         {/* Search Input */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-[#2b323d]">
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-[#e4e0d8]">
           <Search className="w-5 h-5 text-zinc-500" />
-          <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca lead, clienti, task..." className="flex-1 bg-transparent text-white text-lg placeholder:text-zinc-600 focus:outline-none" />
+          <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca lead, clienti, task..." className="flex-1 bg-transparent text-ink text-lg placeholder:text-zinc-600 focus:outline-none" />
           <kbd className="hidden sm:flex items-center gap-1 px-2 py-1 bg-zinc-700/50 rounded text-xs text-zinc-500">ESC</kbd>
         </div>
         
@@ -286,7 +287,7 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
                     <button key={s.id} onClick={() => { onSelectSale(s); onClose(); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 flex items-center gap-3 transition-colors">
                       <div className="w-2 h-8 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-medium truncate">{s.progetto || 'TBD'}</p>
+                        <p className="text-ink text-sm font-medium truncate">{s.progetto || 'TBD'}</p>
                         <p className="text-zinc-500 text-xs truncate">{s.developer} • {s.cliente_nome || 'No cliente'}</p>
                       </div>
                       <StatusBadge status={s.stato || 'lead'} />
@@ -303,7 +304,7 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
                     <button key={c.id} onClick={() => { onSelectCliente(c); setActiveTab('crm'); onClose(); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 flex items-center gap-3 transition-colors">
                       <Avatar nome={c.nome} cognome={c.cognome} size="sm" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-medium truncate">{c.nome} {c.cognome}</p>
+                        <p className="text-ink text-sm font-medium truncate">{c.nome} {c.cognome}</p>
                         <p className="text-zinc-500 text-xs truncate">{c.telefono || c.email || 'No contatto'}</p>
                       </div>
                       <span className="text-amber-400 text-xs">{c.stato}</span>
@@ -322,7 +323,7 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
                         <ListTodo className={`w-4 h-4 ${t.stato === 'completato' ? 'text-emerald-400' : 'text-pink-400'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-white text-sm font-medium truncate ${t.stato === 'completato' ? 'line-through opacity-50' : ''}`}>{t.titolo}</p>
+                        <p className={`text-ink text-sm font-medium truncate ${t.stato === 'completato' ? 'line-through opacity-50' : ''}`}>{t.titolo}</p>
                         <p className="text-zinc-500 text-xs truncate">{t.assegnato_a || 'Non assegnato'}</p>
                       </div>
                       <StatusBadge status={t.priorita} type="priority" />
@@ -335,7 +336,7 @@ const GlobalSearch = ({ isOpen, onClose, sales, clienti, tasks, onSelectSale, on
         </div>
         
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-[#2b323d] flex items-center justify-between text-xs text-zinc-600">
+        <div className="px-4 py-3 border-t border-[#e4e0d8] flex items-center justify-between text-xs text-zinc-600">
           <span>KeyPrime Search</span>
           <div className="flex items-center gap-2">
             <span>Naviga con</span>
@@ -575,13 +576,13 @@ function PushTab({ users }) {
     }
   };
 
-  const inputCls = 'w-full bg-[#141920] border border-[#2b323d] rounded-lg px-3 py-2.5 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-colors';
+  const inputCls = 'w-full bg-[#ffffff] border border-[#e4e0d8] rounded-lg px-3 py-2.5 text-ink text-sm placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-colors';
   const activeUsers = users.filter(u => u.ruolo !== 'admin');
 
   return (
     <div className="max-w-lg space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-white mb-1">Invia Notifica Push</h2>
+        <h2 className="text-xl font-bold text-ink mb-1">Invia Notifica Push</h2>
         <p className="text-sm text-zinc-500">Manda una notifica direttamente agli utenti dell'app.</p>
       </div>
 
@@ -610,7 +611,7 @@ function PushTab({ users }) {
                 { v: 'user', label: '👤 Utente' },
               ].map(opt => (
                 <button key={opt.v} onClick={() => setTarget(opt.v)}
-                  className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${target === opt.v ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'bg-[#141920] border-[#2b323d] text-zinc-400 hover:border-zinc-500'}`}>
+                  className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${target === opt.v ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'bg-[#ffffff] border-[#e4e0d8] text-zinc-400 hover:border-zinc-500'}`}>
                   {opt.label}
                 </button>
               ))}
@@ -662,7 +663,7 @@ function OffertaTab({ offerte, user, onCrea, onEdit, onDelete, onGeneraPDF }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-white font-semibold text-lg">Offerte</h2>
+          <h2 className="text-ink font-semibold text-lg">Offerte</h2>
           <p className="text-zinc-500 text-sm">{myOfferte.length} prospetti salvati</p>
         </div>
         <button onClick={onCrea} className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white" style={{ background: '#06b6d4' }}>
@@ -681,7 +682,7 @@ function OffertaTab({ offerte, user, onCrea, onEdit, onDelete, onGeneraPDF }) {
             <div key={o.id} className="rounded-xl p-4 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-1">
-                  <span className="text-white font-semibold truncate">{o.cliente_nome || 'Cliente n/d'}</span>
+                  <span className="text-ink font-semibold truncate">{o.cliente_nome || 'Cliente n/d'}</span>
                   {o.budget && <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400">{o.budget}</span>}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-zinc-500">
@@ -891,7 +892,7 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
     }
   };
 
-  const inputCls = "w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500";
+  const inputCls = "w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm focus:outline-none focus:border-cyan-500";
   const labelCls = "block text-xs text-zinc-400 mb-1 font-medium";
 
   return (
@@ -900,10 +901,10 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 shrink-0">
           <div>
-            <h2 className="text-white font-semibold">{offerta?.id ? 'Modifica Offerta' : 'Nuova Offerta'}</h2>
+            <h2 className="text-ink font-semibold">{offerta?.id ? 'Modifica Offerta' : 'Nuova Offerta'}</h2>
             <p className="text-xs text-zinc-500 mt-0.5">Step {step} di 3</p>
           </div>
-          <button onClick={onClose} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-zinc-400 hover:text-ink"><X className="w-5 h-5" /></button>
         </div>
 
         {/* Step bar */}
@@ -1011,7 +1012,7 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
                             <button key={l.id} onClick={() => pickFromCatalog(l, idx)}
                               className="w-full text-left px-3 py-2.5 text-sm hover:bg-zinc-700/80 border-b border-zinc-800/50 last:border-0 flex items-center gap-3">
                               <div className="flex-1 min-w-0">
-                                <div className="text-white font-medium truncate">{l.title}</div>
+                                <div className="text-ink font-medium truncate">{l.title}</div>
                                 <div className="text-zinc-500 text-xs">{l.location_name || l.location_full} · {l.developer_name}</div>
                               </div>
                               {l.price_from && <span className="text-cyan-400 text-xs shrink-0">{Number(l.price_from).toLocaleString()} AED</span>}
@@ -1133,12 +1134,12 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
               <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Riepilogo</p>
               <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                  <div><span className="text-zinc-500">Cliente:</span> <span className="text-white ml-1">{form.cliente_nome || '—'}</span></div>
-                  <div><span className="text-zinc-500">Budget:</span> <span className="text-white ml-1">{form.budget || '—'}</span></div>
-                  <div><span className="text-zinc-500">Zona:</span> <span className="text-white ml-1">{form.zona_nome || '—'}</span></div>
-                  <div><span className="text-zinc-500">Consulente:</span> <span className="text-white ml-1">{offerta?.agente_nome || user?.nome}</span></div>
-                  <div><span className="text-zinc-500">Email:</span> <span className={form.agente_email ? 'text-white ml-1' : 'text-amber-400 ml-1'}>{form.agente_email || 'mancante'}</span></div>
-                  <div><span className="text-zinc-500">Tel:</span> <span className={form.agente_telefono ? 'text-white ml-1' : 'text-amber-400 ml-1'}>{form.agente_telefono || 'mancante'}</span></div>
+                  <div><span className="text-zinc-500">Cliente:</span> <span className="text-ink ml-1">{form.cliente_nome || '—'}</span></div>
+                  <div><span className="text-zinc-500">Budget:</span> <span className="text-ink ml-1">{form.budget || '—'}</span></div>
+                  <div><span className="text-zinc-500">Zona:</span> <span className="text-ink ml-1">{form.zona_nome || '—'}</span></div>
+                  <div><span className="text-zinc-500">Consulente:</span> <span className="text-ink ml-1">{offerta?.agente_nome || user?.nome}</span></div>
+                  <div><span className="text-zinc-500">Email:</span> <span className={form.agente_email ? 'text-ink ml-1' : 'text-amber-400 ml-1'}>{form.agente_email || 'mancante'}</span></div>
+                  <div><span className="text-zinc-500">Tel:</span> <span className={form.agente_telefono ? 'text-ink ml-1' : 'text-amber-400 ml-1'}>{form.agente_telefono || 'mancante'}</span></div>
                 </div>
                 <div className="pt-2 border-t border-zinc-800">
                   <p className="text-xs text-zinc-500 mb-2">
@@ -1147,7 +1148,7 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
                   {proprietaValide.map((p, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm py-1">
                       <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
-                      <span className="text-white font-medium truncate">{p.nome || 'N/D'}</span>
+                      <span className="text-ink font-medium truncate">{p.nome || 'N/D'}</span>
                       <span className="text-zinc-500 truncate">{p.zona}</span>
                       <span className="text-cyan-400 shrink-0">{p.prezzo}</span>
                       <span className="text-zinc-600 text-xs shrink-0">{p.foto_urls.filter(Boolean).length} foto</span>
@@ -1170,7 +1171,7 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
           </div>
         )}
         <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-800 shrink-0">
-          <button onClick={step > 1 ? () => setStep(s => s-1) : onClose} className="text-sm text-zinc-400 hover:text-white px-4 py-2">
+          <button onClick={step > 1 ? () => setStep(s => s-1) : onClose} className="text-sm text-zinc-400 hover:text-ink px-4 py-2">
             {step > 1 ? '← Indietro' : 'Annulla'}
           </button>
           <div className="flex gap-3">
@@ -1962,16 +1963,17 @@ export default function App() {
   // ==================== LOGIN VIEW ====================
   if (view === 'login') {
     return (
-      <div className="min-h-screen bg-[#0d1116] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#edebe6] flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
-          <div className="text-center mb-10">
-            <img src="/logo.png" alt="KeyPrime" className="h-20 mx-auto mb-4" />
+          <div className="text-center mb-8">
+            <img src="/logo-scuro.png" alt="KeyPrime" className="h-16 mx-auto mb-3" />
             <p className="text-zinc-500 text-sm">Real Estate CRM</p>
           </div>
-          
-          {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-4 py-3 mb-6 text-sm">{error}</div>}
-          
-          <LoginForm onLogin={handleLogin} loading={loading} />
+
+          <div className="bg-[#ffffff] border border-[#e4e0d8] rounded-2xl p-6 shadow-[0_2px_18px_rgba(20,28,43,0.06)]">
+            {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-4 py-3 mb-5 text-sm">{error}</div>}
+            <LoginForm onLogin={handleLogin} loading={loading} />
+          </div>
         </div>
       </div>
     );
@@ -2016,13 +2018,13 @@ export default function App() {
     // Form View (same for mobile/desktop)
     if (showForm) {
       return (
-        <div className="min-h-screen bg-[#0d1116]">
-          <div className="sticky top-0 z-40 bg-[#0d1116]/95 backdrop-blur-xl border-b border-[#2b323d] px-4 py-4">
+        <div className="min-h-screen bg-[#edebe6]">
+          <div className="sticky top-0 z-40 bg-[#edebe6]/95 backdrop-blur-xl border-b border-[#e4e0d8] px-4 py-4">
             <div className="flex items-center justify-between max-w-lg mx-auto">
-              <button onClick={() => setShowForm(null)} className="text-zinc-400 hover:text-white flex items-center gap-2 transition-colors">
+              <button onClick={() => setShowForm(null)} className="text-zinc-400 hover:text-ink flex items-center gap-2 transition-colors">
                 <ChevronLeft className="w-5 h-5" />Indietro
               </button>
-              <span className="text-white font-semibold">{showForm === 'lead' ? 'Nuovo Lead' : 'Nuova Vendita'}</span>
+              <span className="text-ink font-semibold">{showForm === 'lead' ? 'Nuovo Lead' : 'Nuova Vendita'}</span>
               <div className="w-20" />
             </div>
           </div>
@@ -2030,7 +2032,7 @@ export default function App() {
             {showForm === 'lead' && <LeadForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addLead} />}
             {showForm === 'vendita' && <SaleForm type={type} userName={user?.nome} clienti={myClienti} onSubmit={addSale} />}
           </div>
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0d1116]/95 backdrop-blur-xl border-t border-[#2b323d]">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#edebe6]/95 backdrop-blur-xl border-t border-[#e4e0d8]">
             <Button onClick={() => document.getElementById('submitBtn')?.click()} className="w-full py-4" disabled={submitting}>
               {submitting ? (
                 <span className="flex items-center justify-center gap-2">
@@ -2046,25 +2048,25 @@ export default function App() {
     }
 
     return (
-      <div className="min-h-screen bg-[#0d1116] lg:flex">
+      <div className="min-h-screen bg-[#edebe6] lg:flex">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-[#2b323d] bg-[#141920] p-4 fixed h-full">
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#e4e0d8] bg-[#ffffff] p-4 fixed h-full">
           <div className="mb-8">
-            <img src="/logo.png" alt="KeyPrime" className="h-16" />
+            <img src="/logo-scuro.png" alt="KeyPrime" className="h-16" />
           </div>
           <nav className="space-y-1 flex-1">
             {tabs.map(t => (
               <NavItem key={t.id} icon={t.icon} label={t.label} active={activeTab === t.id} onClick={() => setActiveTab(t.id)} accent={t.accent} badge={t.badge} isNew={t.isNew} />
             ))}
           </nav>
-          <div className="pt-4 border-t border-[#2b323d]">
+          <div className="pt-4 border-t border-[#e4e0d8]">
             <div className="flex items-center gap-3 px-2 py-2">
               <Avatar nome={user?.nome} size="sm" />
               <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-medium truncate">{user?.nome}</p>
+                <p className="text-ink text-sm font-medium truncate">{user?.nome}</p>
                 <p className="text-zinc-500 text-xs capitalize">{type}</p>
               </div>
-              <button onClick={handleLogout} className="text-zinc-500 hover:text-white"><LogOut className="w-4 h-4" /></button>
+              <button onClick={handleLogout} className="text-zinc-500 hover:text-ink"><LogOut className="w-4 h-4" /></button>
             </div>
           </div>
         </aside>
@@ -2072,14 +2074,14 @@ export default function App() {
         {/* Main Content */}
         <div className="flex-1 lg:ml-64 pb-24 lg:pb-0">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-40 bg-[#0d1116]/95 backdrop-blur-xl border-b border-[#2b323d]">
+          <div className="lg:hidden sticky top-0 z-40 bg-[#edebe6]/95 backdrop-blur-xl border-b border-[#e4e0d8]">
             <div className="flex items-center justify-between px-4 py-4">
-              <img src="/logo.png" alt="KeyPrime" className="h-12" />
+              <img src="/logo-scuro.png" alt="KeyPrime" className="h-12" />
               <div className="flex items-center gap-3">
-                <button onClick={refreshAllData} className="p-2 text-zinc-400 hover:text-white" title="Aggiorna">
+                <button onClick={refreshAllData} className="p-2 text-zinc-400 hover:text-ink" title="Aggiorna">
                   <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                 </button>
-                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white">
+                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-ink">
                   <Bell className="w-5 h-5" />
                   {notificationCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
                 </button>
@@ -2089,10 +2091,10 @@ export default function App() {
           </div>
 
           {/* Desktop Header */}
-          <div className="hidden lg:block sticky top-0 z-40 bg-[#0d1116]/95 backdrop-blur-xl border-b border-[#2b323d]">
+          <div className="hidden lg:block sticky top-0 z-40 bg-[#edebe6]/95 backdrop-blur-xl border-b border-[#e4e0d8]">
             <div className="flex items-center justify-between px-6 py-4">
               <div>
-                <h1 className="text-xl font-semibold text-white">{activeTab === 'oggi' ? `Ciao ${(user?.nome || '').split(' ')[0]}` : tabs.find(t => t.id === activeTab)?.label}</h1>
+                <h1 className="text-xl font-semibold text-ink">{activeTab === 'oggi' ? `Ciao ${(user?.nome || '').split(' ')[0]}` : tabs.find(t => t.id === activeTab)?.label}</h1>
                 <p className="text-zinc-500 text-sm">
                   {activeTab === 'oggi' && (codaDiLavoro.length ? (codaDiLavoro.length === 1 ? '1 cosa da fare adesso' : `${codaDiLavoro.length} cose da fare adesso`) : 'Nessun lead in attesa')}
                   {activeTab === 'home' && 'Il tuo riepilogo'}
@@ -2104,11 +2106,11 @@ export default function App() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white bg-[#2b323d] rounded-xl">
+                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-ink bg-[#f0ede6] rounded-xl">
                   <Bell className="w-5 h-5" />
                   {notificationCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
                 </button>
-                <button onClick={refreshAllData} className="p-2 text-zinc-400 hover:text-white bg-[#2b323d] rounded-xl" title="Aggiorna">
+                <button onClick={refreshAllData} className="p-2 text-zinc-400 hover:text-ink bg-[#f0ede6] rounded-xl" title="Aggiorna">
                   <RefreshCw className="w-5 h-5" />
                 </button>
                 <Button onClick={() => setShowForm('lead')} icon={Plus}>Nuovo Lead</Button>
@@ -2125,11 +2127,11 @@ export default function App() {
                 <div className="lg:hidden grid grid-cols-2 gap-3">
                   <button onClick={() => setShowForm('lead')} className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 rounded-2xl p-5 text-left">
                     <Target className="w-6 h-6 text-blue-400 mb-3" />
-                    <span className="text-white font-medium block">Nuovo Lead</span>
+                    <span className="text-ink font-medium block">Nuovo Lead</span>
                   </button>
                   <button onClick={() => setShowForm('vendita')} className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/20 rounded-2xl p-5 text-left">
                     <DollarSign className="w-6 h-6 text-emerald-400 mb-3" />
-                    <span className="text-white font-medium block">Vendita</span>
+                    <span className="text-ink font-medium block">Vendita</span>
                   </button>
                 </div>
 
@@ -2142,7 +2144,7 @@ export default function App() {
 
                 {/* Pipeline */}
                 <Card>
-                  <h3 className="text-white font-medium mb-4">Pipeline</h3>
+                  <h3 className="text-ink font-medium mb-4">Pipeline</h3>
                   <div className="grid grid-cols-5 gap-2">
                     {pipelineStati.map(st => (
                       <div key={st} className="text-center">
@@ -2157,7 +2159,7 @@ export default function App() {
 
                 <Card>
                   <div className="flex justify-between items-center mb-4">
-                    <span className="text-white font-medium">Commissioni</span>
+                    <span className="text-ink font-medium">Commissioni</span>
                     <span className="text-zinc-400 text-sm">{fmt(totalComm)} AED maturate</span>
                   </div>
                   <ProgressBar value={pagate} max={totalComm || 1} color="#34D399" />
@@ -2174,7 +2176,7 @@ export default function App() {
                         <ListTodo className="w-6 h-6 text-pink-400" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-white font-medium">{myTasks.length} task da completare</p>
+                        <p className="text-ink font-medium">{myTasks.length} task da completare</p>
                       </div>
                       <ChevronRight className="w-5 h-5 text-zinc-500" />
                     </div>
@@ -2183,7 +2185,7 @@ export default function App() {
 
                 <div>
                   <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold text-white">Lead Aperti</h2>
+                    <h2 className="text-lg font-semibold text-ink">Lead Aperti</h2>
                     <button onClick={() => setActiveTab('leads')} className="text-sm text-violet-400">Tutti →</button>
                   </div>
                   {mySales.filter(s => s.stato === 'lead' || s.stato === 'trattativa' || s.stato === 'EOI').length === 0 ? (
@@ -2197,7 +2199,7 @@ export default function App() {
                           <div className="flex items-center gap-4">
                             <div className="w-1 h-12 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
                             <div className="flex-1 min-w-0">
-                              <p className="text-white font-medium truncate">{s.progetto}</p>
+                              <p className="text-ink font-medium truncate">{s.progetto}</p>
                               <p className="text-zinc-500 text-sm">{s.developer}</p>
                             </div>
                             <div className="text-right">
@@ -2215,7 +2217,7 @@ export default function App() {
                 {myVendite.length > 0 && (
                   <div className="mt-6">
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-lg font-semibold text-white">🎉 Vendite Confermate</h2>
+                      <h2 className="text-lg font-semibold text-ink">🎉 Vendite Confermate</h2>
                     </div>
                     <div className="grid gap-3 lg:grid-cols-2">
                       {myVendite.slice(0, 4).map(s => (
@@ -2223,7 +2225,7 @@ export default function App() {
                           <div className="flex items-center gap-4">
                             <div className="w-1 h-12 rounded-full bg-emerald-500" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-white font-medium truncate">{s.progetto}</p>
+                              <p className="text-ink font-medium truncate">{s.progetto}</p>
                               <p className="text-zinc-500 text-sm">{s.developer}</p>
                             </div>
                             <div className="text-right">
@@ -2271,13 +2273,13 @@ export default function App() {
                     <div key={st}>
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-3 h-3 rounded-full" style={{ background: theme.status[st]?.color }} />
-                        <span className="text-white font-medium text-sm">{pipelineLabels[st] || st}</span>
+                        <span className="text-ink font-medium text-sm">{pipelineLabels[st] || st}</span>
                         <span className="text-zinc-500 text-xs">({byStato[st]?.length || 0})</span>
                       </div>
                       <div className="space-y-2">
                         {(byStato[st] || []).map(s => (
                           <Card key={s.id} hover onClick={() => setShowLeadDetail(s)} padding="p-3" className="border-l-2" style={{ borderLeftColor: theme.status[st]?.color }}>
-                            <p className="text-white text-sm font-medium truncate">{s.progetto}</p>
+                            <p className="text-ink text-sm font-medium truncate">{s.progetto}</p>
                             <p className="text-zinc-500 text-xs">{s.developer}</p>
                             {s.valore > 0 && <p className="text-emerald-400 text-sm mt-1">{fmt(s.valore)}</p>}
                           </Card>
@@ -2314,7 +2316,7 @@ export default function App() {
                 <div className="flex items-center gap-4 mb-6">
                   <Avatar nome={user?.nome} size="lg" />
                   <div>
-                    <p className="text-xl font-semibold text-white">{user?.nome}</p>
+                    <p className="text-xl font-semibold text-ink">{user?.nome}</p>
                     <p className="text-zinc-500">{type}</p>
                   </div>
                 </div>
@@ -2328,11 +2330,11 @@ export default function App() {
 
           {/* Barra mobile: solo le schede primarie, il resto sotto "Altro".
               Con dieci voci affiancate le etichette diventavano illeggibili. */}
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0d1116]/95 backdrop-blur-xl border-t border-[#2b323d] px-2 py-2 z-30">
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#edebe6]/95 backdrop-blur-xl border-t border-[#e4e0d8] px-2 py-2 z-30">
             <div className="flex justify-around items-end">
               {tabs.filter(t => t.primaria).map(t => (
                 <button key={t.id} onClick={() => { setActiveTab(t.id); setMobileMenuOpen(false); }}
-                        className={`relative flex flex-col items-center py-1.5 px-2 min-w-[60px] ${activeTab === t.id ? 'text-white' : 'text-zinc-500'}`}>
+                        className={`relative flex flex-col items-center py-1.5 px-2 min-w-[60px] ${activeTab === t.id ? 'text-ink' : 'text-zinc-500'}`}>
                   <t.icon className="w-6 h-6" style={activeTab === t.id ? { color: t.accent } : {}} />
                   {t.badge > 0 && (
                     <span className="absolute top-0 right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center">
@@ -2343,7 +2345,7 @@ export default function App() {
                 </button>
               ))}
               <button onClick={() => setMobileMenuOpen(true)}
-                      className={`flex flex-col items-center py-1.5 px-2 min-w-[60px] ${tabs.some(t => !t.primaria && t.id === activeTab) ? 'text-white' : 'text-zinc-500'}`}>
+                      className={`flex flex-col items-center py-1.5 px-2 min-w-[60px] ${tabs.some(t => !t.primaria && t.id === activeTab) ? 'text-ink' : 'text-zinc-500'}`}>
                 <Menu className="w-6 h-6" />
                 <span className="text-[11px] mt-1">Altro</span>
               </button>
@@ -2354,15 +2356,15 @@ export default function App() {
           {mobileMenuOpen && (
             <div className="lg:hidden fixed inset-0 z-40">
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
-              <div className="absolute bottom-0 left-0 right-0 bg-[#141920] border-t border-[#2b323d] rounded-t-3xl p-4 pb-8 animate-slideUp">
+              <div className="absolute bottom-0 left-0 right-0 bg-[#ffffff] border-t border-[#e4e0d8] rounded-t-3xl p-4 pb-8 animate-slideUp">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-white font-semibold">Altre sezioni</h3>
-                  <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-500 hover:text-white"><X className="w-5 h-5" /></button>
+                  <h3 className="text-ink font-semibold">Altre sezioni</h3>
+                  <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-500 hover:text-ink"><X className="w-5 h-5" /></button>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {tabs.filter(t => !t.primaria).map(t => (
                     <button key={t.id} onClick={() => { setActiveTab(t.id); setMobileMenuOpen(false); }}
-                            className={`rounded-2xl p-4 flex flex-col items-center gap-2 transition-all ${activeTab === t.id ? 'bg-white/10' : 'bg-zinc-800/60'}`}>
+                            className={`rounded-2xl p-4 flex flex-col items-center gap-2 transition-all ${activeTab === t.id ? 'bg-ink/10' : 'bg-zinc-800/60'}`}>
                       <t.icon className="w-6 h-6" style={{ color: t.accent }} />
                       <span className="text-xs text-center leading-tight text-zinc-300">{t.label}</span>
                       {t.badge > 0 && <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] rounded-full">{t.badge}</span>}
@@ -2490,11 +2492,11 @@ export default function App() {
     ];
 
     return (
-      <div className="min-h-screen bg-[#0d1116] flex">
+      <div className="min-h-screen bg-[#edebe6] flex">
         {/* Sidebar - Desktop */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-[#2b323d] bg-[#141920] p-4">
+        <aside className="hidden lg:flex flex-col w-64 border-r border-[#e4e0d8] bg-[#ffffff] p-4">
           <div className="mb-8">
-            <img src="/logo.png" alt="KeyPrime" className="h-20" />
+            <img src="/logo-scuro.png" alt="KeyPrime" className="h-20" />
           </div>
           
           <nav className="space-y-1 flex-1">
@@ -2503,15 +2505,15 @@ export default function App() {
             ))}
           </nav>
           
-          <div className="border-t border-[#2b323d] pt-4 mt-4">
+          <div className="border-t border-[#e4e0d8] pt-4 mt-4">
             <div className="flex items-center gap-3 px-4 py-3">
               <Avatar nome={user?.nome} size="sm" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{user?.nome}</p>
+                <p className="text-sm font-medium text-ink truncate">{user?.nome}</p>
                 <p className="text-xs text-zinc-500">Admin</p>
               </div>
-              <button onClick={() => setShowPasswordModal(true)} className="text-zinc-500 hover:text-white transition-colors mr-2" title="Cambia password"><Key className="w-4 h-4" /></button>
-              <button onClick={handleLogout} className="text-zinc-500 hover:text-white transition-colors" title="Esci"><LogOut className="w-4 h-4" /></button>
+              <button onClick={() => setShowPasswordModal(true)} className="text-zinc-500 hover:text-ink transition-colors mr-2" title="Cambia password"><Key className="w-4 h-4" /></button>
+              <button onClick={handleLogout} className="text-zinc-500 hover:text-ink transition-colors" title="Esci"><LogOut className="w-4 h-4" /></button>
             </div>
           </div>
         </aside>
@@ -2519,12 +2521,12 @@ export default function App() {
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-40 bg-[#0d1116]/95 backdrop-blur-xl border-b border-[#2b323d]">
+          <div className="lg:hidden sticky top-0 z-40 bg-[#edebe6]/95 backdrop-blur-xl border-b border-[#e4e0d8]">
             <div className="flex items-center justify-between px-4 py-4">
               <button onClick={() => setMobileMenuOpen(true)} className="text-zinc-400"><Menu className="w-6 h-6" /></button>
-              <img src="/logo.png" alt="KeyPrime" className="h-16" />
+              <img src="/logo-scuro.png" alt="KeyPrime" className="h-16" />
               <div className="flex items-center gap-2">
-                <button onClick={refreshAllData} className="text-zinc-400 hover:text-white" title="Aggiorna">
+                <button onClick={refreshAllData} className="text-zinc-400 hover:text-ink" title="Aggiorna">
                   <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                 </button>
                 <button onClick={() => setShowNotifications(true)} className="relative text-zinc-400">
@@ -2536,7 +2538,7 @@ export default function App() {
             {/* Mobile Tabs */}
             <div className="flex gap-1 px-4 pb-3 overflow-x-auto">
               {tabs.map(t => (
-                <button key={t.id} onClick={() => { setActiveTab(t.id); setShowClienteDetail(null); }} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${activeTab === t.id ? 'text-white' : 'text-zinc-500 hover:text-white'}`} style={activeTab === t.id ? { background: `${t.accent}20`, color: t.accent } : {}}>
+                <button key={t.id} onClick={() => { setActiveTab(t.id); setShowClienteDetail(null); }} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${activeTab === t.id ? 'text-ink' : 'text-zinc-500 hover:text-ink'}`} style={activeTab === t.id ? { background: `${t.accent}20`, color: t.accent } : {}}>
                   <t.icon className="w-4 h-4" />
                   {t.label}
                   {t.badge > 0 && <span className="px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">{t.badge}</span>}
@@ -2550,7 +2552,7 @@ export default function App() {
             {/* Desktop Header */}
             <div className="hidden lg:flex items-center justify-between mb-8">
               <div>
-                <h1 className="text-2xl font-semibold text-white">{tabs.find(t => t.id === activeTab)?.label || activeTab}</h1>
+                <h1 className="text-2xl font-semibold text-ink">{tabs.find(t => t.id === activeTab)?.label || activeTab}</h1>
                 <p className="text-zinc-500 text-sm mt-1">
                   {activeTab === 'dashboard' && 'Panoramica generale'}
                   {activeTab === 'inbox' && (daAssegnare + daLavorare > 0 ? `${daAssegnare} senza agente, ${daLavorare} mai contattati` : 'Tutti i lead sono presi in carico')}
@@ -2573,7 +2575,7 @@ export default function App() {
                   <span>Cerca...</span>
                   <kbd className="ml-2 px-1.5 py-0.5 bg-zinc-700 rounded text-xs">⌘K</kbd>
                 </button>
-                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-white transition-colors">
+                <button onClick={() => setShowNotifications(true)} className="relative p-2 text-zinc-400 hover:text-ink transition-colors">
                   <Bell className="w-5 h-5" />
                   {notificationCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{notificationCount}</span>}
                 </button>
@@ -2583,135 +2585,23 @@ export default function App() {
 
             {/* DASHBOARD */}
             {activeTab === 'dashboard' && (
-              <div className="space-y-6">
-                {/* Period Filter + Export */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex gap-2">
-                    {[
-                      { id: 'all', label: 'Tutto' },
-                      { id: '30', label: '30 giorni' },
-                      { id: '60', label: '60 giorni' },
-                      { id: '90', label: '90 giorni' }
-                    ].map(p => (
-                      <button key={p.id} onClick={() => setPeriodFilter(p.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${periodFilter === p.id ? 'bg-violet-500/20 text-violet-400' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                  <Button variant="secondary" icon={Printer} onClick={() => generateDashboardPDF(totals, periodSales, vendite, byAgente, byZona)}>
-                    Esporta Report
-                  </Button>
-                </div>
-                
-                {/* Alerts */}
-                {(todayTasks.length > 0 || overdueTasks.length > 0) && (
-                  <Card hover onClick={() => setActiveTab('tasks')} className="border-pink-500/20">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-pink-500/20 flex items-center justify-center">
-                        <Bell className="w-6 h-6 text-pink-400" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-white font-medium">Task in scadenza</p>
-                        <p className="text-zinc-500 text-sm">
-                          {overdueTasks.length > 0 && <span className="text-red-400">{overdueTasks.length} scaduti</span>}
-                          {overdueTasks.length > 0 && todayTasks.length > 0 && ' • '}
-                          {todayTasks.length > 0 && <span>{todayTasks.length} oggi</span>}
-                        </p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-zinc-500" />
-                    </div>
-                  </Card>
-                )}
-
-                {/* Main Stats */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <MetricCard label="Volume Potenziale" value={totals.valore} subValue="AED" icon={DollarSign} color="#A78BFA" onClick={() => setActiveTab('vendite')} />
-                  <MetricCard label="Lead Totali" value={sales.length} icon={Target} color="#60A5FA" onClick={() => setActiveTab('pipeline')} />
-                  <MetricCard label="Volume Trattativa" value={volTrattativa} subValue="AED" icon={TrendingUp} color="#60A5FA" onClick={() => setActiveTab('pipeline')} />
-                  <MetricCard label="Vendite Chiuse" value={vendite.length} icon={TrendingUp} color="#34D399" onClick={() => setActiveTab('vendite')} />
-                </div>
-
-                {/* Commission Split */}
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                  <Card><p className="text-zinc-500 text-sm">Netto KeyPrime</p><p className="text-xl font-semibold text-amber-400 mt-1">{fmt(totals.netto)}</p></Card>
-                  <Card><p className="text-zinc-500 text-sm">Commissioni Tot</p><p className="text-xl font-semibold text-emerald-400 mt-1">{fmt(totals.comm)}</p></Card>
-                  <Card><p className="text-zinc-500 text-sm">Agenti 70%</p><p className="text-xl font-semibold text-blue-400 mt-1">{fmt(totals.ag)}</p></Card>
-                  <Card className="border-green-500/20"><p className="text-zinc-500 text-sm">Pellegrino</p><p className="text-xl font-semibold text-green-400 mt-1">{fmt(totals.pell + totals.agPell)}</p><p className="text-zinc-600 text-xs mt-1">KP {fmt(totals.pell)} + Ag. {fmt(totals.agPell)}</p></Card>
-                  <Card className="border-orange-500/20"><p className="text-zinc-500 text-sm">Giovanni</p><p className="text-xl font-semibold text-orange-400 mt-1">{fmt(totals.giov + totals.agGiov)}</p><p className="text-zinc-600 text-xs mt-1">KP {fmt(totals.giov)} + Ag. {fmt(totals.agGiov)}</p></Card>
-                </div>
-
-                {/* Pipeline Overview */}
-                <Card hover onClick={() => setActiveTab('pipeline')}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-white font-semibold">Pipeline</h3>
-                    <ChevronRight className="w-5 h-5 text-zinc-500" />
-                  </div>
-                  <div className="grid grid-cols-5 gap-2">
-                    {Object.entries(byStato).map(([st, items]) => (
-                      <div key={st} className="text-center p-3 rounded-xl" style={{ background: theme.status[st]?.bg }}>
-                        <div className="text-xl font-semibold text-white">{items.length}</div>
-                        <div className="text-xs" style={{ color: theme.status[st]?.color }}>{pipelineLabels[st] || st}</div>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-
-                {/* Top Performers */}
-                <div className="grid lg:grid-cols-3 gap-4">
-                  {/* Top Agenti - Clickable */}
-                  <Card>
-                    <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Award className="w-5 h-5 text-amber-400" />Top Agenti</h3>
-                    <div className="space-y-3">
-                      {Object.entries(byAgente).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, value], i) => (
-                        <div key={name} onClick={() => setShowAgentDetail({ name, type: users.find(u => u.nome === name)?.ruolo || 'agente' })} className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-500 text-black' : 'bg-zinc-700/50 text-zinc-400'}`}>{i + 1}</div>
-                          <Avatar nome={name} size="sm" />
-                          <div className="flex-1">
-                            <p className="text-white text-sm">{name}</p>
-                            <ProgressBar value={value} max={Object.values(byAgente).sort((a,b) => b-a)[0] || 1} color={i === 0 ? '#FBBF24' : '#52525B'} height="h-1" />
-                          </div>
-                          <span className="text-zinc-400 text-sm">{fmt(value)}</span>
-                          <ChevronRight className="w-4 h-4 text-zinc-600" />
-                        </div>
-                      ))}
-                      {Object.keys(byAgente).length === 0 && <p className="text-zinc-500 text-sm text-center py-4">Nessun dato</p>}
-                    </div>
-                  </Card>
-                  
-                  {/* Top Zone */}
-                  <Card>
-                    <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><MapPin className="w-5 h-5 text-emerald-400" />Top Zone</h3>
-                    <div className="space-y-3">
-                      {Object.entries(byZona).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([zona, value], i) => (
-                        <div key={zona} className="flex items-center gap-3">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-emerald-500 text-black' : 'bg-zinc-700/50 text-zinc-400'}`}>{i + 1}</div>
-                          <div className="flex-1">
-                            <p className="text-white text-sm">{zona}</p>
-                            <ProgressBar value={value} max={Object.values(byZona).sort((a,b) => b-a)[0] || 1} color={i === 0 ? '#34D399' : '#52525B'} height="h-1" />
-                          </div>
-                          <span className="text-zinc-400 text-sm">{fmt(value)}</span>
-                        </div>
-                      ))}
-                      {Object.keys(byZona).length === 0 && <p className="text-zinc-500 text-sm text-center py-4">Nessun dato</p>}
-                    </div>
-                  </Card>
-                  
-                  {/* Trend Mensile */}
-                  <Card>
-                    <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-violet-400" />Trend Mensile</h3>
-                    <div className="space-y-3">
-                      {Object.entries(byMonth).sort((a, b) => a[0].localeCompare(b[0])).slice(-5).map(([month, value]) => (
-                        <div key={month} className="flex items-center gap-3">
-                          <span className="text-zinc-500 text-sm w-16">{month}</span>
-                          <div className="flex-1"><ProgressBar value={value} max={Math.max(...Object.values(byMonth)) || 1} color="#A78BFA" /></div>
-                          <span className="text-white text-sm w-20 text-right">{fmt(value)}</span>
-                        </div>
-                      ))}
-                      {Object.keys(byMonth).length === 0 && <p className="text-zinc-500 text-sm text-center py-4">Nessun dato</p>}
-                    </div>
-                  </Card>
-                </div>
-              </div>
+              <DashboardAdmin
+                sales={sales}
+                periodSales={periodSales}
+                vendite={vendite}
+                totals={totals}
+                byStato={byStato}
+                byAgente={byAgente}
+                byZona={byZona}
+                volTrattativa={volTrattativa}
+                periodFilter={periodFilter}
+                overdueTasks={overdueTasks}
+                todayTasks={todayTasks}
+                daAssegnare={daAssegnare}
+                onPeriodo={setPeriodFilter}
+                onVai={setActiveTab}
+                onEsporta={() => generateDashboardPDF(totals, periodSales, vendite, byAgente, byZona)}
+              />
             )}
             
             {/* AGENT DETAIL VIEW */}
@@ -2775,18 +2665,18 @@ export default function App() {
                   </Card>
                   <Card>
                     <p className="text-zinc-500 text-sm">Prossimi 7 giorni</p>
-                    <p className="text-2xl font-semibold text-white mt-1">{myFollowUps.filter(f => { const d = new Date(f.data_reminder); const today = new Date(); const week = new Date(); week.setDate(today.getDate() + 7); return d >= today && d <= week; }).length}</p>
+                    <p className="text-2xl font-semibold text-ink mt-1">{myFollowUps.filter(f => { const d = new Date(f.data_reminder); const today = new Date(); const week = new Date(); week.setDate(today.getDate() + 7); return d >= today && d <= week; }).length}</p>
                   </Card>
                   <Card>
                     <p className="text-zinc-500 text-sm">Totale Attivi</p>
-                    <p className="text-2xl font-semibold text-white mt-1">{myFollowUps.length}</p>
+                    <p className="text-2xl font-semibold text-ink mt-1">{myFollowUps.length}</p>
                   </Card>
                 </div>
 
                 {/* Follow-ups List */}
                 <Card>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-white font-semibold">Follow-up Programmati</h3>
+                    <h3 className="text-ink font-semibold">Follow-up Programmati</h3>
                   </div>
                   {myFollowUps.length > 0 ? (
                     <div className="space-y-2">
@@ -2808,14 +2698,14 @@ export default function App() {
                                   {!f.tipo && '⏰'}
                                 </div>
                                 <div>
-                                  <p className="text-white font-medium">{cliente ? `${cliente.nome} ${cliente.cognome}` : 'Cliente'}</p>
+                                  <p className="text-ink font-medium">{cliente ? `${cliente.nome} ${cliente.cognome}` : 'Cliente'}</p>
                                   <p className="text-zinc-400 text-sm">{sale?.progetto || 'Lead'}</p>
                                   {f.nota && <p className="text-zinc-500 text-xs mt-1">{f.nota}</p>}
                                 </div>
                               </div>
                               <div className="text-right flex items-center gap-3">
                                 <div>
-                                  <p className={`font-medium ${isOverdueF ? 'text-red-400' : isTodayF ? 'text-purple-400' : 'text-white'}`}>
+                                  <p className={`font-medium ${isOverdueF ? 'text-red-400' : isTodayF ? 'text-purple-400' : 'text-ink'}`}>
                                     {new Date(f.data_reminder).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
                                   </p>
                                   {f.ora_reminder && <p className="text-zinc-500 text-xs">{f.ora_reminder.slice(0,5)}</p>}
@@ -2854,7 +2744,7 @@ export default function App() {
                     { id: '90', label: '90 giorni' },
                     { id: '365', label: 'Anno' }
                   ].map(p => (
-                    <button key={p.id} onClick={() => setPeriodFilter(p.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${periodFilter === p.id ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
+                    <button key={p.id} onClick={() => setPeriodFilter(p.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${periodFilter === p.id ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700/50 text-zinc-400 hover:text-ink'}`}>
                       {p.label}
                     </button>
                   ))}
@@ -2902,7 +2792,7 @@ export default function App() {
                   const pctIncassato = commTot > 0 ? (commIncassato / commTot * 100) : 0;
                   return (
                     <Card>
-                      <h3 className="text-white font-semibold mb-4">Stato Incasso Commissioni</h3>
+                      <h3 className="text-ink font-semibold mb-4">Stato Incasso Commissioni</h3>
                       <div className="grid grid-cols-3 gap-4 mb-4">
                         <div className="text-center p-4 bg-emerald-500/10 rounded-xl">
                           <p className="text-emerald-400 text-2xl font-bold">{fmt(commTot)}</p>
@@ -2920,7 +2810,7 @@ export default function App() {
                       <div className="relative h-4 bg-zinc-700/50 rounded-full overflow-hidden">
                         <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-500" style={{ width: `${pctIncassato}%` }} />
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-xs font-medium text-white drop-shadow">{pctIncassato.toFixed(0)}% incassato</span>
+                          <span className="text-xs font-medium text-ink drop-shadow">{pctIncassato.toFixed(0)}% incassato</span>
                         </div>
                       </div>
                     </Card>
@@ -2937,7 +2827,7 @@ export default function App() {
                   
                   return (
                     <Card>
-                      <h3 className="text-white font-semibold mb-4">Stato Pagamenti</h3>
+                      <h3 className="text-ink font-semibold mb-4">Stato Pagamenti</h3>
                       <div className="grid grid-cols-3 gap-4 mb-4">
                         <div className="text-center p-4 bg-emerald-500/10 rounded-xl">
                           <p className="text-emerald-400 text-2xl font-bold">{fmt(maturate)}</p>
@@ -2956,7 +2846,7 @@ export default function App() {
                       <div className="relative h-4 bg-zinc-700/50 rounded-full overflow-hidden">
                         <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-500" style={{ width: `${percentPaid}%` }} />
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-xs font-medium text-white drop-shadow">{percentPaid.toFixed(0)}% pagato</span>
+                          <span className="text-xs font-medium text-ink drop-shadow">{percentPaid.toFixed(0)}% pagato</span>
                         </div>
                       </div>
                     </Card>
@@ -2965,7 +2855,7 @@ export default function App() {
 
                 {/* Per Agente */}
                 <Card>
-                  <h3 className="text-white font-semibold mb-4">Commissioni per Agente</h3>
+                  <h3 className="text-ink font-semibold mb-4">Commissioni per Agente</h3>
                   <div className="space-y-3">
                     {Object.entries(
                       periodSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato').reduce((acc, s) => {
@@ -2982,7 +2872,7 @@ export default function App() {
                         <div className="flex items-center gap-3">
                           <Avatar nome={agente} size="sm" />
                           <div>
-                            <p className="text-white font-medium">{agente}</p>
+                            <p className="text-ink font-medium">{agente}</p>
                             <p className="text-zinc-500 text-xs">{data.count} vendite</p>
                           </div>
                         </div>
@@ -3000,7 +2890,7 @@ export default function App() {
 
                 {/* Vendite con Commissioni */}
                 <Card>
-                  <h3 className="text-white font-semibold mb-4">Dettaglio Vendite</h3>
+                  <h3 className="text-ink font-semibold mb-4">Dettaglio Vendite</h3>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
@@ -3018,11 +2908,11 @@ export default function App() {
                           return (
                             <tr key={s.id} className="text-sm">
                               <td className="py-3">
-                                <p className="text-white">{s.progetto}</p>
+                                <p className="text-ink">{s.progetto}</p>
                                 <p className="text-zinc-500 text-xs">{s.zona}</p>
                               </td>
                               <td className="py-3 text-zinc-300">{s.agente || '-'}</td>
-                              <td className="py-3 text-right text-white">{fmt(s.valore)}</td>
+                              <td className="py-3 text-right text-ink">{fmt(s.valore)}</td>
                               <td className="py-3 text-right text-emerald-400">{fmt(comm)}</td>
                               <td className="py-3 text-center">
                                 {s.pagato ? (
@@ -3067,10 +2957,10 @@ export default function App() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
-            <div className="absolute inset-0 bg-zinc-800/60" onClick={() => setMobileMenuOpen(false)} />
-            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#141920] p-4 animate-slideRight">
+            <div className="absolute inset-0 bg-ink/40" onClick={() => setMobileMenuOpen(false)} />
+            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#ffffff] p-4 animate-slideRight">
               <div className="flex items-center justify-between mb-8">
-                <img src="/logo.png" alt="KeyPrime" className="h-16" />
+                <img src="/logo-scuro.png" alt="KeyPrime" className="h-16" />
                 <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-400"><X className="w-5 h-5" /></button>
               </div>
               <nav className="space-y-1">
@@ -3150,7 +3040,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card padding="p-4">
           <p className="text-zinc-500 text-sm">Vendite chiuse</p>
-          <p className="text-2xl font-semibold text-white mt-1">{chiuse.length}</p>
+          <p className="text-2xl font-semibold text-ink mt-1">{chiuse.length}</p>
         </Card>
         <Card padding="p-4">
           <p className="text-zinc-500 text-sm">Volume venduto</p>
@@ -3171,9 +3061,9 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input type="text" placeholder="Cerca progetto, cliente, agente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50" />
+          <input type="text" placeholder="Cerca progetto, cliente, agente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl pl-10 pr-4 py-2.5 text-ink text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50" />
         </div>
-        <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-2.5">
+        <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-4 py-2.5">
           <input type="checkbox" checked={includiEOI} onChange={(e) => setIncludiEOI(e.target.checked)} className="w-4 h-4 rounded" />
           Includi gli EOI
         </label>
@@ -3183,7 +3073,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#2b323d]">
+              <tr className="border-b border-[#e4e0d8]">
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Data</th>
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Progetto</th>
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Zona</th>
@@ -3204,7 +3094,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div>
-                        <span className="text-white text-sm font-medium">{s.progetto}</span>
+                        <span className="text-ink text-sm font-medium">{s.progetto}</span>
                         <br /><span className="text-xs text-zinc-500">{s.developer}</span>
                       </div>
                       {s.note && (
@@ -3222,9 +3112,9 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
                   <td className="px-4 py-3 text-sm text-zinc-400">{s.zona || '-'}</td>
                   <td className="px-4 py-3 text-sm text-blue-400">{s.cliente_nome || '-'}</td>
                   <td className="px-4 py-3 text-sm text-zinc-400">{s.agente || s.segnalatore || '-'}</td>
-                  <td className="px-4 py-3 text-right text-sm font-medium text-white">{s.valore > 0 ? fmt(s.valore) : '-'}</td>
+                  <td className="px-4 py-3 text-right text-sm font-medium text-ink">{s.valore > 0 ? fmt(s.valore) : '-'}</td>
                   <td className="px-4 py-3 text-center">
-                    <select value={s.commission_pct || 5} onChange={(e) => updateSale(s.id, { commission_pct: parseInt(e.target.value) })} className="bg-zinc-700/50 rounded px-2 py-1 text-xs text-white min-w-[58px] focus:outline-none">
+                    <select value={s.commission_pct || 5} onChange={(e) => updateSale(s.id, { commission_pct: parseInt(e.target.value) })} className="bg-zinc-700/50 rounded px-2 py-1 text-xs text-ink min-w-[58px] focus:outline-none">
                       {commissions.map(c => <option key={c} value={c}>{c}%</option>)}
                     </select>
                   </td>
@@ -3331,7 +3221,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
 
   const SortHeader = ({ field, children }) => (
     <th 
-      className="text-left py-3 px-4 text-zinc-400 font-medium text-sm cursor-pointer hover:text-white transition-colors"
+      className="text-left py-3 px-4 text-zinc-400 font-medium text-sm cursor-pointer hover:text-ink transition-colors"
       onClick={() => {
         if (sortField === field) {
           setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -3362,13 +3252,13 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
               placeholder="Cerca lead..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-zinc-700/50 border border-zinc-700 rounded-lg pl-9 pr-4 py-2 text-white text-sm w-64 focus:border-orange-500 focus:outline-none"
+              className="bg-zinc-700/50 border border-zinc-700 rounded-lg pl-9 pr-4 py-2 text-ink text-sm w-64 focus:border-orange-500 focus:outline-none"
             />
           </div>
           <select
             value={filterStato}
             onChange={(e) => setFilterStato(e.target.value)}
-            className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"
+            className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none"
           >
             <option value="">Tutti gli stati</option>
             {pipelineStati.map(s => (
@@ -3390,7 +3280,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
               <select
                 value=""
                 onChange={(e) => handleBulkAction('status', e.target.value)}
-                className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
+                className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-1.5 text-ink text-sm"
               >
                 <option value="">Cambia stato...</option>
                 {pipelineStati.map(s => (
@@ -3401,7 +3291,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
                 <select
                   value=""
                   onChange={(e) => handleBulkAction('assign', e.target.value)}
-                  className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
+                  className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-1.5 text-ink text-sm"
                 >
                   <option value="">Assegna a...</option>
                   {users.map(u => (
@@ -3465,13 +3355,13 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
                       <div className="flex items-center gap-3">
                         {cliente && <Avatar nome={cliente.nome} size="sm" />}
                         <div>
-                          <p className="text-white font-medium">{cliente ? `${cliente.nome} ${cliente.cognome || ''}` : 'N/A'}</p>
+                          <p className="text-ink font-medium">{cliente ? `${cliente.nome} ${cliente.cognome || ''}` : 'N/A'}</p>
                           {cliente?.telefono && <p className="text-zinc-500 text-xs">{cliente.telefono}</p>}
                         </div>
                       </div>
                     </td>
                     <td className="py-3 px-4" onClick={() => onSelectLead(lead)}>
-                      <p className="text-white">{lead.progetto || '-'}</p>
+                      <p className="text-ink">{lead.progetto || '-'}</p>
                       <p className="text-zinc-500 text-xs">{lead.developer || ''}</p>
                     </td>
                     <td className="py-3 px-4 text-zinc-300" onClick={() => onSelectLead(lead)}>{lead.zona || '-'}</td>
@@ -3497,7 +3387,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
                       <div className="flex items-center gap-1">
                         <button
                           onClick={(e) => { e.stopPropagation(); onSelectLead(lead); }}
-                          className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors"
+                          className="p-1.5 text-zinc-400 hover:text-ink hover:bg-zinc-700 rounded-lg transition-colors"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -3573,7 +3463,7 @@ function PipelineTab({ byStato, onSelectLead, onUpdateSaleStatus }) {
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ background: theme.status[st]?.color }} />
-                <span className="text-sm font-medium text-white">{pipelineLabels[st] || st}</span>
+                <span className="text-sm font-medium text-ink">{pipelineLabels[st] || st}</span>
               </div>
               <span className="text-xs text-zinc-500 bg-zinc-700/50 px-2 py-0.5 rounded-full">{byStato[st]?.length || 0}</span>
             </div>
@@ -3581,7 +3471,7 @@ function PipelineTab({ byStato, onSelectLead, onUpdateSaleStatus }) {
               {byStato[st]?.map(s => (
                 <div key={s.id} draggable onDragStart={(e) => handleDragStart(e, s)} onDragEnd={handleDragEnd} className={`cursor-grab active:cursor-grabbing ${draggedItem?.id === s.id ? 'opacity-50' : ''}`}>
                   <Card hover onClick={() => onSelectLead(s)} padding="p-3" className="border-l-2" style={{ borderLeftColor: theme.status[st]?.color }}>
-                    <p className="text-white text-sm font-medium truncate">{s.progetto || 'TBD'}</p>
+                    <p className="text-ink text-sm font-medium truncate">{s.progetto || 'TBD'}</p>
                     <p className="text-zinc-500 text-xs truncate">{s.developer}</p>
                     {s.cliente_nome && <p className="text-blue-400 text-xs mt-1">{s.cliente_nome}</p>}
                     {s.valore > 0 && <p className="text-emerald-400 text-sm font-medium mt-2">{fmt(s.valore)} AED</p>}
@@ -3665,7 +3555,7 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
 
   const SortHeader = ({ field, children, className = '' }) => (
     <th 
-      className={`text-left py-3 px-4 text-zinc-400 font-medium text-sm cursor-pointer hover:text-white transition-colors ${className}`}
+      className={`text-left py-3 px-4 text-zinc-400 font-medium text-sm cursor-pointer hover:text-ink transition-colors ${className}`}
       onClick={() => {
         if (sortField === field) {
           setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -3691,9 +3581,9 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
         <div className="flex items-center gap-3 flex-wrap flex-1">
           <div className="relative min-w-[250px]">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input type="text" placeholder="Cerca cliente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50" />
+            <input type="text" placeholder="Cerca cliente..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl pl-10 pr-4 py-2.5 text-ink text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50" />
           </div>
-          <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none">
+          <select value={filters.stato} onChange={(e) => setFilters({ ...filters, stato: e.target.value })} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-4 py-2.5 text-ink text-sm focus:outline-none">
             <option value="">Tutti gli stati</option>
             {clienteStati.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
@@ -3712,7 +3602,7 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
               <select
                 value=""
                 onChange={(e) => handleBulkAction('stato', e.target.value)}
-                className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
+                className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-1.5 text-ink text-sm"
               >
                 <option value="">Cambia stato...</option>
                 {clienteStati.map(s => (
@@ -3723,7 +3613,7 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
                 <select
                   value=""
                   onChange={(e) => handleBulkAction('assegnato', e.target.value)}
-                  className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-sm"
+                  className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-1.5 text-ink text-sm"
                 >
                   <option value="">Assegna a...</option>
                   {users.map(u => (
@@ -3789,7 +3679,7 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
                       <div className="flex items-center gap-3">
                         <Avatar nome={cliente.nome} cognome={cliente.cognome} size="sm" />
                         <div>
-                          <p className="text-white font-medium">{cliente.nome} {cliente.cognome || ''}</p>
+                          <p className="text-ink font-medium">{cliente.nome} {cliente.cognome || ''}</p>
                           {cliente.azienda && <p className="text-zinc-500 text-xs">{cliente.azienda}</p>}
                         </div>
                       </div>
@@ -3834,7 +3724,7 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
                       <div className="flex items-center gap-1">
                         <button
                           onClick={(e) => { e.stopPropagation(); onSelect(cliente); }}
-                          className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors"
+                          className="p-1.5 text-zinc-400 hover:text-ink hover:bg-zinc-700 rounded-lg transition-colors"
                           title="Dettagli"
                         >
                           <Eye className="w-4 h-4" />
@@ -3887,7 +3777,7 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
         <div className="flex items-center gap-4 mb-6">
           <Avatar nome={cliente.nome} cognome={cliente.cognome} size="xl" />
           <div className="flex-1">
-            <h1 className="text-2xl font-semibold text-white">{cliente.nome} {cliente.cognome}</h1>
+            <h1 className="text-2xl font-semibold text-ink">{cliente.nome} {cliente.cognome}</h1>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <StatusBadge status={cliente.stato} type="cliente" />
               {cliente.nazionalita && <span className="text-zinc-500 text-sm">{cliente.nazionalita}</span>}
@@ -3919,9 +3809,9 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-[#2b323d]">
+      <div className="flex gap-2 border-b border-[#e4e0d8]">
         {['info', 'lead', 'task'].map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${tab === t ? 'text-white border-amber-500' : 'text-zinc-500 border-transparent hover:text-white'}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${tab === t ? 'text-ink border-amber-500' : 'text-zinc-500 border-transparent hover:text-ink'}`}>
             {t === 'info' ? 'Informazioni' : t === 'lead' ? `Lead (${sales.length})` : `Task (${tasks.length})`}
           </button>
         ))}
@@ -3931,20 +3821,20 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
       {tab === 'info' && (
         <Card>
           <div className="grid grid-cols-2 gap-4">
-            <div><p className="text-zinc-500 text-xs mb-1">Telefono</p><p className="text-white">{cliente.telefono || '-'}</p></div>
-            <div><p className="text-zinc-500 text-xs mb-1">Email</p><p className="text-white truncate">{cliente.email || '-'}</p></div>
+            <div><p className="text-zinc-500 text-xs mb-1">Telefono</p><p className="text-ink">{cliente.telefono || '-'}</p></div>
+            <div><p className="text-zinc-500 text-xs mb-1">Email</p><p className="text-ink truncate">{cliente.email || '-'}</p></div>
             <div><p className="text-zinc-500 text-xs mb-1">Budget Min</p><p className="text-amber-400">{cliente.budget_min ? fmt(cliente.budget_min) : '-'}</p></div>
             <div><p className="text-zinc-500 text-xs mb-1">Budget Max</p><p className="text-amber-400">{cliente.budget_max ? fmt(cliente.budget_max) : '-'}</p></div>
             <div><p className="text-zinc-500 text-xs mb-1">Assegnato a</p><p className="text-blue-400">{cliente.assegnato_a || '-'}</p></div>
-            <div><p className="text-zinc-500 text-xs mb-1">Agente Rif.</p><p className="text-white">{cliente.agente_riferimento || '-'}</p></div>
-            <div><p className="text-zinc-500 text-xs mb-1">Fonte</p><p className="text-white">{cliente.fonte || '-'}</p></div>
+            <div><p className="text-zinc-500 text-xs mb-1">Agente Rif.</p><p className="text-ink">{cliente.agente_riferimento || '-'}</p></div>
+            <div><p className="text-zinc-500 text-xs mb-1">Fonte</p><p className="text-ink">{cliente.fonte || '-'}</p></div>
           </div>
-          {cliente.note && <div className="mt-4 pt-4 border-t border-[#2b323d]"><p className="text-zinc-500 text-xs mb-1">Note</p><p className="text-white text-sm">{cliente.note}</p></div>}
-          <div className="mt-4 pt-4 border-t border-[#2b323d]">
+          {cliente.note && <div className="mt-4 pt-4 border-t border-[#e4e0d8]"><p className="text-zinc-500 text-xs mb-1">Note</p><p className="text-ink text-sm">{cliente.note}</p></div>}
+          <div className="mt-4 pt-4 border-t border-[#e4e0d8]">
             <p className="text-zinc-500 text-xs mb-2">Stato</p>
             <div className="flex flex-wrap gap-2">
               {clienteStati.map(s => (
-                <button key={s} onClick={() => updateCliente(cliente.id, { stato: s })} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${cliente.stato === s ? 'bg-amber-500 text-black' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>{s}</button>
+                <button key={s} onClick={() => updateCliente(cliente.id, { stato: s })} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${cliente.stato === s ? 'bg-amber-500 text-black' : 'bg-zinc-700/50 text-zinc-400 hover:text-ink'}`}>{s}</button>
               ))}
             </div>
           </div>
@@ -3957,11 +3847,11 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
             <Card key={s.id} padding="p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="flex items-center gap-2"><p className="text-white font-medium">{s.progetto}</p><StatusBadge status={s.stato || 'lead'} /></div>
+                  <div className="flex items-center gap-2"><p className="text-ink font-medium">{s.progetto}</p><StatusBadge status={s.stato || 'lead'} /></div>
                   <p className="text-zinc-500 text-sm">{s.developer} • {s.zona}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-white font-medium">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
+                  <p className="text-ink font-medium">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
                   <p className="text-zinc-500 text-xs">{fmtShort(s.data)}</p>
                 </div>
               </div>
@@ -3978,7 +3868,7 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <p className={`text-white font-medium ${t.stato === 'completato' ? 'line-through' : ''}`}>{t.titolo}</p>
+                    <p className={`text-ink font-medium ${t.stato === 'completato' ? 'line-through' : ''}`}>{t.titolo}</p>
                     <StatusBadge status={t.priorita} type="priority" />
                   </div>
                   {t.scadenza && <p className={`text-sm mt-1 ${isOverdue(t.scadenza) && t.stato !== 'completato' ? 'text-red-400' : 'text-zinc-500'}`}>{fmtDateTime(t.scadenza)}</p>}
@@ -4025,7 +3915,7 @@ function AdminTasksTab({ tasks, clienti, users, onComplete, onDelete, onEdit, on
             { id: 'today', label: 'Oggi', count: counts.today, color: '#FBBF24' },
             { id: 'completed', label: 'Fatto', color: '#34D399' }
           ].map(f => (
-            <button key={f.id} onClick={() => setFilter(f.id)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${filter === f.id ? 'text-white' : 'text-zinc-500 hover:text-white'}`} style={filter === f.id ? { background: `${f.color}20`, color: f.color } : {}}>
+            <button key={f.id} onClick={() => setFilter(f.id)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${filter === f.id ? 'text-ink' : 'text-zinc-500 hover:text-ink'}`} style={filter === f.id ? { background: `${f.color}20`, color: f.color } : {}}>
               {f.label} {f.count !== undefined && `(${f.count})`}
             </button>
           ))}
@@ -4042,7 +3932,7 @@ function AdminTasksTab({ tasks, clienti, users, onComplete, onDelete, onEdit, on
               <div className="flex items-start gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <p className={`text-white font-medium ${t.stato === 'completato' ? 'line-through' : ''}`}>{t.titolo}</p>
+                    <p className={`text-ink font-medium ${t.stato === 'completato' ? 'line-through' : ''}`}>{t.titolo}</p>
                     <StatusBadge status={t.priorita} type="priority" />
                     {isOverdue(t.scadenza) && t.stato !== 'completato' && <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400 animate-pulse">Scaduto</span>}
                   </div>
@@ -4089,7 +3979,7 @@ function AgentTasksTab({ tasks, allTasks, clienti, onComplete, onAddNote }) {
           { id: 'overdue', label: 'Scaduti', count: tasks.filter(t => isOverdue(t.scadenza)).length },
           { id: 'completed', label: 'Completati', count: completedTasks.length }
         ].map(f => (
-          <button key={f.id} onClick={() => setFilter(f.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${filter === f.id ? 'bg-pink-500/20 text-pink-400' : 'text-zinc-500 hover:text-white'}`}>
+          <button key={f.id} onClick={() => setFilter(f.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${filter === f.id ? 'bg-pink-500/20 text-pink-400' : 'text-zinc-500 hover:text-ink'}`}>
             {f.label} ({f.count})
           </button>
         ))}
@@ -4105,7 +3995,7 @@ function AgentTasksTab({ tasks, allTasks, clienti, onComplete, onAddNote }) {
               <div className="flex items-start gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <p className={`text-white font-medium ${t.stato === 'completato' ? 'line-through' : ''}`}>{t.titolo}</p>
+                    <p className={`text-ink font-medium ${t.stato === 'completato' ? 'line-through' : ''}`}>{t.titolo}</p>
                     <StatusBadge status={t.priorita} type="priority" />
                     {isOverdue(t.scadenza) && t.stato !== 'completato' && <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400">Scaduto</span>}
                   </div>
@@ -4163,7 +4053,7 @@ function TeamTab({ users, currentUserId, onCreate, onEdit, onSetActive }) {
         <Avatar nome={u.nome} size="lg" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-white font-medium truncate">{u.nome}</p>
+            <p className="text-ink font-medium truncate">{u.nome}</p>
             <span className={`px-2 py-0.5 rounded-full text-xs ${coloreRuolo[u.ruolo] || 'bg-zinc-700 text-zinc-300'}`}>
               {etichettaRuolo[u.ruolo] || u.ruolo}
             </span>
@@ -4207,7 +4097,7 @@ function TeamTab({ users, currentUserId, onCreate, onEdit, onSetActive }) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card padding="p-4"><p className="text-zinc-500 text-sm">Attivi</p><p className="text-2xl font-semibold text-white mt-1">{attivi.length}</p></Card>
+        <Card padding="p-4"><p className="text-zinc-500 text-sm">Attivi</p><p className="text-2xl font-semibold text-ink mt-1">{attivi.length}</p></Card>
         <Card padding="p-4"><p className="text-zinc-500 text-sm">In rotazione lead</p><p className="text-2xl font-semibold text-oro-400 mt-1">{agenti.length}</p></Card>
         <Card padding="p-4"><p className="text-zinc-500 text-sm">Segnalatori</p><p className="text-2xl font-semibold text-emerald-400 mt-1">{attivi.filter(u => u.ruolo === 'segnalatore').length}</p></Card>
         <Card padding="p-4"><p className="text-zinc-500 text-sm">Disattivati</p><p className="text-2xl font-semibold text-zinc-400 mt-1">{disattivi.length}</p></Card>
@@ -4263,7 +4153,7 @@ function AgentDetailView({ agent, sales, onBack }) {
   }, {});
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0d1116] overflow-auto">
+    <div className="fixed inset-0 z-50 bg-[#edebe6] overflow-auto">
       <div className="max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
@@ -4275,7 +4165,7 @@ function AgentDetailView({ agent, sales, onBack }) {
         <div className="flex items-center gap-4 mb-8">
           <Avatar nome={agent.name} size="xl" />
           <div>
-            <h1 className="text-2xl font-semibold text-white">{agent.name}</h1>
+            <h1 className="text-2xl font-semibold text-ink">{agent.name}</h1>
             <p className="text-zinc-500 capitalize">{agent.type}</p>
           </div>
         </div>
@@ -4284,7 +4174,7 @@ function AgentDetailView({ agent, sales, onBack }) {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card>
             <p className="text-zinc-500 text-sm">Volume Totale</p>
-            <p className="text-2xl font-semibold text-white mt-1">{fmt(totalVolume)}</p>
+            <p className="text-2xl font-semibold text-ink mt-1">{fmt(totalVolume)}</p>
             <p className="text-zinc-600 text-xs">AED</p>
           </Card>
           <Card>
@@ -4305,11 +4195,11 @@ function AgentDetailView({ agent, sales, onBack }) {
         
         {/* Pipeline */}
         <Card className="mb-6">
-          <h3 className="text-white font-semibold mb-4">Pipeline</h3>
+          <h3 className="text-ink font-semibold mb-4">Pipeline</h3>
           <div className="grid grid-cols-5 gap-2">
             {pipelineStati.map(st => (
               <div key={st} className="text-center p-3 rounded-xl" style={{ background: theme.status[st]?.bg }}>
-                <div className="text-xl font-semibold text-white">{byStato[st] || 0}</div>
+                <div className="text-xl font-semibold text-ink">{byStato[st] || 0}</div>
                 <div className="text-xs" style={{ color: theme.status[st]?.color }}>{pipelineLabels[st] || st}</div>
               </div>
             ))}
@@ -4319,7 +4209,7 @@ function AgentDetailView({ agent, sales, onBack }) {
         {/* Charts */}
         <div className="grid lg:grid-cols-2 gap-4 mb-6">
           <Card>
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+            <h3 className="text-ink font-semibold mb-4 flex items-center gap-2">
               <MapPin className="w-4 h-4 text-emerald-400" />Zone
             </h3>
             <div className="space-y-2">
@@ -4327,7 +4217,7 @@ function AgentDetailView({ agent, sales, onBack }) {
                 <div key={zona} className="flex items-center gap-3">
                   <span className="text-zinc-400 text-sm w-24 truncate">{zona}</span>
                   <div className="flex-1"><ProgressBar value={value} max={Object.values(byZona).sort((a,b)=>b-a)[0] || 1} color="#34D399" /></div>
-                  <span className="text-white text-sm w-20 text-right">{fmt(value)}</span>
+                  <span className="text-ink text-sm w-20 text-right">{fmt(value)}</span>
                 </div>
               ))}
               {Object.keys(byZona).length === 0 && <p className="text-zinc-500 text-sm">Nessun dato</p>}
@@ -4335,7 +4225,7 @@ function AgentDetailView({ agent, sales, onBack }) {
           </Card>
           
           <Card>
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+            <h3 className="text-ink font-semibold mb-4 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-violet-400" />Trend
             </h3>
             <div className="space-y-2">
@@ -4343,7 +4233,7 @@ function AgentDetailView({ agent, sales, onBack }) {
                 <div key={month} className="flex items-center gap-3">
                   <span className="text-zinc-400 text-sm w-16">{month}</span>
                   <div className="flex-1"><ProgressBar value={value} max={Math.max(...Object.values(byMonth)) || 1} color="#A78BFA" /></div>
-                  <span className="text-white text-sm w-20 text-right">{fmt(value)}</span>
+                  <span className="text-ink text-sm w-20 text-right">{fmt(value)}</span>
                 </div>
               ))}
               {Object.keys(byMonth).length === 0 && <p className="text-zinc-500 text-sm">Nessun dato</p>}
@@ -4353,17 +4243,17 @@ function AgentDetailView({ agent, sales, onBack }) {
         
         {/* Recent Sales */}
         <Card>
-          <h3 className="text-white font-semibold mb-4">Ultimi Lead</h3>
+          <h3 className="text-ink font-semibold mb-4">Ultimi Lead</h3>
           <div className="space-y-2">
             {agentSales.slice(0, 10).map(s => (
               <div key={s.id} className="flex items-center gap-3 p-3 bg-zinc-700/50/50 rounded-xl">
                 <div className="w-1 h-10 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium truncate">{s.progetto || 'TBD'}</p>
+                  <p className="text-ink text-sm font-medium truncate">{s.progetto || 'TBD'}</p>
                   <p className="text-zinc-500 text-xs">{s.developer} • {s.zona}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-white text-sm font-medium">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
+                  <p className="text-ink text-sm font-medium">{s.valore > 0 ? fmt(s.valore) : 'TBD'}</p>
                   <p className="text-xs" style={{ color: theme.status[s.stato || 'lead']?.color }}>{s.stato || 'lead'}</p>
                 </div>
               </div>
@@ -4576,7 +4466,7 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
                   <Building2 className="w-12 h-12 text-zinc-600" />
                 </div>
               )}
-              <button onClick={(e) => { e.stopPropagation(); setPopupProject(null); }} className="absolute top-2 right-2 p-1.5 bg-zinc-800/50 rounded-full text-white hover:bg-zinc-800/70">
+              <button onClick={(e) => { e.stopPropagation(); setPopupProject(null); }} className="absolute top-2 right-2 p-1.5 bg-zinc-800/50 rounded-full text-ink hover:bg-zinc-800/70">
                 <X className="w-4 h-4" />
               </button>
               <div className="absolute bottom-2 left-2 px-2 py-1 bg-orange-500 text-white text-xs font-medium rounded-lg">
@@ -4584,7 +4474,7 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
               </div>
             </div>
             <div className="p-4">
-              <h3 className="text-white font-semibold truncate">{popupProject.title}</h3>
+              <h3 className="text-ink font-semibold truncate">{popupProject.title}</h3>
               <p className="text-zinc-400 text-sm truncate">{popupProject.location?.full_name || popupProject.location?.name}</p>
               <div className="flex items-center justify-between mt-3">
                 <p className="text-orange-400 font-bold">{popupProject.price_from > 0 ? 'AED ' + formatPrice(popupProject.price_from) : 'TBD'}</p>
@@ -4606,7 +4496,7 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
       {/* Map Stats */}
       <div className="absolute bottom-4 left-4 z-[1000]">
         <div className="bg-zinc-800/90 backdrop-blur border border-zinc-700 rounded-xl px-3 py-2">
-          <p className="text-white text-sm font-medium">{Object.keys(projectsByLocation).length} progetti sulla mappa</p>
+          <p className="text-ink text-sm font-medium">{Object.keys(projectsByLocation).length} progetti sulla mappa</p>
         </div>
       </div>
 
@@ -4674,7 +4564,7 @@ function ProjectCardCompact({ project, isSelected, onClick, onHover }) {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-white font-medium text-sm truncate">{project.title}</p>
+          <p className="text-ink font-medium text-sm truncate">{project.title}</p>
           <p className="text-zinc-500 text-xs truncate">{project.location?.full_name}</p>
           <div className="flex items-center gap-2 mt-1.5">
             <p className="text-orange-400 font-bold text-sm">{project.price_from > 0 ? 'AED ' + formatPrice(project.price_from) : 'TBD'}</p>
@@ -5043,7 +4933,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
       <div className="flex-shrink-0 mb-4">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl font-semibold text-white flex items-center gap-2"><Building2 className="w-6 h-6 text-orange-400" />Off-Plan Projects</h2>
+            <h2 className="text-xl font-semibold text-ink flex items-center gap-2"><Building2 className="w-6 h-6 text-orange-400" />Off-Plan Projects</h2>
             <p className="text-zinc-500 text-sm mt-1">{totalResults > 0 ? totalResults.toLocaleString() + ' progetti' : 'Cerca progetti'}{selectedAreaName && ' • ' + selectedAreaName}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -5051,9 +4941,9 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
               {showStats ? 'Nascondi' : 'Stats'}
             </Button>
             <div className="flex items-center gap-2 bg-zinc-700/50/50 p-1 rounded-xl">
-              <button onClick={() => { setViewMode('list'); setSelectedAreaProjects(null); }} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'list' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Lista"><List className="w-5 h-5" /></button>
-              <button onClick={() => setViewMode('map')} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'map' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Mappa"><Map className="w-5 h-5" /></button>
-              <button onClick={() => setViewMode('saved')} className={'p-2 rounded-lg transition-colors relative ' + (viewMode === 'saved' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white')} title="Salvati">
+              <button onClick={() => { setViewMode('list'); setSelectedAreaProjects(null); }} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'list' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-ink')} title="Lista"><List className="w-5 h-5" /></button>
+              <button onClick={() => setViewMode('map')} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'map' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-ink')} title="Mappa"><Map className="w-5 h-5" /></button>
+              <button onClick={() => setViewMode('saved')} className={'p-2 rounded-lg transition-colors relative ' + (viewMode === 'saved' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-ink')} title="Salvati">
                 <svg className="w-5 h-5" fill={viewMode === 'saved' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
                 {savedListings?.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold">{savedListings.length}</span>}
               </button>
@@ -5065,33 +4955,33 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         {showStats && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <Card className="p-4">
-              <h3 className="text-white font-medium mb-3 flex items-center gap-2"><MapPin className="w-4 h-4 text-orange-400" />Top Zone</h3>
+              <h3 className="text-ink font-medium mb-3 flex items-center gap-2"><MapPin className="w-4 h-4 text-orange-400" />Top Zone</h3>
               <div className="space-y-2">
                 {stats.byZone.slice(0, 5).map((z, i) => (
                   <div key={z.name} className="flex items-center justify-between">
                     <span className="text-zinc-400 text-sm truncate flex-1">{z.name}</span>
-                    <span className="text-white text-sm font-medium ml-2">{z.count}</span>
+                    <span className="text-ink text-sm font-medium ml-2">{z.count}</span>
                   </div>
                 ))}
               </div>
             </Card>
             <Card className="p-4">
-              <h3 className="text-white font-medium mb-3 flex items-center gap-2"><Building2 className="w-4 h-4 text-orange-400" />Top Developer</h3>
+              <h3 className="text-ink font-medium mb-3 flex items-center gap-2"><Building2 className="w-4 h-4 text-orange-400" />Top Developer</h3>
               <div className="space-y-2">
                 {stats.byDeveloper.slice(0, 5).map((d, i) => (
                   <div key={d.name} className="flex items-center justify-between">
                     <span className="text-zinc-400 text-sm truncate flex-1">{d.name}</span>
-                    <span className="text-white text-sm font-medium ml-2">{d.count}</span>
+                    <span className="text-ink text-sm font-medium ml-2">{d.count}</span>
                   </div>
                 ))}
               </div>
             </Card>
             <Card className="p-4">
-              <h3 className="text-white font-medium mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-orange-400" />Statistiche</h3>
+              <h3 className="text-ink font-medium mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-orange-400" />Statistiche</h3>
               <div className="space-y-3">
                 <div>
                   <p className="text-zinc-500 text-xs">Totale Progetti</p>
-                  <p className="text-white text-xl font-bold">{totalResults.toLocaleString()}</p>
+                  <p className="text-ink text-xl font-bold">{totalResults.toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-zinc-500 text-xs">Prezzo Medio</p>
@@ -5103,20 +4993,20 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         )}
 
         <Card className="mb-4">
-          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto, zona o developer..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
+          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto, zona o developer..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl pl-10 pr-4 py-3 text-ink placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
           {/* Nove colonne uguali schiacciavano ogni filtro sotto la larghezza
               della propria etichetta ("Tutte le zo…"). Cinque per riga danno
               a ciascuno lo spazio per leggersi, e i nove controlli vanno
               semplicemente a capo. */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            <select value={filters.emirate} onChange={(e) => setFilters(f => ({ ...f, emirate: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">🇦🇪 Emirato</option>{emirates.map(e => <option key={e} value={e}>{e}</option>)}</select>
-            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{availableZones.map(a => <option key={a} value={a}>{a}</option>)}</select>
-            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
-            <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
-            <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
-            <select value={filters.deliveryYear} onChange={(e) => setFilters(f => ({ ...f, deliveryYear: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none"><option value="">Consegna</option>{deliveryYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
-            <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
-            <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <select value={filters.emirate} onChange={(e) => setFilters(f => ({ ...f, emirate: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none"><option value="">🇦🇪 Emirato</option>{emirates.map(e => <option key={e} value={e}>{e}</option>)}</select>
+            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{availableZones.map(a => <option key={a} value={a}>{a}</option>)}</select>
+            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
+            <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
+            <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
+            <select value={filters.deliveryYear} onChange={(e) => setFilters(f => ({ ...f, deliveryYear: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none"><option value="">Consegna</option>{deliveryYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
+            <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none" />
+            <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none" />
             <Button onClick={() => { setSelectedAreaProjects(null); searchListings(1); }} icon={Search} disabled={loading}>{loading ? '...' : 'Cerca'}</Button>
           </div>
           {/* Sorting and active filters */}
@@ -5162,11 +5052,11 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                           <span className={'px-2 py-1 text-white text-xs font-medium rounded-lg ' + (project.construction_phase_key === 'completed' ? 'bg-green-500/90' : project.construction_phase_key === 'under_construction' ? 'bg-orange-500/90' : 'bg-blue-500/90')}>{project.construction_phase_key === 'completed' ? 'Completato' : project.construction_phase_key === 'under_construction' ? 'In Costruzione' : 'Lancio'}</span>
                           {project.hotness_level >= 80 && <span className="px-2 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-medium rounded-lg">🔥</span>}
                         </div>
-                        {formatDelivery(project.delivery_date) && <div className="absolute top-2 right-12 px-2 py-1 bg-zinc-800/70 text-white text-xs rounded-lg">{formatDelivery(project.delivery_date)}</div>}
+                        {formatDelivery(project.delivery_date) && <div className="absolute top-2 right-12 px-2 py-1 bg-zinc-800/70 text-ink text-xs rounded-lg">{formatDelivery(project.delivery_date)}</div>}
                         <button onClick={(e) => { e.stopPropagation(); isListingSaved(project.project_id) ? onRemoveListing(project.project_id) : onSaveListing(project); }} className={'absolute top-2 right-2 p-2 rounded-full transition-colors ' + (isListingSaved(project.project_id) ? 'bg-orange-500 text-white' : 'bg-zinc-800/50 text-white hover:bg-orange-500')}><svg className="w-4 h-4" fill={isListingSaved(project.project_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg></button>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-white font-medium line-clamp-1">{project.title}</p>
+                        <p className="text-ink font-medium line-clamp-1">{project.title}</p>
                         <p className="text-zinc-500 text-sm line-clamp-1">{project.location?.full_name}</p>
                         <div className="flex items-center gap-3 text-xs text-zinc-400">
                           {formatBedrooms(project.bedrooms) && <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" />{formatBedrooms(project.bedrooms)}</span>}
@@ -5243,12 +5133,12 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         )}
 
         {viewMode === 'map' && (
-          <div className="fixed inset-0 z-50 bg-[#0d1116]">
+          <div className="fixed inset-0 z-50 bg-[#edebe6]">
             {/* Header */}
-            <div className="absolute top-0 left-0 right-0 z-20 bg-[#0d1116]/95 backdrop-blur border-b border-zinc-800">
+            <div className="absolute top-0 left-0 right-0 z-20 bg-[#edebe6]/95 backdrop-blur border-b border-zinc-800">
               <div className="px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <img src="/logo.png" alt="KeyPrime" className="h-8 lg:h-10" />
+                  <img src="/logo-scuro.png" alt="KeyPrime" className="h-8 lg:h-10" />
                   <span className="text-zinc-500 hidden sm:inline">|</span>
                   <span className="text-zinc-400 text-sm">{displayProjects.length} progetti</span>
                 </div>
@@ -5256,19 +5146,19 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
               </div>
               {/* Filters - Horizontal scroll on mobile */}
               <div className="px-4 pb-3 flex items-center gap-2 overflow-x-auto scrollbar-hide">
-                <select value={filters.emirate} onChange={(e) => setFilters(f => ({ ...f, emirate: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm min-w-[100px] flex-shrink-0">
+                <select value={filters.emirate} onChange={(e) => setFilters(f => ({ ...f, emirate: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm min-w-[100px] flex-shrink-0">
                   <option value="">🇦🇪 Emirato</option>
                   {emirates.map(e => <option key={e} value={e}>{e}</option>)}
                 </select>
-                <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm min-w-[120px] flex-shrink-0">
+                <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm min-w-[120px] flex-shrink-0">
                   <option value="">Tutte le zone</option>
                   {availableZones.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
-                <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm min-w-[130px] flex-shrink-0">
+                <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm min-w-[130px] flex-shrink-0">
                   <option value="">Tutti i developer</option>
                   {topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
-                <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm min-w-[90px] flex-shrink-0">
+                <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm min-w-[90px] flex-shrink-0">
                   <option value="">Camere</option>
                   {bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}
                 </select>
@@ -5281,11 +5171,11 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
               {/* Desktop: Sidebar + Map */}
               <div className="hidden lg:flex h-full">
                 {/* Left Sidebar */}
-                <div className="w-96 h-full bg-[#141920] border-r border-zinc-800 flex flex-col">
+                <div className="w-96 h-full bg-[#ffffff] border-r border-zinc-800 flex flex-col">
                   <div className="p-3 border-b border-zinc-800">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                      <input type="text" placeholder="Cerca progetto..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-white text-sm placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none" />
+                      <input type="text" placeholder="Cerca progetto..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-ink text-sm placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none" />
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto">
@@ -5296,7 +5186,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                             {project.images?.[0]?.medium_image_url ? <img src={project.images[0].medium_image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Building2 className="w-6 h-6 text-zinc-600" /></div>}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-white text-sm truncate">{project.title}</h3>
+                            <h3 className="font-medium text-ink text-sm truncate">{project.title}</h3>
                             <p className="text-xs text-zinc-500 truncate">{project.location?.full_name}</p>
                             <p className="text-orange-400 font-semibold text-sm mt-1">{project.price_from > 0 ? 'From ' + formatPrice(project.price_from) : 'TBD'}</p>
                             <div className="flex items-center gap-2 text-xs text-zinc-500">
@@ -5336,7 +5226,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                       <div 
                         key={project.project_id} 
                         onClick={() => setSelectedListing(project)}
-                        className={'flex-shrink-0 w-72 bg-[#141920] rounded-xl p-3 border transition-all snap-start ' + (selectedListing?.project_id === project.project_id ? 'border-orange-500 scale-[1.02]' : 'border-zinc-800')}
+                        className={'flex-shrink-0 w-72 bg-[#ffffff] rounded-xl p-3 border transition-all snap-start ' + (selectedListing?.project_id === project.project_id ? 'border-orange-500 scale-[1.02]' : 'border-zinc-800')}
                       >
                         <div className="flex gap-3">
                           <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700">
@@ -5347,7 +5237,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-white text-sm line-clamp-1">{project.title}</h3>
+                            <h3 className="font-medium text-ink text-sm line-clamp-1">{project.title}</h3>
                             <p className="text-xs text-zinc-500 line-clamp-1">{project.location?.full_name}</p>
                             <p className="text-orange-400 font-bold mt-1">{project.price_from > 0 ? 'From ' + formatPrice(project.price_from) : 'TBD'}</p>
                             <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
@@ -5408,7 +5298,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                             <X className="w-4 h-4" />
                           </button>
                           {saved.completion_status && (
-                            <span className={'absolute top-2 left-2 px-2 py-1 text-white text-xs font-medium rounded-lg ' + 
+                            <span className={'absolute top-2 left-2 px-2 py-1 text-ink text-xs font-medium rounded-lg ' + 
                               (saved.completion_status === 'completed' ? 'bg-green-500/90' : 
                                saved.completion_status === 'under_construction' ? 'bg-orange-500/90' : 'bg-blue-500/90')}>
                               {saved.completion_status === 'completed' ? 'Completato' : 
@@ -5417,7 +5307,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                           )}
                         </div>
                         <div className="space-y-2">
-                          <p className="text-white font-medium line-clamp-1">{project.title || saved.title}</p>
+                          <p className="text-ink font-medium line-clamp-1">{project.title || saved.title}</p>
                           <p className="text-zinc-500 text-sm line-clamp-1">{project.location?.full_name || saved.location_full}</p>
                           <div className="flex items-center justify-between pt-2">
                             <p className="text-orange-400 font-semibold">
@@ -5682,10 +5572,10 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
   if (showFullGallery) {
     return (
       <div className="fixed inset-0 z-[60] bg-zinc-800">
-        <button onClick={() => setShowFullGallery(false)} className="absolute top-4 right-4 z-10 p-3 bg-white/10 backdrop-blur rounded-full text-white hover:bg-white/20">
+        <button onClick={() => setShowFullGallery(false)} className="absolute top-4 right-4 z-10 p-3 bg-white/10 backdrop-blur rounded-full text-ink hover:bg-white/20">
           <X className="w-6 h-6" />
         </button>
-        <div className="absolute top-4 left-4 z-10 px-4 py-2 bg-white/10 backdrop-blur rounded-full text-white text-sm">
+        <div className="absolute top-4 left-4 z-10 px-4 py-2 bg-white/10 backdrop-blur rounded-full text-ink text-sm">
           {activeImageIndex + 1} / {images.length}
         </div>
         
@@ -5699,10 +5589,10 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
         {/* Navigation */}
         {images.length > 1 && (
           <>
-            <button onClick={() => setActiveImageIndex(i => i > 0 ? i - 1 : images.length - 1)} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 backdrop-blur rounded-full text-white hover:bg-white/20">
+            <button onClick={() => setActiveImageIndex(i => i > 0 ? i - 1 : images.length - 1)} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 backdrop-blur rounded-full text-ink hover:bg-white/20">
               <ChevronLeft className="w-6 h-6" />
             </button>
-            <button onClick={() => setActiveImageIndex(i => i < images.length - 1 ? i + 1 : 0)} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 backdrop-blur rounded-full text-white hover:bg-white/20">
+            <button onClick={() => setActiveImageIndex(i => i < images.length - 1 ? i + 1 : 0)} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 backdrop-blur rounded-full text-ink hover:bg-white/20">
               <ChevronRight className="w-6 h-6" />
             </button>
           </>
@@ -5723,7 +5613,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4">
       <div className="absolute inset-0 bg-zinc-800/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#141920] border border-[#2b323d] rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-scaleIn">
+      <div className="relative bg-[#ffffff] border border-[#e4e0d8] rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-scaleIn">
         
         {/* Hero Image Section with Gallery */}
         <div className="relative h-72 md:h-80">
@@ -5741,7 +5631,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           {/* Top controls */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
             <div className="flex gap-2 flex-wrap">
-              <span className={`px-3 py-1.5 ${status.color} text-white text-sm font-medium rounded-full flex items-center gap-1.5 shadow-lg`}>
+              <span className={`px-3 py-1.5 ${status.color} text-ink text-sm font-medium rounded-full flex items-center gap-1.5 shadow-lg`}>
                 <span>{status.icon}</span> {status.text}
               </span>
               {listing.hotness_level >= 80 && (
@@ -5750,7 +5640,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                 </span>
               )}
               {formatDelivery(listing.delivery_date) && (
-                <span className="px-3 py-1.5 bg-zinc-800/60 backdrop-blur text-white text-sm rounded-full">
+                <span className="px-3 py-1.5 bg-zinc-800/60 backdrop-blur text-ink text-sm rounded-full">
                   📅 {formatDelivery(listing.delivery_date)}
                 </span>
               )}
@@ -5759,7 +5649,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               <button onClick={onToggleSave} className={`p-2.5 rounded-full shadow-lg transition-all ${isSaved ? 'bg-orange-500 text-white' : 'bg-zinc-800/60 backdrop-blur text-white hover:bg-orange-500'}`}>
                 <svg className="w-5 h-5" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
               </button>
-              <button onClick={onClose} className="p-2.5 bg-zinc-800/60 backdrop-blur rounded-full text-white hover:bg-zinc-800/80 shadow-lg">
+              <button onClick={onClose} className="p-2.5 bg-zinc-800/60 backdrop-blur rounded-full text-ink hover:bg-zinc-800/80 shadow-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -5771,14 +5661,14 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               {images.slice(0, 8).map((_, idx) => (
                 <button key={idx} onClick={() => setActiveImageIndex(idx)} className={`w-2 h-2 rounded-full transition-all ${idx === activeImageIndex ? 'bg-orange-500 w-6' : 'bg-white/50 hover:bg-white/80'}`} />
               ))}
-              {images.length > 8 && <span className="text-white/50 text-xs ml-1">+{images.length - 8}</span>}
+              {images.length > 8 && <span className="text-ink/50 text-xs ml-1">+{images.length - 8}</span>}
             </div>
           )}
           
           {/* Title section */}
           <div className="absolute bottom-4 left-4 right-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">{listing.title}</h2>
-            <div className="flex items-center gap-2 mt-2 text-white/80">
+            <h2 className="text-2xl md:text-3xl font-bold text-ink drop-shadow-lg">{listing.title}</h2>
+            <div className="flex items-center gap-2 mt-2 text-ink/80">
               <MapPin className="w-4 h-4" />
               <span>{listing.location?.full_name}</span>
             </div>
@@ -5786,7 +5676,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           
           {/* Expand gallery button */}
           {images.length > 1 && (
-            <button onClick={() => setShowFullGallery(true)} className="absolute bottom-4 right-4 px-3 py-1.5 bg-zinc-800/60 backdrop-blur text-white text-sm rounded-full hover:bg-zinc-800/80 flex items-center gap-1.5">
+            <button onClick={() => setShowFullGallery(true)} className="absolute bottom-4 right-4 px-3 py-1.5 bg-zinc-800/60 backdrop-blur text-ink text-sm rounded-full hover:bg-zinc-800/80 flex items-center gap-1.5">
               <Eye className="w-4 h-4" /> {images.length} foto
             </button>
           )}
@@ -5816,7 +5706,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           {/* Price Breakdown by Bedroom Type */}
           {listing.bedrooms?.available?.length > 0 && listing.price_from > 0 && (
             <div className="mb-6 p-4 bg-zinc-700/50/30 border border-zinc-700/50 rounded-xl">
-              <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+              <h4 className="text-ink font-medium mb-3 flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-orange-400" />
                 Prezzi per Tipologia
               </h4>
@@ -5841,26 +5731,26 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-orange-500/20 rounded-xl p-4 text-center">
               <p className="text-orange-400 text-2xl font-bold">{status.icon}</p>
-              <p className="text-white font-medium mt-1">{status.text}</p>
+              <p className="text-ink font-medium mt-1">{status.text}</p>
               <p className="text-zinc-500 text-xs mt-1">Stato progetto</p>
             </div>
             {formatDelivery(listing.delivery_date) && (
               <div className="bg-zinc-700/50/50 rounded-xl p-4 text-center">
                 <p className="text-blue-400 text-2xl font-bold">📅</p>
-                <p className="text-white font-medium mt-1">{formatDelivery(listing.delivery_date)}</p>
+                <p className="text-ink font-medium mt-1">{formatDelivery(listing.delivery_date)}</p>
                 <p className="text-zinc-500 text-xs mt-1">Consegna prevista</p>
               </div>
             )}
             {listing.payment_plans?.plans?.[0]?.summary?.down_payment && (
               <div className="bg-zinc-700/50/50 rounded-xl p-4 text-center">
                 <p className="text-green-400 text-2xl font-bold">{listing.payment_plans.plans[0].summary.down_payment}%</p>
-                <p className="text-white font-medium mt-1">Anticipo</p>
+                <p className="text-ink font-medium mt-1">Anticipo</p>
                 <p className="text-zinc-500 text-xs mt-1">Down payment</p>
               </div>
             )}
             <div className="bg-zinc-700/50/50 rounded-xl p-4 text-center">
               <p className="text-purple-400 text-2xl font-bold">{locationInsights.roi}</p>
-              <p className="text-white font-medium mt-1">ROI Stimato</p>
+              <p className="text-ink font-medium mt-1">ROI Stimato</p>
               <p className="text-zinc-500 text-xs mt-1">Rendimento annuo</p>
             </div>
           </div>
@@ -5877,7 +5767,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               )}
               <div className="flex-1">
                 <p className="text-zinc-400 text-xs uppercase tracking-wider">Developer</p>
-                <p className="text-xl font-semibold text-white">{listing.developer.name}</p>
+                <p className="text-xl font-semibold text-ink">{listing.developer.name}</p>
                 {listing.developer.projects_count && (
                   <p className="text-zinc-500 text-sm">{listing.developer.projects_count} progetti</p>
                 )}
@@ -5892,7 +5782,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           {listing.construction_phase_key === 'under_construction' && (
             <div className="bg-gradient-to-r from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-xl p-4 mb-6">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-white font-semibold flex items-center gap-2">
+                <h3 className="text-ink font-semibold flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-orange-400" /> Stato Avanzamento Lavori
                 </h3>
                 <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs font-medium rounded-full">In Costruzione</span>
@@ -5920,7 +5810,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                         style={{ width: `${progress}%` }}
                       />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-xs font-bold text-white drop-shadow">{progress}%</span>
+                        <span className="text-xs font-bold text-ink drop-shadow">{progress}%</span>
                       </div>
                     </div>
                     <div className="flex justify-between text-xs text-zinc-500">
@@ -5955,7 +5845,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/5 border border-blue-500/20 rounded-xl p-4 mb-6">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <h3 className="text-white font-semibold flex items-center gap-2">
+                <h3 className="text-ink font-semibold flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-blue-400" /> Analisi Location
                 </h3>
                 <p className="text-zinc-400 text-sm">{locationInsights.name}</p>
@@ -5981,7 +5871,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           {/* Payment Plans */}
           {listing.payment_plans?.plans?.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <h3 className="text-ink font-semibold mb-3 flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-green-400" /> Piano di Pagamento
               </h3>
               <div className="space-y-3">
@@ -6017,7 +5907,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           {/* Image Gallery Thumbnails */}
           {images.length > 1 && (
             <div className="mb-6">
-              <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <h3 className="text-ink font-semibold mb-3 flex items-center gap-2">
                 <Eye className="w-4 h-4 text-orange-400" /> Galleria
                 <span className="text-zinc-500 text-sm font-normal">({images.length} immagini)</span>
               </h3>
@@ -6026,7 +5916,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                   <button key={idx} onClick={() => { setActiveImageIndex(idx); setShowFullGallery(true); }} className="relative h-20 rounded-lg overflow-hidden group">
                     <img src={img.small_image_url || img.medium_image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                     <div className="absolute inset-0 bg-zinc-800/0 group-hover:bg-zinc-800/30 transition-colors flex items-center justify-center">
-                      <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <Eye className="w-5 h-5 text-ink opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </button>
                 ))}
@@ -6099,7 +5989,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
             <div className="flex items-center justify-between p-4 border-b border-zinc-800">
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-blue-400" />
-                <span className="text-white font-medium">Brochure - {listing.title}</span>
+                <span className="text-ink font-medium">Brochure - {listing.title}</span>
               </div>
               <div className="flex items-center gap-2">
                 <a 
@@ -6113,7 +6003,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                 </a>
                 <button 
                   onClick={() => setShowBrochureViewer(false)} 
-                  className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                  className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-ink transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -6139,11 +6029,11 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
             <div className="flex items-center justify-between p-4 border-b border-zinc-800">
               <div className="flex items-center gap-3">
                 <svg className="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                <span className="text-white font-medium">Video - {listing.title}</span>
+                <span className="text-ink font-medium">Video - {listing.title}</span>
               </div>
               <button 
                 onClick={() => setShowVideoPlayer(false)} 
-                className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-ink transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -6218,10 +6108,10 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-zinc-800/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#141920] border border-[#2b323d] rounded-2xl w-full max-w-md animate-scaleIn">
+      <div className="relative bg-[#ffffff] border border-[#e4e0d8] rounded-2xl w-full max-w-md animate-scaleIn">
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-          <h3 className="text-lg font-semibold text-white">Crea Lead da Annuncio</h3>
-          <button onClick={onClose} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+          <h3 className="text-lg font-semibold text-ink">Crea Lead da Annuncio</h3>
+          <button onClick={onClose} className="text-zinc-400 hover:text-ink"><X className="w-5 h-5" /></button>
         </div>
         
         <div className="p-4 space-y-4">
@@ -6229,7 +6119,7 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
           <div className="flex gap-3 p-3 bg-zinc-700/50/50 rounded-xl">
             {listing.images?.[0]?.small_image_url && <img src={listing.images[0].small_image_url} alt="" className="w-16 h-16 rounded-lg object-cover" />}
             <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium line-clamp-1">{listing.title}</p>
+              <p className="text-ink text-sm font-medium line-clamp-1">{listing.title}</p>
               <p className="text-zinc-500 text-xs line-clamp-1">{listing.location?.path_name}</p>
               <p className="text-orange-400 text-sm font-medium mt-1">AED {parseFloat(listing.price).toLocaleString()}</p>
             </div>
@@ -6238,7 +6128,7 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
           {/* Client Selection */}
           <div>
             <label className="text-sm text-zinc-400 mb-2 block">Associa a Cliente <span className="text-red-400">*</span></label>
-            <input type="text" placeholder="Cerca cliente o digita nome per crearne uno nuovo..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setSelectedCliente(null); setCreateNew(false); }} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-xl px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none" />
+            <input type="text" placeholder="Cerca cliente o digita nome per crearne uno nuovo..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setSelectedCliente(null); setCreateNew(false); }} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none" />
             
             {searchQuery && !createNew && !selectedCliente && (
               <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
@@ -6258,7 +6148,7 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
               <div className="mt-2 flex items-center gap-2 p-2 bg-emerald-500/20 rounded-lg">
                 <Avatar nome={selectedCliente.nome} cognome={selectedCliente.cognome} size="xs" />
                 <span className="text-sm text-emerald-400">{selectedCliente.nome} {selectedCliente.cognome}</span>
-                <button onClick={() => { setSelectedCliente(null); setSearchQuery(''); }} className="ml-auto text-zinc-400 hover:text-white"><X className="w-4 h-4" /></button>
+                <button onClick={() => { setSelectedCliente(null); setSearchQuery(''); }} className="ml-auto text-zinc-400 hover:text-ink"><X className="w-4 h-4" /></button>
               </div>
             )}
           </div>
@@ -6268,11 +6158,11 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
             <div className="space-y-3 p-3 bg-zinc-700/30 rounded-xl border border-orange-500/30">
               <p className="text-sm text-orange-400 font-medium">Nuovo Cliente</p>
               <div className="grid grid-cols-2 gap-2">
-                <input type="text" placeholder="Nome *" value={newCliente.nome} onChange={(e) => setNewCliente(n => ({ ...n, nome: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
-                <input type="text" placeholder="Cognome" value={newCliente.cognome} onChange={(e) => setNewCliente(n => ({ ...n, cognome: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+                <input type="text" placeholder="Nome *" value={newCliente.nome} onChange={(e) => setNewCliente(n => ({ ...n, nome: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm" />
+                <input type="text" placeholder="Cognome" value={newCliente.cognome} onChange={(e) => setNewCliente(n => ({ ...n, cognome: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm" />
               </div>
-              <input type="tel" placeholder="Telefono" value={newCliente.telefono} onChange={(e) => setNewCliente(n => ({ ...n, telefono: e.target.value }))} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
-              <input type="email" placeholder="Email" value={newCliente.email} onChange={(e) => setNewCliente(n => ({ ...n, email: e.target.value }))} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm" />
+              <input type="tel" placeholder="Telefono" value={newCliente.telefono} onChange={(e) => setNewCliente(n => ({ ...n, telefono: e.target.value }))} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm" />
+              <input type="email" placeholder="Email" value={newCliente.email} onChange={(e) => setNewCliente(n => ({ ...n, email: e.target.value }))} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm" />
             </div>
           )}
           
@@ -6302,8 +6192,8 @@ function LoginForm({ onLogin, loading }) {
       <div>
         <label className="block text-sm text-zinc-400 mb-2">Password</label>
         <div className="relative">
-          <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 pr-12 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3d4858] transition-all" />
-          <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors">
+          <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-4 py-3 pr-12 text-ink text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#d8d3c9] transition-all" />
+          <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-ink transition-colors">
             {showPwd ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
         </div>
@@ -6423,7 +6313,7 @@ function LeadDetailSheet({
             <div className="flex items-center gap-3 mb-3">
               <Avatar nome={cliente.nome} cognome={cliente.cognome} />
               <div className="min-w-0">
-                <p className="text-white font-medium truncate">{cliente.nome} {cliente.cognome}</p>
+                <p className="text-ink font-medium truncate">{cliente.nome} {cliente.cognome}</p>
                 <p className="text-zinc-500 text-sm truncate">
                   {cliente.telefono}
                   {sale?.fonte ? ` • ${sale.fonte}` : ''}
@@ -6439,7 +6329,7 @@ function LeadDetailSheet({
           {schede.map(s => (
             <button key={s.id} onClick={() => setScheda(s.id)}
                     className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-all ${
-                      scheda === s.id ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'
+                      scheda === s.id ? 'bg-zinc-700 text-ink' : 'text-zinc-400 hover:text-ink'
                     }`}>
               {s.label}
             </button>
@@ -6454,7 +6344,7 @@ function LeadDetailSheet({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-zinc-400 text-xs">Prossimo contatto</p>
-                    <p className="text-white font-medium mt-0.5">
+                    <p className="text-ink font-medium mt-0.5">
                       {new Date(prossimo.data_reminder).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
                       {prossimo.ora_reminder ? ` alle ${String(prossimo.ora_reminder).slice(0, 5)}` : ''}
                     </p>
@@ -6479,7 +6369,7 @@ function LeadDetailSheet({
               <div className="flex gap-2">
                 {[1, 3, 7, 14].map(g => (
                   <button key={g} onClick={() => onProgrammaFollowUp?.(sale.id, cliente?.id, g, 'call')}
-                          className="flex-1 py-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-700 text-zinc-300 hover:text-white text-sm transition-colors">
+                          className="flex-1 py-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-700 text-zinc-300 hover:text-ink text-sm transition-colors">
                     {g === 1 ? 'Domani' : `${g} gg`}
                   </button>
                 ))}
@@ -6493,7 +6383,7 @@ function LeadDetailSheet({
                 {Object.entries(leadLib.TEMPERATURE).map(([id, t]) => (
                   <button key={id} onClick={() => onUpdateSale(sale.id, { temperatura: id })}
                           className={`flex-1 py-2.5 rounded-xl text-sm transition-all ${
-                            sale?.temperatura === id ? 'text-white font-medium' : 'bg-zinc-800/60 text-zinc-400 hover:text-white'
+                            sale?.temperatura === id ? 'text-ink font-medium' : 'bg-zinc-800/60 text-zinc-400 hover:text-ink'
                           }`}
                           style={sale?.temperatura === id ? { background: `${t.colore}26`, color: t.colore } : {}}>
                     {t.emoji} {t.label}
@@ -6508,7 +6398,7 @@ function LeadDetailSheet({
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 {pipelineStati.slice(0, -1).map(st => (
                   <button key={st} onClick={() => { onUpdateSale(sale.id, { stato: st }); }}
-                          className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${sale?.stato === st ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+                          className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${sale?.stato === st ? 'text-ink' : 'text-zinc-500 hover:text-ink'}`}
                           style={sale?.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#1b212b' }}>
                     {pipelineLabels[st] || st}
                   </button>
@@ -6522,7 +6412,7 @@ function LeadDetailSheet({
                 <p className="text-zinc-500 text-xs mb-2">Assegnato a</p>
                 <select value={sale?.assegnato_a || ''}
                         onChange={(e) => onAssegna?.([sale.id], e.target.value)}
-                        className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3d4858]">
+                        className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-4 py-3 text-ink text-sm focus:outline-none focus:border-[#d8d3c9]">
                   <option value="">Nessuno</option>
                   {agenti.map(a => <option key={a.nome} value={a.nome}>{a.nome}</option>)}
                 </select>
@@ -6542,7 +6432,7 @@ function LeadDetailSheet({
                 <Card padding="p-4" className="border-red-500/25 bg-red-500/5 space-y-3">
                   <p className="text-red-300 text-sm">Perche' si e' perso?</p>
                   <select value={motivoPerso} onChange={(e) => setMotivoPerso(e.target.value)}
-                          className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-3 py-2 text-white text-sm">
+                          className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm">
                     {motiviPerdita.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                   <div className="flex gap-2">
@@ -6565,7 +6455,7 @@ function LeadDetailSheet({
           <div className="space-y-3">
             {!showActivityForm ? (
               <button onClick={() => setShowActivityForm(true)}
-                      className="w-full py-2.5 border-2 border-dashed border-zinc-700 rounded-xl text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors flex items-center justify-center gap-2">
+                      className="w-full py-2.5 border-2 border-dashed border-zinc-700 rounded-xl text-zinc-400 hover:text-ink hover:border-zinc-600 transition-colors flex items-center justify-center gap-2">
                 <Plus className="w-4 h-4" /> Registra attivita
               </button>
             ) : (
@@ -6573,14 +6463,14 @@ function LeadDetailSheet({
                 <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
                   {leadLib.TIPI_ATTIVITA.map(t => (
                     <button key={t.id} onClick={() => setActivityForm({ ...activityForm, tipo: t.id })}
-                            className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${activityForm.tipo === t.id ? 'bg-blue-500 text-white' : 'bg-zinc-700/50 text-zinc-400 hover:text-white'}`}>
+                            className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${activityForm.tipo === t.id ? 'bg-blue-500 text-white' : 'bg-zinc-700/50 text-zinc-400 hover:text-ink'}`}>
                       {t.icona} {t.label}
                     </button>
                   ))}
                 </div>
                 <textarea value={activityForm.contenuto} onChange={(e) => setActivityForm({ ...activityForm, contenuto: e.target.value })}
                           placeholder="Com'e' andata?" rows={3}
-                          className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm resize-none" />
+                          className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm resize-none" />
                 <div className="flex gap-2 mt-3">
                   <Button variant="secondary" onClick={() => setShowActivityForm(false)} className="flex-1">Annulla</Button>
                   <Button onClick={handleAddActivity} className="flex-1" disabled={!activityForm.contenuto.trim()}>Salva</Button>
@@ -6598,7 +6488,7 @@ function LeadDetailSheet({
                         <div className="flex items-start gap-2 min-w-0">
                           <span className="text-lg shrink-0">{tipo.icona}</span>
                           <div className="min-w-0">
-                            <p className="text-white text-sm break-words">{a.contenuto}</p>
+                            <p className="text-ink text-sm break-words">{a.contenuto}</p>
                             <p className="text-zinc-500 text-xs mt-1">{a.created_by} • {fmtDateTime(a.created_at)}</p>
                           </div>
                         </div>
@@ -6619,7 +6509,7 @@ function LeadDetailSheet({
             <div className="pt-2 border-t border-zinc-800">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-zinc-500 text-xs">Follow-up programmati ({followUpAperti.length})</p>
-                <button onClick={() => setShowFollowUpForm(!showFollowUpForm)} className="text-zinc-400 hover:text-white text-xs">
+                <button onClick={() => setShowFollowUpForm(!showFollowUpForm)} className="text-zinc-400 hover:text-ink text-xs">
                   {showFollowUpForm ? 'Chiudi' : 'Data precisa'}
                 </button>
               </div>
@@ -6630,17 +6520,17 @@ function LeadDetailSheet({
                     <div>
                       <label className="text-zinc-500 text-xs">Data</label>
                       <input type="date" value={followUpForm.data_reminder} onChange={(e) => setFollowUpForm({ ...followUpForm, data_reminder: e.target.value })}
-                             className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                             className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm mt-1" />
                     </div>
                     <div>
                       <label className="text-zinc-500 text-xs">Ora</label>
                       <input type="time" value={followUpForm.ora_reminder} onChange={(e) => setFollowUpForm({ ...followUpForm, ora_reminder: e.target.value })}
-                             className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                             className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm mt-1" />
                     </div>
                   </div>
                   <textarea value={followUpForm.nota} onChange={(e) => setFollowUpForm({ ...followUpForm, nota: e.target.value })}
                             placeholder="Cosa devi fare" rows={2}
-                            className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm resize-none" />
+                            className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm resize-none" />
                   <Button onClick={handleAddFollowUp} className="w-full mt-3" disabled={!followUpForm.data_reminder}>Programma</Button>
                 </Card>
               )}
@@ -6658,7 +6548,7 @@ function LeadDetailSheet({
                         : 'bg-zinc-800/50 border-zinc-800'}`}>
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className={f.completato ? 'text-zinc-500 line-through' : scaduto ? 'text-red-400' : 'text-white'}>
+                            <p className={f.completato ? 'text-zinc-500 line-through' : scaduto ? 'text-red-400' : 'text-ink'}>
                               {new Date(f.data_reminder).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
                               {f.ora_reminder ? ` alle ${String(f.ora_reminder).slice(0, 5)}` : ''}
                               {scaduto && ' — in ritardo'}
@@ -6696,7 +6586,7 @@ function LeadDetailSheet({
           <div className="space-y-4">
             <Card className="border-amber-500/20 bg-amber-500/5">
               <p className="text-zinc-400 text-sm">Valore</p>
-              <p className="text-2xl font-semibold text-white mt-1">{sale?.valore > 0 ? `${fmt(sale.valore)} AED` : 'Da definire'}</p>
+              <p className="text-2xl font-semibold text-ink mt-1">{sale?.valore > 0 ? `${fmt(sale.valore)} AED` : 'Da definire'}</p>
               {mc > 0 && <p className="text-emerald-400 text-sm mt-1">La tua commissione: {fmt(mc)} AED {sale?.pagato ? '(pagata)' : ''}</p>}
             </Card>
 
@@ -6706,24 +6596,24 @@ function LeadDetailSheet({
                   <div>
                     <label className="text-zinc-500 text-xs">Progetto</label>
                     <input type="text" value={editForm.progetto} onChange={(e) => setEditForm({ ...editForm, progetto: e.target.value })}
-                           className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                           className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm mt-1" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-zinc-500 text-xs">Developer</label>
                       <input type="text" value={editForm.developer} onChange={(e) => setEditForm({ ...editForm, developer: e.target.value })}
-                             className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                             className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm mt-1" />
                     </div>
                     <div>
                       <label className="text-zinc-500 text-xs">Zona</label>
                       <input type="text" value={editForm.zona} onChange={(e) => setEditForm({ ...editForm, zona: e.target.value })}
-                             className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                             className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm mt-1" />
                     </div>
                   </div>
                   <div>
                     <label className="text-zinc-500 text-xs">Valore (AED)</label>
                     <input type="number" value={editForm.valore} onChange={(e) => setEditForm({ ...editForm, valore: e.target.value })}
-                           className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+                           className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm mt-1" />
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4">
@@ -6736,17 +6626,17 @@ function LeadDetailSheet({
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-zinc-500 text-xs mb-1">Immobile</p>
-                    <p className="text-white font-medium">{sale?.progetto || 'N/A'}</p>
+                    <p className="text-ink font-medium">{sale?.progetto || 'N/A'}</p>
                   </div>
-                  <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg bg-zinc-700/50 text-zinc-400 hover:text-white">
+                  <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg bg-zinc-700/50 text-zinc-400 hover:text-ink">
                     <Edit2 className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="grid grid-cols-2 gap-3 mt-3">
-                  <div><p className="text-zinc-500 text-xs">Developer</p><p className="text-white text-sm">{sale?.developer || 'N/A'}</p></div>
-                  <div><p className="text-zinc-500 text-xs">Zona</p><p className="text-white text-sm">{sale?.zona || 'N/A'}</p></div>
-                  <div><p className="text-zinc-500 text-xs">Agente</p><p className="text-white text-sm">{sale?.assegnato_a || sale?.agente || 'Nessuno'}</p></div>
-                  <div><p className="text-zinc-500 text-xs">Fonte</p><p className="text-white text-sm">{sale?.fonte || 'N/A'}</p></div>
+                  <div><p className="text-zinc-500 text-xs">Developer</p><p className="text-ink text-sm">{sale?.developer || 'N/A'}</p></div>
+                  <div><p className="text-zinc-500 text-xs">Zona</p><p className="text-ink text-sm">{sale?.zona || 'N/A'}</p></div>
+                  <div><p className="text-zinc-500 text-xs">Agente</p><p className="text-ink text-sm">{sale?.assegnato_a || sale?.agente || 'Nessuno'}</p></div>
+                  <div><p className="text-zinc-500 text-xs">Fonte</p><p className="text-ink text-sm">{sale?.fonte || 'N/A'}</p></div>
                 </div>
                 {sale?.note && (
                   <div className="mt-3 pt-3 border-t border-zinc-800">
@@ -6777,7 +6667,7 @@ function ConvertModal({ sale, onConvert, onCancel }) {
     <Modal isOpen={!!sale} onClose={onCancel} title="🎉 Registra Vendita" size="sm">
       <div className="space-y-4">
         <Card padding="p-3" className="bg-zinc-700/50/50">
-          <p className="text-white font-medium">{sale?.progetto}</p>
+          <p className="text-ink font-medium">{sale?.progetto}</p>
           <p className="text-zinc-500 text-sm">{sale?.developer} • {sale?.zona}</p>
         </Card>
         <Input label="Valore finale (AED)" type="number" value={value} onChange={(e) => setValue(e.target.value)} placeholder="es. 1500000" autoFocus />
@@ -6810,14 +6700,14 @@ function NotificationsPanel({ tasks, unreadIds, onClose, onGoToTask, recentSales
                   <DollarSign className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-white text-sm font-medium">Nuova {s.stato === 'venduto' ? 'Vendita' : 'Lead'}</p>
+                  <p className="text-ink text-sm font-medium">Nuova {s.stato === 'venduto' ? 'Vendita' : 'Lead'}</p>
                   <p className="text-zinc-400 text-xs">{s.progetto} • {s.agente || s.segnalatore}</p>
                   <p className="text-emerald-400 text-xs font-medium mt-1">{fmt(s.valore)} AED</p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <span className="text-zinc-500 text-xs">{fmtShort(s.created_at)}</span>
                   {unreadIds.includes('sale_' + s.id) && (
-                    <button onClick={(e) => { e.stopPropagation(); onMarkAsRead('sale_' + s.id); }} className="text-xs text-zinc-500 hover:text-white">
+                    <button onClick={(e) => { e.stopPropagation(); onMarkAsRead('sale_' + s.id); }} className="text-xs text-zinc-500 hover:text-ink">
                       <Check className="w-4 h-4" />
                     </button>
                   )}
@@ -6833,7 +6723,7 @@ function NotificationsPanel({ tasks, unreadIds, onClose, onGoToTask, recentSales
                 <div className="flex items-start gap-3">
                   <div className={`w-2 h-2 rounded-full mt-1.5 ${isOverdue(t.scadenza) ? 'bg-red-500' : 'bg-amber-500'}`} />
                   <div className="flex-1 cursor-pointer" onClick={onGoToTask}>
-                    <p className="text-white text-sm font-medium">{t.titolo}</p>
+                    <p className="text-ink text-sm font-medium">{t.titolo}</p>
                     <p className={`text-xs ${isOverdue(t.scadenza) ? 'text-red-400' : 'text-zinc-500'}`}>
                       {t.scadenza ? fmtDateTime(t.scadenza) : 'Senza scadenza'}
                       {isOverdue(t.scadenza) && ' • Scaduto!'}
@@ -6843,7 +6733,7 @@ function NotificationsPanel({ tasks, unreadIds, onClose, onGoToTask, recentSales
                   <div className="flex items-center gap-2">
                     <StatusBadge status={t.priorita} type="priority" />
                     {isUnread && (
-                      <button onClick={(e) => { e.stopPropagation(); onMarkAsRead(taskNotifId); }} className="p-1 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded transition-colors" title="Segna come letta">
+                      <button onClick={(e) => { e.stopPropagation(); onMarkAsRead(taskNotifId); }} className="p-1 text-zinc-500 hover:text-ink hover:bg-zinc-700 rounded transition-colors" title="Segna come letta">
                         <Check className="w-4 h-4" />
                       </button>
                     )}
@@ -6909,11 +6799,11 @@ function NoteModal({ task, onSave, onClose }) {
     <Modal isOpen onClose={onClose} title="Aggiungi Nota" size="sm">
       <div className="space-y-4">
         <Card padding="p-3" className="bg-zinc-700/50/50">
-          <p className="text-white font-medium">{task?.titolo}</p>
+          <p className="text-ink font-medium">{task?.titolo}</p>
         </Card>
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Nota</label>
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Scrivi una nota..." className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3d4858] h-24 resize-none" autoFocus />
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Scrivi una nota..." className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-4 py-3 text-ink text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#d8d3c9] h-24 resize-none" autoFocus />
         </div>
         <p className="text-zinc-600 text-xs">L'admin riceverà una notifica email</p>
         <div className="flex gap-3">
@@ -6959,7 +6849,7 @@ function ClienteModal({ cliente, onSave, onClose }) {
         </div>
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Note</label>
-          <textarea value={form.note || ''} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3d4858]" />
+          <textarea value={form.note || ''} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-4 py-3 text-ink text-sm h-20 resize-none focus:outline-none focus:border-[#d8d3c9]" />
         </div>
         <div className="flex gap-3 pt-2">
           <Button variant="secondary" onClick={onClose} className="flex-1">Annulla</Button>
@@ -6985,7 +6875,7 @@ function TaskModal({ task, clienti, users, onSave, onClose }) {
         <Input label="Titolo *" value={form.titolo} onChange={(e) => setForm({ ...form, titolo: e.target.value })} autoFocus />
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Descrizione</label>
-          <textarea value={form.descrizione || ''} onChange={(e) => setForm({ ...form, descrizione: e.target.value })} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm h-20 resize-none focus:outline-none focus:border-[#3d4858]" />
+          <textarea value={form.descrizione || ''} onChange={(e) => setForm({ ...form, descrizione: e.target.value })} className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-4 py-3 text-ink text-sm h-20 resize-none focus:outline-none focus:border-[#d8d3c9]" />
         </div>
         <Input label="Scadenza" type="datetime-local" value={form.scadenza ? form.scadenza.slice(0, 16) : ''} onChange={(e) => setForm({ ...form, scadenza: e.target.value ? new Date(e.target.value).toISOString() : '' })} />
         <div>
@@ -7077,8 +6967,8 @@ function UserModal({ user, onSave, onClose }) {
             Copiale adesso: nel database viene salvato solo l'hash, quindi questa password non sara' piu' recuperabile.
           </div>
           <Card padding="p-4" className="space-y-2">
-            <div className="flex justify-between"><span className="text-zinc-500 text-sm">Portale</span><span className="text-white text-sm">{getBaseUrl().replace('https://', '')}</span></div>
-            <div className="flex justify-between"><span className="text-zinc-500 text-sm">Utente</span><span className="text-white text-sm font-medium">{daConsegnare.username}</span></div>
+            <div className="flex justify-between"><span className="text-zinc-500 text-sm">Portale</span><span className="text-ink text-sm">{getBaseUrl().replace('https://', '')}</span></div>
+            <div className="flex justify-between"><span className="text-zinc-500 text-sm">Utente</span><span className="text-ink text-sm font-medium">{daConsegnare.username}</span></div>
             <div className="flex justify-between"><span className="text-zinc-500 text-sm">Password</span><span className="text-oro-400 text-sm font-mono font-medium">{daConsegnare.password}</span></div>
           </Card>
           <p className="text-zinc-500 text-sm">
@@ -7117,7 +7007,7 @@ function UserModal({ user, onSave, onClose }) {
               value={form.password || ''}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               placeholder={user ? 'Invariata' : ''}
-              className="flex-1 bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm font-mono placeholder:text-zinc-600 focus:outline-none focus:border-[#3d4858] transition-all"
+              className="flex-1 bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-4 py-3 text-ink text-sm font-mono placeholder:text-zinc-600 focus:outline-none focus:border-[#d8d3c9] transition-all"
             />
             <Button variant="secondary" icon={RefreshCw} onClick={() => setForm({ ...form, password: auth.generaPassword() })} title="Genera">Genera</Button>
           </div>
@@ -7148,7 +7038,7 @@ function UserModal({ user, onSave, onClose }) {
                 value={form.commission_pct ?? ''}
                 onChange={(e) => setForm({ ...form, commission_pct: e.target.value })}
                 placeholder="70"
-                className="w-28 bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3d4858]"
+                className="w-28 bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-4 py-3 text-ink text-sm focus:outline-none focus:border-[#d8d3c9]"
               />
               <span className="text-zinc-500 text-sm">% della commissione sulla vendita (vuoto = 70%, lo standard)</span>
             </div>
@@ -7196,10 +7086,10 @@ function ClientSearch({ clienti, onSelect, onCreateNew, selectedClient }) {
         <div className="flex items-center gap-3">
           <Avatar nome={selectedClient.nome} cognome={selectedClient.cognome} size="sm" />
           <div className="flex-1">
-            <p className="text-white font-medium">{selectedClient.nome} {selectedClient.cognome}</p>
+            <p className="text-ink font-medium">{selectedClient.nome} {selectedClient.cognome}</p>
             <p className="text-emerald-400 text-sm">{selectedClient.telefono}</p>
           </div>
-          <button onClick={() => onSelect(null)} className="text-zinc-500 hover:text-white"><X className="w-5 h-5" /></button>
+          <button onClick={() => onSelect(null)} className="text-zinc-500 hover:text-ink"><X className="w-5 h-5" /></button>
         </div>
       </Card>
     );
@@ -7209,16 +7099,16 @@ function ClientSearch({ clienti, onSelect, onCreateNew, selectedClient }) {
     <div className="relative">
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-        <input type="text" placeholder="Cerca cliente..." value={search} onChange={(e) => { setSearch(e.target.value); setShow(true); }} onFocus={() => setShow(true)} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#3d4858]" />
+        <input type="text" placeholder="Cerca cliente..." value={search} onChange={(e) => { setSearch(e.target.value); setShow(true); }} onFocus={() => setShow(true)} className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl pl-10 pr-4 py-3 text-ink text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#d8d3c9]" />
       </div>
       
       {show && search.length >= 2 && (
-        <div className="absolute z-10 w-full mt-2 bg-[#141920] border border-[#2b323d] rounded-xl overflow-hidden shadow-xl">
+        <div className="absolute z-10 w-full mt-2 bg-[#ffffff] border border-[#e4e0d8] rounded-xl overflow-hidden shadow-xl">
           {filtered.map(c => (
-            <button key={c.id} onClick={() => { onSelect(c); setSearch(''); setShow(false); }} className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-[#2b323d] last:border-0 flex items-center gap-3 transition-colors">
+            <button key={c.id} onClick={() => { onSelect(c); setSearch(''); setShow(false); }} className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-[#e4e0d8] last:border-0 flex items-center gap-3 transition-colors">
               <Avatar nome={c.nome} cognome={c.cognome} size="sm" />
               <div>
-                <p className="text-white text-sm">{c.nome} {c.cognome}</p>
+                <p className="text-ink text-sm">{c.nome} {c.cognome}</p>
                 <p className="text-zinc-500 text-xs">{c.telefono}</p>
               </div>
             </button>
@@ -7231,7 +7121,7 @@ function ClientSearch({ clienti, onSelect, onCreateNew, selectedClient }) {
       )}
       
       {!search && (
-        <button onClick={onCreateNew} className="w-full mt-3 border border-dashed border-[#3d4858] rounded-xl py-3 text-zinc-500 text-sm flex items-center justify-center gap-2 hover:border-amber-500 hover:text-amber-400 transition-colors">
+        <button onClick={onCreateNew} className="w-full mt-3 border border-dashed border-[#d8d3c9] rounded-xl py-3 text-zinc-500 text-sm flex items-center justify-center gap-2 hover:border-amber-500 hover:text-amber-400 transition-colors">
           <UserPlus className="w-4 h-4" /> Crea nuovo cliente
         </button>
       )}
@@ -7257,12 +7147,12 @@ function SelectWithOther({ value, onChange, options, placeholder, label }) {
       <select value={showCustom ? 'Altro' : value} onChange={(e) => {
         if (e.target.value === 'Altro') { setShowCustom(true); setCustomValue(''); onChange(''); }
         else { setShowCustom(false); onChange(e.target.value); }
-      }} className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#3d4858] appearance-none">
+      }} className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-4 py-3 text-ink text-sm focus:outline-none focus:border-[#d8d3c9] appearance-none">
         <option value="">{placeholder}</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
       {showCustom && (
-        <input type="text" value={customValue} onChange={(e) => { setCustomValue(e.target.value); onChange(e.target.value); }} placeholder="Specifica..." className="w-full bg-[#141920] border border-[#2b323d] rounded-xl px-4 py-3 text-white text-sm mt-2 focus:outline-none focus:border-[#3d4858]" autoFocus />
+        <input type="text" value={customValue} onChange={(e) => { setCustomValue(e.target.value); onChange(e.target.value); }} placeholder="Specifica..." className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-4 py-3 text-ink text-sm mt-2 focus:outline-none focus:border-[#d8d3c9]" autoFocus />
       )}
     </div>
   );
@@ -7299,13 +7189,13 @@ function LeadForm({ type, userName, clienti, onSubmit }) {
     <form onSubmit={submit} className="space-y-6">
       {/* Cliente */}
       <Card>
-        <h4 className="text-white font-medium mb-4 flex items-center gap-2">
+        <h4 className="text-ink font-medium mb-4 flex items-center gap-2">
           <User className="w-4 h-4 text-amber-400" /> Cliente
         </h4>
         <ClientSearch clienti={clienti} selectedClient={selectedClient} onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }} onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }} />
         
         {showNewClient && !selectedClient && (
-          <div className="mt-4 pt-4 border-t border-[#2b323d] space-y-3">
+          <div className="mt-4 pt-4 border-t border-[#e4e0d8] space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Input placeholder="Nome *" value={form.cliente_nome} onChange={(e) => setForm({ ...form, cliente_nome: e.target.value })} />
               <Input placeholder="Cognome" value={form.cliente_cognome} onChange={(e) => setForm({ ...form, cliente_cognome: e.target.value })} />
@@ -7324,7 +7214,7 @@ function LeadForm({ type, userName, clienti, onSubmit }) {
 
       {/* Immobile */}
       <Card>
-        <h4 className="text-white font-medium mb-4 flex items-center gap-2">
+        <h4 className="text-ink font-medium mb-4 flex items-center gap-2">
           <Building2 className="w-4 h-4 text-blue-400" /> Immobile
         </h4>
         <div className="space-y-3">
@@ -7339,7 +7229,7 @@ function LeadForm({ type, userName, clienti, onSubmit }) {
 
       {/* Stato */}
       <Card>
-        <h4 className="text-white font-medium mb-4">Stato iniziale</h4>
+        <h4 className="text-ink font-medium mb-4">Stato iniziale</h4>
         <div className="flex flex-wrap gap-2">
           {pipelineStati.slice(0, 4).map(st => (
             <button key={st} type="button" onClick={() => setForm({ ...form, stato: st })} className={`px-4 py-2 rounded-xl text-sm transition-all ${form.stato === st ? 'text-white' : 'text-zinc-500'}`} style={form.stato === st ? { background: theme.status[st]?.bg, color: theme.status[st]?.color } : { background: '#2b323d' }}>
@@ -7389,13 +7279,13 @@ function SaleForm({ type, userName, clienti, onSubmit }) {
     <form onSubmit={submit} className="space-y-6">
       {/* Cliente */}
       <Card>
-        <h4 className="text-white font-medium mb-4 flex items-center gap-2">
+        <h4 className="text-ink font-medium mb-4 flex items-center gap-2">
           <User className="w-4 h-4 text-amber-400" /> Cliente Acquirente
         </h4>
         <ClientSearch clienti={clienti} selectedClient={selectedClient} onSelect={(c) => { setSelectedClient(c); setShowNewClient(false); }} onCreateNew={() => { setSelectedClient(null); setShowNewClient(true); }} />
         
         {showNewClient && !selectedClient && (
-          <div className="mt-4 pt-4 border-t border-[#2b323d] space-y-3">
+          <div className="mt-4 pt-4 border-t border-[#e4e0d8] space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Input placeholder="Nome *" value={form.nuovo_cliente_nome} onChange={(e) => setForm({ ...form, nuovo_cliente_nome: e.target.value })} />
               <Input placeholder="Cognome" value={form.nuovo_cliente_cognome} onChange={(e) => setForm({ ...form, nuovo_cliente_cognome: e.target.value })} />
@@ -7410,7 +7300,7 @@ function SaleForm({ type, userName, clienti, onSubmit }) {
 
       {/* Vendita */}
       <Card>
-        <h4 className="text-white font-medium mb-4 flex items-center gap-2">
+        <h4 className="text-ink font-medium mb-4 flex items-center gap-2">
           <DollarSign className="w-4 h-4 text-emerald-400" /> Dettagli Vendita
         </h4>
         <div className="space-y-3">
@@ -7546,20 +7436,20 @@ function ROICalculator() {
     <div className="space-y-4">
       {/* Emirate Filter */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        <button onClick={()=>setEmirate('all')} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate==='all'?'bg-emerald-500 text-white':'bg-[#2b323d] text-zinc-400 hover:bg-[#475569]'}`}>🇦🇪 Tutti</button>
+        <button onClick={()=>setEmirate('all')} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate==='all'?'bg-emerald-500 text-white':'bg-[#f0ede6] text-zinc-400 hover:bg-[#d8d3c9]'}`}>🇦🇪 Tutti</button>
         {['Dubai','Abu Dhabi','RAK','Sharjah','Ajman','UAQ'].map(em=>(
-          <button key={em} onClick={()=>setEmirate(em)} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate===em?'bg-emerald-500 text-white':'bg-[#2b323d] text-zinc-400 hover:bg-[#475569]'}`}>
+          <button key={em} onClick={()=>setEmirate(em)} className={`py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${emirate===em?'bg-emerald-500 text-white':'bg-[#f0ede6] text-zinc-400 hover:bg-[#d8d3c9]'}`}>
             {em==='RAK'?'🏝️':em==='Dubai'?'🌆':em==='Abu Dhabi'?'🏛️':em==='Sharjah'?'📚':em==='Ajman'?'🏠':'⛵'} {em}
           </button>
         ))}
       </div>
 
       {/* Inputs */}
-      <div className="bg-[#141920] rounded-xl p-4 border border-[#2b323d]">
+      <div className="bg-[#ffffff] rounded-xl p-4 border border-[#e4e0d8]">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <div className="col-span-2">
             <label className="text-zinc-500 text-xs block mb-1">Zona</label>
-            <select value={z} onChange={e=>setZ(e.target.value)} className="w-full bg-[#2b323d] border-none rounded-lg px-3 py-2 text-sm text-white">
+            <select value={z} onChange={e=>setZ(e.target.value)} className="w-full bg-[#f0ede6] border-none rounded-lg px-3 py-2 text-sm text-ink">
               {Object.entries(filteredZones).map(([em, cats])=>(
                 <optgroup key={em} label={`━━ ${em} ━━`}>
                   {Object.entries(cats || {}).map(([cat, list])=>(
@@ -7574,21 +7464,21 @@ function ROICalculator() {
           </div>
           <div>
             <label className="text-zinc-500 text-xs block mb-1">Prezzo (AED)</label>
-            <input type="number" value={price} onChange={e=>setPrice(+e.target.value)} className="w-full bg-[#2b323d] border-none rounded-lg px-3 py-2 text-sm text-white"/>
+            <input type="number" value={price} onChange={e=>setPrice(+e.target.value)} className="w-full bg-[#f0ede6] border-none rounded-lg px-3 py-2 text-sm text-ink"/>
           </div>
           <div>
             <label className="text-zinc-500 text-xs block mb-1">Sqft</label>
-            <input type="number" value={sqft} onChange={e=>setSqft(+e.target.value)} className="w-full bg-[#2b323d] border-none rounded-lg px-3 py-2 text-sm text-white"/>
+            <input type="number" value={sqft} onChange={e=>setSqft(+e.target.value)} className="w-full bg-[#f0ede6] border-none rounded-lg px-3 py-2 text-sm text-ink"/>
           </div>
           <div>
             <label className="text-zinc-500 text-xs block mb-1">Camere</label>
-            <select value={br} onChange={e=>setBr(+e.target.value)} className="w-full bg-[#2b323d] border-none rounded-lg px-3 py-2 text-sm text-white">
+            <select value={br} onChange={e=>setBr(+e.target.value)} className="w-full bg-[#f0ede6] border-none rounded-lg px-3 py-2 text-sm text-ink">
               {['Studio','1BR','2BR','3BR','4+BR'].map((l,i)=><option key={i} value={i}>{l}</option>)}
             </select>
           </div>
           <div>
             <label className="text-zinc-500 text-xs block mb-1">Mercato</label>
-            <select value={mkt} onChange={e=>setMkt(e.target.value)} className="w-full bg-[#2b323d] border-none rounded-lg px-3 py-2 text-sm text-white">
+            <select value={mkt} onChange={e=>setMkt(e.target.value)} className="w-full bg-[#f0ede6] border-none rounded-lg px-3 py-2 text-sm text-ink">
               <option value="offplan">🏗️ Off-Plan</option>
               <option value="secondary">🏢 Secondary</option>
             </select>
@@ -7599,36 +7489,36 @@ function ROICalculator() {
           {mkt === 'secondary' && (
             <div>
               <label className="text-zinc-500 text-xs block mb-1">Età Edificio</label>
-              <select value={age} onChange={e=>setAge(e.target.value)} className="w-full bg-[#2b323d] border-none rounded-lg px-3 py-2 text-sm text-white">
+              <select value={age} onChange={e=>setAge(e.target.value)} className="w-full bg-[#f0ede6] border-none rounded-lg px-3 py-2 text-sm text-ink">
                 <option value="new">🆕 {d.ageNew}</option>
                 {d.ageMid && <option value="mid">📅 {d.ageMid}</option>}
                 {d.ageOld && <option value="old">🏚️ {d.ageOld}</option>}
               </select>
             </div>
           )}
-          <div className="bg-[#2b323d]/50 rounded-lg p-2">
+          <div className="bg-[#f0ede6]/50 rounded-lg p-2">
             <p className="text-zinc-500 text-xs">{d.emirate} • {d.cat}</p>
-            <p className="text-white font-medium text-sm">{d.e} {z}</p>
+            <p className="text-ink font-medium text-sm">{d.e} {z}</p>
           </div>
           <div className="bg-amber-500/10 rounded-lg p-2 text-center border border-amber-500/20">
             <p className="text-amber-400 text-xs">SC/sqft</p>
-            <p className="text-white font-bold">{sc} AED</p>
+            <p className="text-ink font-bold">{sc} AED</p>
           </div>
           {mkt === 'offplan' ? (
             <>
               <div className="bg-emerald-500/10 rounded-lg p-2 text-center border border-emerald-500/20">
                 <p className="text-emerald-400 text-xs">Discount</p>
-                <p className="text-white font-bold">-{disc}%</p>
+                <p className="text-ink font-bold">-{disc}%</p>
               </div>
               <div className="bg-purple-500/10 rounded-lg p-2 text-center border border-purple-500/20">
                 <p className="text-purple-400 text-xs">Apprezzamento</p>
-                <p className="text-white font-bold">+{d.opAppr}%</p>
+                <p className="text-ink font-bold">+{d.opAppr}%</p>
               </div>
             </>
           ) : (
             <div className="bg-red-500/10 rounded-lg p-2 text-center border border-red-500/20">
               <p className="text-red-400 text-xs">Manutenzione</p>
-              <p className="text-white font-bold">{fmt(a.maint)}/y</p>
+              <p className="text-ink font-bold">{fmt(a.maint)}/y</p>
             </div>
           )}
         </div>
@@ -7637,7 +7527,7 @@ function ROICalculator() {
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto">
         {['overview','rental','capital','costs'].map(t=>(
-          <button key={t} onClick={()=>setTab(t)} className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${tab===t?'bg-emerald-500 text-white':'bg-[#2b323d] text-zinc-400 hover:bg-[#475569]'}`}>
+          <button key={t} onClick={()=>setTab(t)} className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${tab===t?'bg-emerald-500 text-white':'bg-[#f0ede6] text-zinc-400 hover:bg-[#d8d3c9]'}`}>
             {t==='overview'?'📊 Overview':t==='rental'?'🏠 Rental':t==='capital'?'📈 Capital':'💰 Costi'}
           </button>
         ))}
@@ -7663,14 +7553,14 @@ function ROICalculator() {
             <p className="text-xs text-zinc-500 mt-1">Costi/Anno</p>
           </div>
           
-          <div className="col-span-2 bg-[#141920] rounded-xl p-4 border border-[#2b323d]">
+          <div className="col-span-2 bg-[#ffffff] rounded-xl p-4 border border-[#e4e0d8]">
             <p className="text-zinc-400 text-xs mb-3">Revenue Annuo Netto</p>
             <div className="space-y-2">
               <div className="flex justify-between items-center"><span className="text-zinc-400">🏠 Long Term</span><span className="text-blue-400 font-bold text-lg">{fmt(ltNet)} AED</span></div>
               <div className="flex justify-between items-center"><span className="text-zinc-400">🏖️ Short Term</span><span className="text-purple-400 font-bold text-lg">{fmt(stNet)} AED</span></div>
             </div>
           </div>
-          <div className="col-span-2 bg-[#141920] rounded-xl p-4 border border-[#2b323d]">
+          <div className="col-span-2 bg-[#ffffff] rounded-xl p-4 border border-[#e4e0d8]">
             <p className="text-zinc-400 text-xs mb-3">Capital Gain</p>
             <div className="space-y-2">
               <div className="flex justify-between items-center"><span className="text-zinc-400">Valore Futuro</span><span className="text-emerald-400 font-bold text-lg">{fmt(futVal)} AED</span></div>
@@ -7678,13 +7568,13 @@ function ROICalculator() {
             </div>
           </div>
           
-          <div className="col-span-full bg-[#141920] rounded-xl p-4 border border-[#2b323d]">
+          <div className="col-span-full bg-[#ffffff] rounded-xl p-4 border border-[#e4e0d8]">
             <p className="text-zinc-400 text-xs mb-3">ROI Totale 3 anni (rent + appreciation)</p>
             <div className="flex items-center gap-4">
-              <div className="flex-1 bg-[#2b323d] rounded-full h-4 overflow-hidden">
+              <div className="flex-1 bg-[#f0ede6] rounded-full h-4 overflow-hidden">
                 <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 transition-all" style={{width:`${Math.min(((ltNet*3+profit)/price)*100, 100)}%`}}/>
               </div>
-              <span className="text-white font-bold text-xl">{(((ltNet*3+profit)/price)*100).toFixed(0)}%</span>
+              <span className="text-ink font-bold text-xl">{(((ltNet*3+profit)/price)*100).toFixed(0)}%</span>
             </div>
           </div>
         </div>
@@ -7693,8 +7583,8 @@ function ROICalculator() {
       {/* Rental Tab */}
       {tab === 'rental' && (
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="bg-[#141920] rounded-xl p-4 border border-blue-500/30">
-            <h3 className="font-semibold text-white mb-4">🏠 Long Term Rental</h3>
+          <div className="bg-[#ffffff] rounded-xl p-4 border border-blue-500/30">
+            <h3 className="font-semibold text-ink mb-4">🏠 Long Term Rental</h3>
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-blue-500/10 rounded-lg p-3 text-center">
                 <p className="text-2xl font-bold text-blue-400">{(rent/price*100).toFixed(1)}%</p>
@@ -7706,15 +7596,15 @@ function ROICalculator() {
               </div>
             </div>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Affitto Annuo</span><span className="text-white">{fmt(rent)} AED</span></div>
-              <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Mensile</span><span className="text-white">{fmt(rent/12)} AED</span></div>
-              <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">(-) Costi Annui</span><span className="text-red-400">-{fmt(costs)} AED</span></div>
-              <div className="flex justify-between py-2 font-medium"><span className="text-white">= Netto Annuo</span><span className="text-emerald-400">{fmt(ltNet)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#e4e0d8]"><span className="text-zinc-400">Affitto Annuo</span><span className="text-ink">{fmt(rent)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#e4e0d8]"><span className="text-zinc-400">Mensile</span><span className="text-ink">{fmt(rent/12)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#e4e0d8]"><span className="text-zinc-400">(-) Costi Annui</span><span className="text-red-400">-{fmt(costs)} AED</span></div>
+              <div className="flex justify-between py-2 font-medium"><span className="text-ink">= Netto Annuo</span><span className="text-emerald-400">{fmt(ltNet)} AED</span></div>
             </div>
           </div>
           
-          <div className="bg-[#141920] rounded-xl p-4 border border-purple-500/30">
-            <h3 className="font-semibold text-white mb-4">🏖️ Short Term / Airbnb</h3>
+          <div className="bg-[#ffffff] rounded-xl p-4 border border-purple-500/30">
+            <h3 className="font-semibold text-ink mb-4">🏖️ Short Term / Airbnb</h3>
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-purple-500/10 rounded-lg p-3 text-center">
                 <p className="text-2xl font-bold text-purple-400">{(stGross/price*100).toFixed(1)}%</p>
@@ -7726,10 +7616,10 @@ function ROICalculator() {
               </div>
             </div>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Tariffa/Notte</span><span className="text-white">{fmt(d.night*roiBrMult.night[br])} AED</span></div>
-              <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Occupancy Media</span><span className="text-white">{d.occ}%</span></div>
-              <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Revenue Lordo</span><span className="text-white">{fmt(stGross)} AED</span></div>
-              <div className="flex justify-between py-2 font-medium"><span className="text-white">= Netto Annuo</span><span className="text-emerald-400">{fmt(stNet)} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#e4e0d8]"><span className="text-zinc-400">Tariffa/Notte</span><span className="text-ink">{fmt(d.night*roiBrMult.night[br])} AED</span></div>
+              <div className="flex justify-between py-2 border-b border-[#e4e0d8]"><span className="text-zinc-400">Occupancy Media</span><span className="text-ink">{d.occ}%</span></div>
+              <div className="flex justify-between py-2 border-b border-[#e4e0d8]"><span className="text-zinc-400">Revenue Lordo</span><span className="text-ink">{fmt(stGross)} AED</span></div>
+              <div className="flex justify-between py-2 font-medium"><span className="text-ink">= Netto Annuo</span><span className="text-emerald-400">{fmt(stNet)} AED</span></div>
             </div>
           </div>
         </div>
@@ -7737,19 +7627,19 @@ function ROICalculator() {
 
       {/* Capital Tab */}
       {tab === 'capital' && (
-        <div className="bg-[#141920] rounded-xl p-4 border border-emerald-500/30">
-          <h3 className="font-semibold text-white mb-4">📈 Capital Appreciation - {mkt === 'offplan' ? 'Off-Plan' : 'Secondary'}</h3>
+        <div className="bg-[#ffffff] rounded-xl p-4 border border-emerald-500/30">
+          <h3 className="font-semibold text-ink mb-4">📈 Capital Appreciation - {mkt === 'offplan' ? 'Off-Plan' : 'Secondary'}</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div className="bg-emerald-500/10 rounded-lg p-3 text-center">
               <p className="text-2xl font-bold text-emerald-400">+{appr.toFixed(0)}%</p>
               <p className="text-xs text-zinc-500">Apprezzamento</p>
             </div>
-            <div className="bg-[#2b323d] rounded-lg p-3 text-center">
-              <p className="text-xl font-bold text-white">{fmt(profit)}</p>
+            <div className="bg-[#f0ede6] rounded-lg p-3 text-center">
+              <p className="text-xl font-bold text-ink">{fmt(profit)}</p>
               <p className="text-xs text-zinc-500">Profitto (AED)</p>
             </div>
-            <div className="bg-[#2b323d] rounded-lg p-3 text-center">
-              <p className="text-xl font-bold text-white">{fmt(futVal)}</p>
+            <div className="bg-[#f0ede6] rounded-lg p-3 text-center">
+              <p className="text-xl font-bold text-ink">{fmt(futVal)}</p>
               <p className="text-xs text-zinc-500">Valore Futuro</p>
             </div>
             {mkt === 'offplan' && (
@@ -7760,40 +7650,40 @@ function ROICalculator() {
             )}
           </div>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Prezzo Acquisto</span><span className="text-white">{fmt(price)} AED</span></div>
-            {mkt === 'offplan' && <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">(-) Launch Discount {disc}%</span><span className="text-emerald-400">-{fmt(price-effPrice)} AED</span></div>}
-            <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">Prezzo Effettivo</span><span className="text-white">{fmt(effPrice)} AED</span></div>
-            <div className="flex justify-between py-2 border-b border-[#2b323d]"><span className="text-zinc-400">(+) Apprezzamento {appr.toFixed(0)}%</span><span className="text-emerald-400">+{fmt(profit)} AED</span></div>
-            <div className="flex justify-between py-2 font-medium text-lg"><span className="text-white">= Valore Futuro</span><span className="text-emerald-400">{fmt(futVal)} AED</span></div>
+            <div className="flex justify-between py-2 border-b border-[#e4e0d8]"><span className="text-zinc-400">Prezzo Acquisto</span><span className="text-ink">{fmt(price)} AED</span></div>
+            {mkt === 'offplan' && <div className="flex justify-between py-2 border-b border-[#e4e0d8]"><span className="text-zinc-400">(-) Launch Discount {disc}%</span><span className="text-emerald-400">-{fmt(price-effPrice)} AED</span></div>}
+            <div className="flex justify-between py-2 border-b border-[#e4e0d8]"><span className="text-zinc-400">Prezzo Effettivo</span><span className="text-ink">{fmt(effPrice)} AED</span></div>
+            <div className="flex justify-between py-2 border-b border-[#e4e0d8]"><span className="text-zinc-400">(+) Apprezzamento {appr.toFixed(0)}%</span><span className="text-emerald-400">+{fmt(profit)} AED</span></div>
+            <div className="flex justify-between py-2 font-medium text-lg"><span className="text-ink">= Valore Futuro</span><span className="text-emerald-400">{fmt(futVal)} AED</span></div>
           </div>
         </div>
       )}
 
       {/* Costs Tab */}
       {tab === 'costs' && (
-        <div className="bg-[#141920] rounded-xl p-4 border border-red-500/30">
-          <h3 className="font-semibold text-white mb-4">💰 Breakdown Costi Annuali</h3>
+        <div className="bg-[#ffffff] rounded-xl p-4 border border-red-500/30">
+          <h3 className="font-semibold text-ink mb-4">💰 Breakdown Costi Annuali</h3>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between py-3 border-b border-[#2b323d]">
+            <div className="flex justify-between py-3 border-b border-[#e4e0d8]">
               <span className="text-zinc-400">Service Charge ({sc} × {sqft} sqft)</span>
               <span className="text-amber-400 font-bold">{fmt(sc*sqft*a.sc)} AED</span>
             </div>
-            <div className="flex justify-between py-3 border-b border-[#2b323d]">
+            <div className="flex justify-between py-3 border-b border-[#e4e0d8]">
               <span className="text-zinc-400">DEWA (Utilities)</span>
               <span className="text-blue-400 font-bold">{fmt(d.dewa*roiBrMult.dewa[br])} AED</span>
             </div>
-            <div className="flex justify-between py-3 border-b border-[#2b323d]">
+            <div className="flex justify-between py-3 border-b border-[#e4e0d8]">
               <span className="text-zinc-400">Assicurazione</span>
               <span className="text-green-400 font-bold">~1,000 AED</span>
             </div>
             {a.maint > 0 && (
-              <div className="flex justify-between py-3 border-b border-[#2b323d]">
+              <div className="flex justify-between py-3 border-b border-[#e4e0d8]">
                 <span className="text-zinc-400">Manutenzione (edificio {age})</span>
                 <span className="text-red-400 font-bold">{fmt(a.maint)} AED</span>
               </div>
             )}
             <div className="flex justify-between py-3 font-bold text-lg">
-              <span className="text-white">TOTALE ANNUO</span>
+              <span className="text-ink">TOTALE ANNUO</span>
               <span className="text-red-400">{fmt(costs)} AED</span>
             </div>
             <div className="flex justify-between py-2 text-zinc-500">

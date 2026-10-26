@@ -77,7 +77,7 @@ export default function MessaggiGhl({ sale, cliente, utente, onMessaggioInviato,
         {CANALI.map((c) => (
           <button key={c.id} onClick={() => setCanale(c.id)}
                   className={`flex-1 py-2 rounded-xl text-sm flex items-center justify-center gap-2 transition-all ${
-                    canale === c.id ? 'text-white' : 'bg-zinc-800/60 text-zinc-400 hover:text-white'
+                    canale === c.id ? 'text-ink' : 'bg-zinc-800/60 text-zinc-400 hover:text-ink'
                   }`}
                   style={canale === c.id ? { background: `${c.colore}26`, color: c.colore } : {}}>
             <c.icona className="w-4 h-4" />{c.label}
@@ -87,12 +87,12 @@ export default function MessaggiGhl({ sale, cliente, utente, onMessaggioInviato,
 
       {canale === 'email' && (
         <input value={oggetto} onChange={(e) => setOggetto(e.target.value)} placeholder="Oggetto"
-               className="w-full bg-zinc-800/60 border border-zinc-700 rounded-xl px-3 py-2 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600" />
+               className="w-full bg-zinc-800/60 border border-zinc-700 rounded-xl px-3 py-2 text-ink text-sm placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600" />
       )}
 
       <textarea value={testo} onChange={(e) => setTesto(e.target.value)} rows={3}
                 placeholder={`Scrivi a ${cliente?.nome || 'il cliente'} su ${CANALI.find(c => c.id === canale)?.label}...`}
-                className="w-full bg-zinc-800/60 border border-zinc-700 rounded-xl px-3 py-2 text-white text-sm resize-none placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600" />
+                className="w-full bg-zinc-800/60 border border-zinc-700 rounded-xl px-3 py-2 text-ink text-sm resize-none placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600" />
 
       <Button onClick={invia} icon={Send} disabled={inviando || !testo.trim()} className="w-full">
         {inviando ? 'Invio...' : 'Invia dai canali KeyPrime'}
@@ -120,7 +120,7 @@ export default function MessaggiGhl({ sale, cliente, utente, onMessaggioInviato,
                  className={`p-3 rounded-xl text-sm ${
                    m.direzione === 'uscita' ? 'bg-zinc-800/60 ml-4' : 'bg-blue-500/10 mr-4'
                  }`}>
-              <p className="text-white whitespace-pre-wrap break-words">{m.corpo}</p>
+              <p className="text-ink whitespace-pre-wrap break-words">{m.corpo}</p>
               <p className="text-zinc-600 text-xs mt-1">
                 {m.canale} • {m.direzione === 'uscita' ? (m.inviato_da || 'portale') : 'cliente'} • {fmtDateTime(m.created_at)}
               </p>
