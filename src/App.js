@@ -25,6 +25,7 @@ import ControlloAccessi from './components/ControlloAccessi';
 import { generaOffertaPdf, proprietaCompilata } from './lib/offertaPdf';
 import DashboardAdmin from './components/DashboardAdmin';
 import CalcolatoreRoi from './components/CalcolatoreRoi';
+import Paginazione, { usePaginazione } from './components/Paginazione';
 import { istantaneaCatalogo, trimestreAnno, etichettaFase } from './lib/offerta';
 import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List, ExternalLink, Calculator } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
@@ -655,10 +656,22 @@ function PushTab({ users }) {
 }
 
 // ==================== OFFERTA TAB ====================
+
+// Il budget e' testo libero: chi scrive "MAX 800K AED" va lasciato com'e',
+// chi digita "1000000" merita i separatori, altrimenti in elenco si legge
+// come un codice.
+function budgetLeggibile(budget) {
+  const testo = String(budget || '').trim();
+  if (!/^\d+$/.test(testo)) return testo;
+  return `${Number(testo).toLocaleString('it-IT')} AED`;
+}
+
 function OffertaTab({ offerte, user, onCrea, onEdit, onDelete, onGeneraPDF }) {
   const myOfferte = user?.ruolo === 'admin'
     ? offerte
     : offerte.filter(o => o.agente_nome === user?.nome);
+
+  const pagOfferte = usePaginazione(myOfferte);
 
   return (
     <div className="space-y-4">
@@ -667,7 +680,8 @@ function OffertaTab({ offerte, user, onCrea, onEdit, onDelete, onGeneraPDF }) {
           <h2 className="text-ink font-semibold text-lg">Offerte</h2>
           <p className="text-zinc-500 text-sm">{myOfferte.length} prospetti salvati</p>
         </div>
-        <button onClick={onCrea} className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white" style={{ background: '#06b6d4' }}>
+        <button onClick={onCrea} className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm"
+          style={{ background: theme.accento.fill, color: theme.accento.inkSuFill }}>
           <Plus className="w-4 h-4" /> Nuova Offerta
         </button>
       </div>
@@ -678,34 +692,47 @@ function OffertaTab({ offerte, user, onCrea, onEdit, onDelete, onGeneraPDF }) {
           <p className="text-sm mt-1">Crea il tuo primo prospetto cliente</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {myOfferte.map(o => (
-            <div key={o.id} className="rounded-xl p-4 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="rounded-2xl overflow-hidden"
+             style={{ background: theme.bg.secondary, border: `1px solid ${theme.border.subtle}` }}>
+          {pagOfferte.elementi.map((o, i) => (
+            <div key={o.id} className="p-4 flex items-center justify-between gap-4"
+                 style={i > 0 ? { borderTop: `1px solid ${theme.border.subtle}` } : undefined}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-1">
                   <span className="text-ink font-semibold truncate">{o.cliente_nome || 'Cliente n/d'}</span>
-                  {o.budget && <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400">{o.budget}</span>}
+                  {o.budget && (
+                    <span className="text-xs px-2 py-0.5 rounded-full shrink-0"
+                          style={{ background: theme.accento.wash, color: theme.accento.text }}>
+                      {budgetLeggibile(o.budget)}
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-zinc-500">
+                <div className="flex items-center gap-3 text-xs text-zinc-500 flex-wrap">
                   <span>{new Date(o.created_at).toLocaleDateString('it-IT')}</span>
                   <span>·</span><span>{o.agente_nome}</span>
                   {o.zona_nome && <><span>·</span><span>{o.zona_nome}</span></>}
                   <span>·</span><span>{(o.proprieta || []).length} propr.</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 ml-4 shrink-0">
-                <button onClick={() => onGeneraPDF(o)} className="text-xs px-3 py-1.5 rounded-lg font-medium text-white flex items-center gap-1" style={{ background: '#06b6d4' }}>
+              <div className="flex items-center gap-2 shrink-0">
+                <button onClick={() => onGeneraPDF(o)} className="text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1"
+                        style={{ background: theme.accento.fill, color: theme.accento.inkSuFill }}>
                   <Printer className="w-3 h-3" /> PDF
                 </button>
-                <button onClick={() => onEdit(o)} className="text-xs px-3 py-1.5 rounded-lg font-medium text-zinc-300 bg-zinc-700/50 flex items-center">
+                <button onClick={() => onEdit(o)} aria-label="Modifica offerta"
+                        className="text-xs px-3 py-1.5 rounded-lg font-medium flex items-center"
+                        style={{ background: theme.bg.tertiary, color: theme.text.secondary }}>
                   <Edit2 className="w-3 h-3" />
                 </button>
-                <button onClick={() => onDelete(o.id)} className="text-xs px-3 py-1.5 rounded-lg font-medium text-red-400 bg-red-500/10 flex items-center">
+                <button onClick={() => onDelete(o.id)} aria-label="Elimina offerta"
+                        className="text-xs px-3 py-1.5 rounded-lg font-medium flex items-center"
+                        style={{ background: theme.stato.critico.bg, color: theme.stato.critico.text }}>
                   <Trash2 className="w-3 h-3" />
                 </button>
               </div>
             </div>
           ))}
+          <Paginazione {...pagOfferte} nome="offerte" />
         </div>
       )}
     </div>
@@ -893,14 +920,16 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
     }
   };
 
-  const inputCls = "w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm focus:outline-none focus:border-cyan-500";
+  const inputCls = "w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm focus:outline-none focus:border-oro-500";
   const labelCls = "block text-xs text-zinc-400 mb-1 font-medium";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-      <div className="w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col" style={{ background: '#1a1f2e', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '92vh' }}>
+      <div className="w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col"
+           style={{ background: theme.bg.secondary, border: `1px solid ${theme.border.default}`,
+                    boxShadow: '0 24px 60px rgba(15,28,53,0.22)', maxHeight: '92vh' }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-700 shrink-0">
           <div>
             <h2 className="text-ink font-semibold">{offerta?.id ? 'Modifica Offerta' : 'Nuova Offerta'}</h2>
             <p className="text-xs text-zinc-500 mt-0.5">Step {step} di 3</p>
@@ -913,7 +942,7 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
           {[1,2,3].map(s => (
             <button key={s} onClick={() => s < step && setStep(s)}
               className="flex-1 h-1 rounded-full transition-all"
-              style={{ background: s <= step ? '#06b6d4' : 'rgba(255,255,255,0.1)', cursor: s < step ? 'pointer' : 'default' }} />
+              style={{ background: s <= step ? theme.accento.fill : theme.border.subtle, cursor: s < step ? 'pointer' : 'default' }} />
           ))}
         </div>
 
@@ -965,7 +994,7 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
                 <div className="flex items-center justify-between mb-1">
                   <label className={labelCls} style={{ margin: 0 }}>Descrizione zona — "Perché scegliere {form.zona_nome || 'X'}"</label>
                   <button onClick={generaDescrizione} disabled={!form.zona_nome || generatingDesc}
-                    className="text-xs text-cyan-400 px-2 py-1 rounded-lg border border-cyan-500/30 hover:border-cyan-500/60 disabled:opacity-40 flex items-center gap-1">
+                    className="text-xs text-oro-400 px-2 py-1 rounded-lg border border-oro-500/50 hover:border-oro-500 hover:bg-oro-50 disabled:opacity-40 flex items-center gap-1">
                     {generatingDesc ? '...' : '✨ Genera con AI'}
                   </button>
                 </div>
@@ -982,18 +1011,18 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
               <div className="flex items-center justify-between">
                 <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Proprietà ({form.proprieta.length}/3)</p>
                 {form.proprieta.length < 3 && (
-                  <button onClick={addProp} className="text-xs text-cyan-400 flex items-center gap-1 hover:text-cyan-300">
+                  <button onClick={addProp} className="text-xs text-oro-400 flex items-center gap-1 hover:text-oro-800">
                     <Plus className="w-3 h-3" /> Aggiungi
                   </button>
                 )}
               </div>
               {form.proprieta.map((prop, idx) => (
-                <div key={idx} className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div key={idx} className="rounded-xl p-4 space-y-3" style={{ background: theme.bg.tertiary, border: `1px solid ${theme.border.subtle}` }}>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Proprietà {idx + 1}</span>
                     <div className="flex items-center gap-2">
                       <button onClick={() => setActivePropIdx(activePropIdx === idx ? null : idx)}
-                        className="text-xs text-cyan-400 flex items-center gap-1 px-2 py-1 rounded-lg border border-cyan-500/30 hover:border-cyan-500/60">
+                        className="text-xs text-oro-400 flex items-center gap-1 px-2 py-1 rounded-lg border border-oro-500/50 hover:border-oro-500 hover:bg-oro-50">
                         <Search className="w-3 h-3" /> Cerca nel catalogo
                       </button>
                       {form.proprieta.length > 1 && (
@@ -1008,15 +1037,15 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
                         onChange={e => { setCatalogSearch(e.target.value); searchCatalog(e.target.value); }}
                         placeholder="Cerca per nome, zona, developer..." />
                       {catalogResults.length > 0 && (
-                        <div className="rounded-lg overflow-hidden max-h-48 overflow-y-auto" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div className="rounded-lg overflow-hidden max-h-48 overflow-y-auto" style={{ border: `1px solid ${theme.border.subtle}` }}>
                           {catalogResults.map(l => (
                             <button key={l.id} onClick={() => pickFromCatalog(l, idx)}
-                              className="w-full text-left px-3 py-2.5 text-sm hover:bg-zinc-700/80 border-b border-zinc-800/50 last:border-0 flex items-center gap-3">
+                              className="w-full text-left px-3 py-2.5 text-sm hover:bg-zinc-700/80 border-b border-zinc-700 last:border-0 flex items-center gap-3">
                               <div className="flex-1 min-w-0">
                                 <div className="text-ink font-medium truncate">{l.title}</div>
                                 <div className="text-zinc-500 text-xs">{l.location_name || l.location_full} · {l.developer_name}</div>
                               </div>
-                              {l.price_from && <span className="text-cyan-400 text-xs shrink-0">{Number(l.price_from).toLocaleString()} AED</span>}
+                              {l.price_from && <span className="text-oro-400 text-xs shrink-0">{Number(l.price_from).toLocaleString()} AED</span>}
                             </button>
                           ))}
                         </div>
@@ -1133,7 +1162,7 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
           {step === 3 && (
             <div className="space-y-4">
               <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Riepilogo</p>
-              <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="rounded-xl p-4 space-y-3" style={{ background: theme.bg.tertiary, border: `1px solid ${theme.border.subtle}` }}>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                   <div><span className="text-zinc-500">Cliente:</span> <span className="text-ink ml-1">{form.cliente_nome || '—'}</span></div>
                   <div><span className="text-zinc-500">Budget:</span> <span className="text-ink ml-1">{form.budget || '—'}</span></div>
@@ -1142,24 +1171,24 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
                   <div><span className="text-zinc-500">Email:</span> <span className={form.agente_email ? 'text-ink ml-1' : 'text-amber-400 ml-1'}>{form.agente_email || 'mancante'}</span></div>
                   <div><span className="text-zinc-500">Tel:</span> <span className={form.agente_telefono ? 'text-ink ml-1' : 'text-amber-400 ml-1'}>{form.agente_telefono || 'mancante'}</span></div>
                 </div>
-                <div className="pt-2 border-t border-zinc-800">
+                <div className="pt-2 border-t border-zinc-700">
                   <p className="text-xs text-zinc-500 mb-2">
                     Proprietà nel PDF:{righeVuote > 0 && <span className="text-zinc-600"> ({righeVuote} {righeVuote === 1 ? 'riga vuota verrà scartata' : 'righe vuote verranno scartate'})</span>}
                   </p>
                   {proprietaValide.map((p, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm py-1">
-                      <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
+                      <span className="w-5 h-5 rounded-full bg-oro-500/25 text-oro-400 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
                       <span className="text-ink font-medium truncate">{p.nome || 'N/D'}</span>
                       <span className="text-zinc-500 truncate">{p.zona}</span>
-                      <span className="text-cyan-400 shrink-0">{p.prezzo}</span>
+                      <span className="text-oro-400 shrink-0">{p.prezzo}</span>
                       <span className="text-zinc-600 text-xs shrink-0">{p.foto_urls.filter(Boolean).length} foto</span>
                     </div>
                   ))}
                 </div>
               </div>
               <p className="text-xs text-zinc-500">
-                Al salvataggio il PDF (A4 orizzontale) viene generato e scaricato: copertina, una pagina per proprietà
-                e le brochure in coda.
+                Al salvataggio il PDF (A4 verticale) viene generato e scaricato: copertina, pagina sulla zona,
+                confronto fra le proprietà, una scheda per ciascuna e le brochure in coda.
               </p>
             </div>
           )}
@@ -1171,18 +1200,20 @@ function OffertaModal({ offerta, clienti, user, onSave, onClose }) {
             <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{errore}</p>
           </div>
         )}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-800 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-700 shrink-0">
           <button onClick={step > 1 ? () => setStep(s => s-1) : onClose} className="text-sm text-zinc-400 hover:text-ink px-4 py-2">
             {step > 1 ? '← Indietro' : 'Annulla'}
           </button>
           <div className="flex gap-3">
             {step < 3 && (
-              <button onClick={() => setStep(s => s+1)} className="px-5 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#06b6d4' }}>
+              <button onClick={() => setStep(s => s+1)} className="px-5 py-2 rounded-xl text-sm font-semibold"
+                style={{ background: theme.accento.fill, color: theme.accento.inkSuFill }}>
                 Avanti →
               </button>
             )}
             {step === 3 && (
-              <button onClick={handleSave} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50" style={{ background: '#06b6d4' }}>
+              <button onClick={handleSave} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-semibold disabled:opacity-50"
+                style={{ background: theme.accento.fill, color: theme.accento.inkSuFill }}>
                 {saving ? 'Salvataggio...' : '💾 Salva e Genera PDF'}
               </button>
             )}
@@ -2137,10 +2168,10 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <MetricCard label="Lead Attivi" value={mySales.filter(s => s.stato !== 'venduto' && s.stato !== 'incassato').length} icon={Target} color="#60A5FA" onClick={() => setActiveTab('leads')} />
-                  <MetricCard label="Vendite (SPA)" value={myVendite.length} icon={TrendingUp} color="#34D399" />
-                  <MetricCard label="Comm. Maturate" value={fmt(totalComm)} icon={DollarSign} color="#FBBF24" />
-                  <MetricCard label="Comm. Pagate" value={fmt(pagate)} icon={Check} color="#34D399" />
+                  <MetricCard label="Lead Attivi" value={mySales.filter(s => s.stato !== 'venduto' && s.stato !== 'incassato').length} icon={Target} onClick={() => setActiveTab('leads')} />
+                  <MetricCard label="Vendite (SPA)" value={myVendite.length} icon={TrendingUp} />
+                  <MetricCard label="Comm. Maturate" value={fmt(totalComm)} icon={DollarSign} />
+                  <MetricCard label="Comm. Pagate" value={fmt(pagate)} icon={Check} />
                 </div>
 
                 {/* Pipeline */}
@@ -2163,10 +2194,10 @@ export default function App() {
                     <span className="text-ink font-medium">Commissioni</span>
                     <span className="text-zinc-400 text-sm">{fmt(totalComm)} AED maturate</span>
                   </div>
-                  <ProgressBar value={pagate} max={totalComm || 1} color="#34D399" />
+                  <ProgressBar value={pagate} max={totalComm || 1} />
                   <div className="flex justify-between mt-3 text-sm">
                     <span className="text-emerald-400">✓ Pagate: {fmt(pagate)} AED</span>
-                    <span className="text-amber-400">⏳ Pending: {fmt(totalComm - pagate)} AED</span>
+                    <span className="text-amber-400">Da incassare: {fmt(totalComm - pagate)} AED</span>
                   </div>
                 </Card>
 
@@ -2425,6 +2456,9 @@ export default function App() {
     
     const periodSales = getFilteredByPeriod(sales);
     const vendite = periodSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
+    // Stesso elenco per il conto nell'intestazione e per le righe: altrimenti
+    // i due numeri possono divergere senza che nessuno se ne accorga.
+    const venditeDettaglio = vendite;
 
     // calcCommission: logica riutilizzabile per una singola vendita
     const calcCommission = (s) => {
@@ -2477,18 +2511,18 @@ export default function App() {
     const tabs = [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', accent: theme.sections.dashboard.accent },
       { id: 'inbox', icon: AlertCircle, label: 'Inbox Lead', accent: theme.sections.inbox.accent, badge: daAssegnare + daLavorare },
-      { id: 'commissioni', icon: Award, label: 'Commissioni', accent: '#10B981' },
+      { id: 'commissioni', icon: Award, label: 'Commissioni', accent: theme.sections.commissioni.accent },
       { id: 'vendite', icon: DollarSign, label: 'Vendite', accent: theme.sections.vendite.accent },
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.pipeline.accent },
       { id: 'crm', icon: Users, label: 'CRM', accent: theme.sections.crm.accent },
       { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent, isNew: true },
       { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent, isNew: true },
-      { id: 'offerte', icon: FileText, label: 'Offerte', accent: '#06b6d4' },
+      { id: 'offerte', icon: FileText, label: 'Offerte', accent: theme.sections.offerte.accent },
       { id: 'tasks', icon: ListTodo, label: 'Task', accent: theme.sections.tasks.accent, badge: pendingTasks.length },
-      { id: 'followups', icon: Clock, label: 'Follow-up', accent: '#A855F7', badge: todayFollowUps.length + overdueFollowUps.length },
-      { id: 'push', icon: Bell, label: 'Notifiche', accent: '#f59e0b' },
+      { id: 'followups', icon: Clock, label: 'Follow-up', accent: theme.sections.followups.accent, badge: todayFollowUps.length + overdueFollowUps.length },
+      { id: 'push', icon: Bell, label: 'Notifiche', accent: theme.sections.push.accent },
       { id: 'utenti', icon: Users, label: 'Team', accent: theme.sections.utenti.accent },
-      { id: 'accessi', icon: Key, label: 'Controllo accessi', accent: '#F472B6' },
+      { id: 'accessi', icon: Key, label: 'Controllo accessi', accent: theme.sections.accessi.accent },
       { id: 'impostazioni', icon: Settings, label: 'Impostazioni', accent: theme.sections.ghl.accent }
     ];
 
@@ -2891,7 +2925,14 @@ export default function App() {
 
                 {/* Vendite con Commissioni */}
                 <Card>
-                  <h3 className="text-ink font-semibold mb-4">Dettaglio Vendite</h3>
+                  <div className="flex items-baseline justify-between gap-3 mb-4">
+                    <h3 className="text-ink font-semibold">Dettaglio Vendite</h3>
+                    {venditeDettaglio.length > 20 && (
+                      <button onClick={() => setActiveTab('vendite')} className="text-sm text-oro-400 hover:underline">
+                        prime 20 di {venditeDettaglio.length} — vedi tutte
+                      </button>
+                    )}
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[640px]">
                       <thead>
@@ -2904,7 +2945,7 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-800">
-                        {periodSales.filter(s => s.stato === 'venduto' || s.stato === 'incassato').slice(0, 20).map(s => {
+                        {venditeDettaglio.slice(0, 20).map(s => {
                           const comm = Number(s.valore) * (s.commission_pct || 5) / 100;
                           return (
                             <tr key={s.id} className="text-sm">
@@ -3036,6 +3077,10 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
   const daPagare = chiuse.filter(s => !s.pagato)
     .reduce((t, s) => t + Number(s.valore || 0) * (s.commission_pct || 5) / 100, 0);
 
+  // I totali qui sopra restano su tutte le vendite del filtro: si impagina
+  // la tabella, non il conto.
+  const pagVendite = usePaginazione(chiuse);
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -3089,7 +3134,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
               </tr>
             </thead>
             <tbody className="divide-y divide-[#2b323d]">
-              {chiuse.map(s => (
+              {pagVendite.elementi.map(s => (
                 <tr key={s.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-4 py-3 text-sm text-zinc-400">{fmtShort(s.data)}</td>
                   <td className="px-4 py-3">
@@ -3144,6 +3189,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
             </tbody>
           </table>
         </div>
+        <Paginazione {...pagVendite} nome="vendite" />
         {sales.length === 0 && <div className="text-center py-12 text-zinc-500">Nessuna vendita trovata</div>}
       </Card>
     </div>
@@ -3190,6 +3236,8 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
       if (sortDir === 'asc') return aVal > bVal ? 1 : -1;
       return aVal < bVal ? 1 : -1;
     });
+
+  const pag = usePaginazione(filteredLeads);
 
   const toggleSelect = (id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -3336,7 +3384,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              {filteredLeads.map(lead => {
+              {pag.elementi.map(lead => {
                 const cliente = getCliente(lead.cliente_id);
                 const isSelected = selectedIds.includes(lead.id);
                 return (
@@ -3412,6 +3460,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
             </div>
           )}
         </div>
+        <Paginazione {...pag} nome="lead" />
       </Card>
     </div>
   );
@@ -3612,6 +3661,9 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
     });
   }, [clienti, statsPerCliente, sortField, sortDir]);
 
+  // L'elenco si impagina: con trenta contatti si scorre, con trecento no.
+  const pag = usePaginazione(sortedClienti);
+
   // Stabile fra un ridisegno e l'altro, altrimenti il memo delle righe non
   // serve a niente: una funzione nuova e' una prop nuova.
   const toggleSelect = useCallback((id) => {
@@ -3759,7 +3811,7 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              {sortedClienti.map(cliente => (
+              {pag.elementi.map(cliente => (
                 <RigaCliente
                   key={cliente.id}
                   cliente={cliente}
@@ -3780,6 +3832,7 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
             </div>
           )}
         </div>
+        <Paginazione {...pag} nome="clienti" />
       </Card>
     </div>
   );
@@ -3925,6 +3978,7 @@ function AdminTasksTab({ tasks, clienti, users, onComplete, onDelete, onEdit, on
     if (filter === 'completed') return t.stato === 'completato';
     return true;
   });
+  const pagTask = usePaginazione(filtered);
   const getCliente = (id) => clienti.find(c => c.id === id);
   const counts = {
     pending: tasks.filter(t => t.stato === 'pending').length,
@@ -3939,12 +3993,14 @@ function AdminTasksTab({ tasks, clienti, users, onComplete, onDelete, onEdit, on
         <div className="flex-1" />
         <div className="flex gap-2">
           {[
-            { id: 'pending', label: 'Pending', count: counts.pending, color: '#60A5FA' },
-            { id: 'overdue', label: 'Scaduti', count: counts.overdue, color: '#EF4444' },
-            { id: 'today', label: 'Oggi', count: counts.today, color: '#FBBF24' },
-            { id: 'completed', label: 'Fatto', color: '#34D399' }
+            { id: 'pending', label: 'Da fare', count: counts.pending, tinta: theme.delta.pari },
+            { id: 'overdue', label: 'Scaduti', count: counts.overdue, tinta: theme.stato.critico },
+            { id: 'today', label: 'Oggi', count: counts.today, tinta: theme.stato.attenzione },
+            { id: 'completed', label: 'Fatto', tinta: theme.stato.buono }
           ].map(f => (
-            <button key={f.id} onClick={() => setFilter(f.id)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${filter === f.id ? 'text-ink' : 'text-zinc-500 hover:text-ink'}`} style={filter === f.id ? { background: `${f.color}20`, color: f.color } : {}}>
+            <button key={f.id} onClick={() => setFilter(f.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === f.id ? '' : 'text-zinc-500 hover:text-ink'}`}
+                    style={filter === f.id ? { background: f.tinta.bg, color: f.tinta.text } : {}}>
               {f.label} {f.count !== undefined && `(${f.count})`}
             </button>
           ))}
@@ -3954,7 +4010,7 @@ function AdminTasksTab({ tasks, clienti, users, onComplete, onDelete, onEdit, on
       <div className="space-y-2">
         {filtered.length === 0 ? (
           <EmptyState icon={ListTodo} title="Nessun task" description={filter === 'pending' ? 'Tutti i task sono completati!' : 'Nessun task in questa categoria'} />
-        ) : filtered.map(t => {
+        ) : pagTask.elementi.map(t => {
           const cliente = getCliente(t.cliente_id);
           return (
             <Card key={t.id} padding="p-4" className={`${t.stato === 'completato' ? 'opacity-50' : ''} ${isOverdue(t.scadenza) && t.stato !== 'completato' ? 'border-red-500/30 bg-red-500/5' : ''}`}>
@@ -3987,6 +4043,7 @@ function AdminTasksTab({ tasks, clienti, users, onComplete, onDelete, onEdit, on
           );
         })}
       </div>
+      <Paginazione {...pagTask} nome="task" className="rounded-xl" />
     </div>
   );
 }
@@ -4245,7 +4302,7 @@ function AgentDetailView({ agent, sales, onBack }) {
               {Object.entries(byZona).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([zona, value]) => (
                 <div key={zona} className="flex items-center gap-3">
                   <span className="text-zinc-400 text-sm w-24 truncate">{zona}</span>
-                  <div className="flex-1"><ProgressBar value={value} max={Object.values(byZona).sort((a,b)=>b-a)[0] || 1} color="#34D399" /></div>
+                  <div className="flex-1"><ProgressBar value={value} max={Object.values(byZona).sort((a,b)=>b-a)[0] || 1} /></div>
                   <span className="text-ink text-sm w-20 text-right">{fmt(value)}</span>
                 </div>
               ))}
@@ -4261,7 +4318,7 @@ function AgentDetailView({ agent, sales, onBack }) {
               {Object.entries(byMonth).sort((a, b) => a[0].localeCompare(b[0])).slice(-5).map(([month, value]) => (
                 <div key={month} className="flex items-center gap-3">
                   <span className="text-zinc-400 text-sm w-16">{month}</span>
-                  <div className="flex-1"><ProgressBar value={value} max={Math.max(...Object.values(byMonth)) || 1} color="#A78BFA" /></div>
+                  <div className="flex-1"><ProgressBar value={value} max={Math.max(...Object.values(byMonth)) || 1} /></div>
                   <span className="text-ink text-sm w-20 text-right">{fmt(value)}</span>
                 </div>
               ))}
@@ -6535,7 +6592,7 @@ function LeadDetailSheet({
             )}
 
             {/* Follow-up programmati */}
-            <div className="pt-2 border-t border-zinc-800">
+            <div className="pt-2 border-t border-zinc-700">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-zinc-500 text-xs">Follow-up programmati ({followUpAperti.length})</p>
                 <button onClick={() => setShowFollowUpForm(!showFollowUpForm)} className="text-zinc-400 hover:text-ink text-xs">

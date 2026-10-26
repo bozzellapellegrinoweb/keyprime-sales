@@ -66,7 +66,9 @@ export const SectionHeader = ({ icon: Icon, title, accent, action, actionLabel, 
 );
 
 // Metric Card
-export const MetricCard = ({ label, value, subValue, icon: Icon, color, trend, onClick }) => (
+// Il colore non si passa piu' per scheda: l'accento del portale e' uno solo.
+// Il parametro resta per i rari casi in cui una tinta di stato ha un senso.
+export const MetricCard = ({ label, value, subValue, icon: Icon, color = theme.accento.text, trend, onClick }) => (
   <Card hover={!!onClick} onClick={onClick} className="relative overflow-hidden">
     <div className="flex items-start justify-between">
       <div>
@@ -81,15 +83,14 @@ export const MetricCard = ({ label, value, subValue, icon: Icon, color, trend, o
     {trend !== undefined && (
       <div className={`flex items-center gap-1 mt-3 text-sm ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
         {trend >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-        {Math.abs(trend)}% vs last month
+        {Math.abs(trend)}% rispetto al mese scorso
       </div>
     )}
-    <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full opacity-5" style={{ background: color }} />
   </Card>
 );
 
 // Progress Bar
-export const ProgressBar = ({ value, max, color = '#A78BFA', height = 'h-2', showLabel = false }) => {
+export const ProgressBar = ({ value, max, color = theme.accento.fill, height = 'h-2', showLabel = false }) => {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
     <div className="relative">
