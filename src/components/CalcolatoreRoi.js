@@ -157,11 +157,12 @@ function Voce({ etichetta, valore, coloreValore, spiegazione, formula, forte }) 
   );
 }
 
-function Dato({ valore, etichetta, tinta, spiegazione }) {
+function Dato({ valore, etichetta, tinta, spiegazione, nota }) {
   const [aperta, setAperta] = useState(false);
   return (
     <div className="rounded-xl p-4 border" style={{ background: theme.bg.secondary, borderColor: theme.border.subtle }}>
       <p className="text-3xl font-bold tabular-nums" style={{ color: tinta || theme.text.primary }}>{valore}</p>
+      {nota && <p className="text-xs mt-0.5 tabular-nums" style={{ color: theme.text.tertiary }}>{nota}</p>}
       <p className="text-xs mt-1 flex items-center gap-1" style={{ color: theme.text.tertiary }}>
         <span>{etichetta}</span>
         {spiegazione && (
@@ -224,15 +225,26 @@ export default function CalcolatoreRoi() {
   const profit = futVal - price;
   const scontoLancio = mkt === 'offplan' ? d.opDisc : 0;
 
-  /* Costi d'acquisto: fuori dal rendimento, ma dichiarati. */
+  /* Costi d'acquisto e capitale realmente impegnato.
+     I rendimenti annui restano sul prezzo, perche' e' cosi' che il mercato
+     li quota e solo cosi' sono confrontabili col riferimento di zona. Ma
+     accanto compare anche il rendimento sul capitale che esce davvero dal
+     conto: e' quello che misura l'operazione, non l'immobile. */
   const reg = REGISTRAZIONE[d.emirate] || { pct: 2, ente: 'registro locale' };
   const costiAcquisto = price * (reg.pct + AGENZIA_PCT) / 100;
+  const capitale = price + costiAcquisto;
+  const ltYieldCap = ltNet / capitale * 100;
+  const stYieldCap = stNet / capitale * 100;
 
   /* ROI complessivo: affitto per gli anni fino alla consegna, piu' la
      rivalutazione sullo stesso orizzonte. Prima sommava 3 anni di affitto a
      una rivalutazione di durata diversa a seconda della zona. */
   const anni = mkt === 'offplan' ? Math.max(1, Math.round(d.opHand / 12)) : 3;
-  const roiTotale = (ltNet * anni + profit) / price * 100;
+  // Misura l'operazione, non l'immobile: sul capitale impegnato, costi
+  // d'acquisto compresi. E un off-plan in costruzione non si affitta, quindi
+  // fino alla consegna l'unico ritorno e' la rivalutazione.
+  const affittoNelPeriodo = mkt === 'offplan' ? 0 : ltNet * anni;
+  const roiTotale = (affittoNelPeriodo + profit) / capitale * 100;
 
   const fmt = (n) => new Intl.NumberFormat('it-IT').format(Math.round(n));
   const pct = (n) => `${Number(n).toLocaleString('it-IT', { maximumFractionDigits: 1 })}%`;
@@ -367,9 +379,11 @@ export default function CalcolatoreRoi() {
       {tab === 'overview' && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Dato valore={pct(ltYield)} etichetta="Rendimento netto, affitto lungo" tinta={theme.text.primary}
-                spiegazione="Quanto rende l'immobile in un anno, dopo aver pagato service charge, utenze e assicurazione, diviso il prezzo che paghi. È il numero da confrontare con un investimento alternativo." />
+                nota={`${pct(ltYieldCap)} sul capitale impegnato`}
+                spiegazione="Quanto rende l'immobile in un anno, dopo service charge, utenze e assicurazione, diviso il prezzo. È sul prezzo perché così lo quota il mercato, e solo così è confrontabile col riferimento di zona. La riga sotto è lo stesso reddito diviso per i soldi che escono davvero dal conto — prezzo più costi d'acquisto — ed è quello che misura l'operazione." />
           <Dato valore={pct(stYield)} etichetta="Rendimento netto, affitto breve" tinta={theme.text.primary}
-                spiegazione="Stesso calcolo per l'affitto turistico: ricavo delle notti vendute meno i costi, la gestione e la licenza. Rende di più ma richiede gestione, e l'occupazione non è garantita." />
+                nota={`${pct(stYieldCap)} sul capitale impegnato`}
+                spiegazione="Stesso calcolo per l'affitto turistico: ricavo delle notti meno costi, gestione e licenza. Rende di più ma richiede gestione, e l'occupazione non è garantita." />
           <Dato valore={`+${pct(appr)}`} etichetta={`Rivalutazione ${orizzonte}`} tinta={theme.stato.buono.text}
                 spiegazione={`Crescita di valore attesa per questa zona ${mkt === 'offplan' ? 'per un off-plan fino alla consegna' : 'sul mercato secondario, su tre anni'}, corretta per l'età dell'edificio. È una stima di mercato, non una garanzia.`} />
           <Dato valore={fmt(costs)} etichetta="Costi fissi all'anno" tinta={theme.stato.critico.text}
@@ -396,7 +410,9 @@ export default function CalcolatoreRoi() {
           <div className="col-span-full rounded-xl p-4 border" style={scheda}>
             <div className="flex items-center justify-between gap-3 mb-3">
               <p className="text-xs" style={{ color: theme.text.tertiary }}>
-                RITORNO COMPLESSIVO SU {anni} {anni === 1 ? 'ANNO' : 'ANNI'} — AFFITTO + RIVALUTAZIONE
+                {mkt === 'offplan'
+                  ? `RITORNO ALLA CONSEGNA (${d.opHand} MESI) — SOLA RIVALUTAZIONE`
+                  : `RITORNO DELL'OPERAZIONE SU ${anni} ANNI — AFFITTO + RIVALUTAZIONE`}
               </p>
               <span className="text-xl font-bold tabular-nums" style={{ color: theme.text.primary }}>{pct(roiTotale)}</span>
             </div>
@@ -404,9 +420,20 @@ export default function CalcolatoreRoi() {
               <div className="h-full transition-all" style={{ width: `${Math.min(Math.max(roiTotale, 0), 100)}%`, background: theme.accento.fill }} />
             </div>
             <p className="text-xs mt-2 leading-relaxed" style={{ color: theme.text.secondary }}>
-              {anni} {anni === 1 ? 'anno' : 'anni'} di affitto netto ({fmt(ltNet * anni)} AED) più la rivalutazione
-              ({fmt(profit)} AED), sul prezzo pagato. {mkt === 'offplan' && `L'orizzonte segue la consegna: ${d.opHand} mesi.`}
-              {' '}Non include i costi d'acquisto.
+              {mkt === 'offplan' ? (
+                <>
+                  Fino alla consegna ({d.opHand} mesi) un off-plan non si affitta: l'unico ritorno è la
+                  rivalutazione ({fmt(profit)} AED), divisa per il capitale impegnato — prezzo {fmt(price)} più
+                  costi d'acquisto {fmt(costiAcquisto)} = {fmt(capitale)} AED. Da lì in poi l'immobile comincia
+                  a rendere {pct(ltYieldCap)} l'anno sul capitale.
+                </>
+              ) : (
+                <>
+                  {anni} anni di affitto netto ({fmt(ltNet * anni)} AED) più la rivalutazione ({fmt(profit)} AED),
+                  divisi per il capitale impegnato: prezzo {fmt(price)} più costi d'acquisto {fmt(costiAcquisto)}
+                  {' '}= {fmt(capitale)} AED.
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -432,6 +459,9 @@ export default function CalcolatoreRoi() {
                   spiegazione="Service charge, utenze, assicurazione e manutenzione. Dettaglio nella scheda Costi." />
             <Voce etichetta="= Netto annuo" valore={`${fmt(ltNet)} AED`} coloreValore={theme.stato.buono.text} forte
                   spiegazione="Il reddito che l'immobile produce in un anno, al netto delle spese ricorrenti." />
+            <Voce etichetta="Rendimento sul capitale impegnato" valore={pct(ltYieldCap)}
+                  spiegazione={`Lo stesso reddito diviso per quello che esce davvero dal conto: prezzo più i costi d'acquisto (${fmt(costiAcquisto)} AED). È più basso del rendimento sul prezzo, ed è il numero onesto se la domanda è "quanto rende l'operazione".`}
+                  formula={`${fmt(ltNet)} / (${fmt(price)} + ${fmt(costiAcquisto)})`} />
           </div>
 
           <div className="rounded-xl p-4 border" style={scheda}>
@@ -458,6 +488,9 @@ export default function CalcolatoreRoi() {
                   spiegazione="Gli stessi dell'affitto lungo: service charge, utenze, assicurazione." />
             <Voce etichetta="= Netto annuo" valore={`${fmt(stNet)} AED`} coloreValore={theme.stato.buono.text} forte
                   spiegazione="Quello che resta dall'affitto breve in un anno medio." />
+            <Voce etichetta="Rendimento sul capitale impegnato" valore={pct(stYieldCap)}
+                  spiegazione={`Lo stesso netto diviso per prezzo più costi d'acquisto (${fmt(costiAcquisto)} AED). Non tiene conto dell'arredo, che per l'affitto breve è un esborso iniziale in più.`}
+                  formula={`${fmt(stNet)} / (${fmt(price)} + ${fmt(costiAcquisto)})`} />
           </div>
         </div>
       )}
