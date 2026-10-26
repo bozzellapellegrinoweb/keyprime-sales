@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Il menu a tendina di un <select> non lo disegna la pagina: lo disegna il
+   sistema operativo. Con il tema chiaro va dichiarato chiaro, o il sistema lo
+   costruisce scuro su un'interfaccia chiara. */
+:root { color-scheme: light; }
+
+select option { background-color: #ffffff; color: #141c2b; }
+
+/* Safe area per il notch iOS */
+:root {
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+  --sar: env(safe-area-inset-right);
+}
+
+@media all and (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+.capacitor-ios body { padding-top: env(safe-area-inset-top); }
+.capacitor-android body { padding-top: 0; }
+
+body.keyboard-open { height: auto !important; }
+body.keyboard-open .fixed.bottom-0 { position: absolute; }
+
+html, body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+html { scroll-behavior: smooth; }
+body { background: #edebe6; color: #141c2b; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+.active\:scale-95:active { transform: scale(0.95); }
+
+button, a { -webkit-user-select: none; user-select: none; }

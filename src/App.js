@@ -1,5 +1,5 @@
 /* eslint-disable */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from './lib/supabaseClient';
 import { theme, BRAND } from './lib/theme';
 import * as auth from './lib/auth';
@@ -2893,7 +2893,7 @@ export default function App() {
                 <Card>
                   <h3 className="text-ink font-semibold mb-4">Dettaglio Vendite</h3>
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full min-w-[640px]">
                       <thead>
                         <tr className="text-left text-zinc-500 text-xs border-b border-zinc-800">
                           <th className="pb-3">Progetto</th>
@@ -3072,7 +3072,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
 
       <Card padding="p-0" className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[820px]">
             <thead>
               <tr className="border-b border-[#e4e0d8]">
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">Data</th>
@@ -3314,8 +3314,8 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
       {/* Table */}
       <Card padding="p-0" className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-zinc-700/50/50 border-b border-zinc-700">
+          <table className="w-full min-w-[820px]">
+            <thead className="bg-zinc-800 border-b border-zinc-700">
               <tr>
                 <th className="w-12 py-3 px-4">
                   <input
@@ -3342,7 +3342,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
                 return (
                   <tr 
                     key={lead.id} 
-                    className={`hover:bg-zinc-700/50/50 cursor-pointer transition-colors ${isSelected ? 'bg-orange-500/10' : ''}`}
+                    className={`hover:bg-zinc-800 cursor-pointer transition-colors ${isSelected ? 'bg-orange-500/10' : ''}`}
                   >
                     <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                       <input
@@ -3458,9 +3458,12 @@ function PipelineTab({ byStato, onSelectLead, onUpdateSaleStatus }) {
       <div className="flex items-center justify-between">
         <p className="text-zinc-500 text-sm">Trascina le card per cambiare stato</p>
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Su schermo largo cinque colonne; su telefono una fila che scorre,
+          perche' cinque stadi in due colonne di griglia non si leggono e non
+          si scorrono. */}
+      <div className="flex gap-4 overflow-x-auto pb-3 snap-x lg:grid lg:grid-cols-5 lg:overflow-visible lg:pb-0">
         {pipelineStati.map(st => (
-          <div key={st} className="space-y-3" onDragOver={(e) => handleDragOver(e, st)} onDragLeave={handleDragLeave} onDrop={(e) => handleDrop(e, st)}>
+          <div key={st} className="space-y-3 shrink-0 w-[78vw] max-w-[300px] snap-start lg:w-auto lg:max-w-none lg:shrink" onDragOver={(e) => handleDragOver(e, st)} onDragLeave={handleDragLeave} onDrop={(e) => handleDrop(e, st)}>
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ background: theme.status[st]?.color }} />
@@ -3489,35 +3492,131 @@ function PipelineTab({ byStato, onSelectLead, onUpdateSaleStatus }) {
 }
 
 // CRM Tab
+// Una riga della tabella clienti, memoizzata di proposito.
+//
+// Spuntando una casella cambia una riga sola, ma senza memo React ne ridisegna
+// trentasei: misurato, erano 96-235 ms per click su CPU rallentata quattro
+// volte — un ritardo che si sente sotto il dito.
+const STATS_VUOTE = { leads: 0, value: 0 };
+
+const RigaCliente = React.memo(function RigaCliente({
+  cliente, stats, selezionata, onToggle, onSelect, onDelete
+}) {
+  return (
+                  <tr 
+                    className={`hover:bg-zinc-800 cursor-pointer transition-colors ${selezionata ? 'bg-amber-500/10' : ''}`}
+                  >
+                    <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selezionata}
+                        onChange={() => onToggle(cliente.id)}
+                        className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-amber-500 focus:ring-amber-500"
+                      />
+                    </td>
+                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
+                      <div className="flex items-center gap-3">
+                        <Avatar nome={cliente.nome} cognome={cliente.cognome} size="sm" />
+                        <div>
+                          <p className="text-ink font-medium">{cliente.nome} {cliente.cognome || ''}</p>
+                          {cliente.azienda && <p className="text-zinc-500 text-xs">{cliente.azienda}</p>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-zinc-300" onClick={() => onSelect(cliente)}>
+                      {cliente.telefono || '-'}
+                    </td>
+                    <td className="py-3 px-4 text-zinc-300 text-sm" onClick={() => onSelect(cliente)}>
+                      {cliente.email || '-'}
+                    </td>
+                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
+                      <StatusBadge status={cliente.stato} type="cliente" />
+                    </td>
+                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
+                      {cliente.assegnato_a ? (
+                        <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">{cliente.assegnato_a}</span>
+                      ) : (
+                        <span className="text-zinc-600">-</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
+                      {stats.leads > 0 ? (
+                        <span className="text-blue-400 font-medium">{stats.leads}</span>
+                      ) : (
+                        <span className="text-zinc-600">0</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
+                      {stats.value > 0 ? (
+                        <span className="text-emerald-400 font-semibold">{fmt(stats.value)}</span>
+                      ) : (
+                        <span className="text-zinc-600">-</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-zinc-300" onClick={() => onSelect(cliente)}>
+                      {cliente.budget_max ? fmt(cliente.budget_max) : '-'}
+                    </td>
+                    <td className="py-3 px-4 text-zinc-500 text-sm" onClick={() => onSelect(cliente)}>
+                      {cliente.created_at ? new Date(cliente.created_at).toLocaleDateString('it-IT') : '-'}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onSelect(cliente); }}
+                          className="p-1.5 text-zinc-400 hover:text-ink hover:bg-zinc-700 rounded-lg transition-colors"
+                          title="Dettagli"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); if(window.confirm('Eliminare questo cliente?')) onDelete(cliente.id); }}
+                          className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          title="Elimina"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+  );
+});
+
 function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDelete, onUpdateCliente, users }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [sortField, setSortField] = useState('created_at');
   const [sortDir, setSortDir] = useState('desc');
 
-  const getClientStats = (id) => {
-    const cs = sales.filter(s => s.cliente_id === id);
-    const vendite = cs.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
-    return { leads: cs.length, value: vendite.reduce((sum, s) => sum + Number(s.valore || 0), 0) };
-  };
-
-  // Sort clients
-  const sortedClienti = [...clienti].sort((a, b) => {
-    let aVal = a[sortField];
-    let bVal = b[sortField];
-    if (sortField === 'leads') {
-      aVal = getClientStats(a.id).leads;
-      bVal = getClientStats(b.id).leads;
-    } else if (sortField === 'value') {
-      aVal = getClientStats(a.id).value;
-      bVal = getClientStats(b.id).value;
+  // Una passata sola sulle vendite, non una per ogni riga a ogni ridisegno.
+  // Oggetto semplice e non Map: in questo file "Map" e' un'icona importata da
+  // lucide-react, e `new Map()` chiamerebbe il componente come costruttore.
+  const statsPerCliente = useMemo(() => {
+    const m = {};
+    for (const s of sales) {
+      if (!s.cliente_id) continue;
+      const v = m[s.cliente_id] || (m[s.cliente_id] = { leads: 0, value: 0 });
+      v.leads += 1;
+      if (s.stato === 'venduto' || s.stato === 'incassato') v.value += Number(s.valore || 0);
     }
-    if (sortDir === 'asc') return aVal > bVal ? 1 : -1;
-    return aVal < bVal ? 1 : -1;
-  });
+    return m;
+  }, [sales]);
 
-  const toggleSelect = (id) => {
+  const sortedClienti = useMemo(() => {
+    const stat = (id) => statsPerCliente[id] || STATS_VUOTE;
+    return [...clienti].sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+      if (sortField === 'leads') { aVal = stat(a.id).leads; bVal = stat(b.id).leads; }
+      else if (sortField === 'value') { aVal = stat(a.id).value; bVal = stat(b.id).value; }
+      if (sortDir === 'asc') return aVal > bVal ? 1 : -1;
+      return aVal < bVal ? 1 : -1;
+    });
+  }, [clienti, statsPerCliente, sortField, sortDir]);
+
+  // Stabile fra un ridisegno e l'altro, altrimenti il memo delle righe non
+  // serve a niente: una funzione nuova e' una prop nuova.
+  const toggleSelect = useCallback((id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
+  }, []);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === sortedClienti.length) {
@@ -3636,8 +3735,8 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
       {/* Table */}
       <Card padding="p-0" className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-zinc-700/50/50 border-b border-zinc-700">
+          <table className="w-full min-w-[820px]">
+            <thead className="bg-zinc-800 border-b border-zinc-700">
               <tr>
                 <th className="w-12 py-3 px-4">
                   <input
@@ -3660,88 +3759,17 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              {sortedClienti.map(cliente => {
-                const stats = getClientStats(cliente.id);
-                const isSelected = selectedIds.includes(cliente.id);
-                return (
-                  <tr 
-                    key={cliente.id} 
-                    className={`hover:bg-zinc-700/50/50 cursor-pointer transition-colors ${isSelected ? 'bg-amber-500/10' : ''}`}
-                  >
-                    <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleSelect(cliente.id)}
-                        className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-amber-500 focus:ring-amber-500"
-                      />
-                    </td>
-                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
-                      <div className="flex items-center gap-3">
-                        <Avatar nome={cliente.nome} cognome={cliente.cognome} size="sm" />
-                        <div>
-                          <p className="text-ink font-medium">{cliente.nome} {cliente.cognome || ''}</p>
-                          {cliente.azienda && <p className="text-zinc-500 text-xs">{cliente.azienda}</p>}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-zinc-300" onClick={() => onSelect(cliente)}>
-                      {cliente.telefono || '-'}
-                    </td>
-                    <td className="py-3 px-4 text-zinc-300 text-sm" onClick={() => onSelect(cliente)}>
-                      {cliente.email || '-'}
-                    </td>
-                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
-                      <StatusBadge status={cliente.stato} type="cliente" />
-                    </td>
-                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
-                      {cliente.assegnato_a ? (
-                        <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">{cliente.assegnato_a}</span>
-                      ) : (
-                        <span className="text-zinc-600">-</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
-                      {stats.leads > 0 ? (
-                        <span className="text-blue-400 font-medium">{stats.leads}</span>
-                      ) : (
-                        <span className="text-zinc-600">0</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
-                      {stats.value > 0 ? (
-                        <span className="text-emerald-400 font-semibold">{fmt(stats.value)}</span>
-                      ) : (
-                        <span className="text-zinc-600">-</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-zinc-300" onClick={() => onSelect(cliente)}>
-                      {cliente.budget_max ? fmt(cliente.budget_max) : '-'}
-                    </td>
-                    <td className="py-3 px-4 text-zinc-500 text-sm" onClick={() => onSelect(cliente)}>
-                      {cliente.created_at ? new Date(cliente.created_at).toLocaleDateString('it-IT') : '-'}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onSelect(cliente); }}
-                          className="p-1.5 text-zinc-400 hover:text-ink hover:bg-zinc-700 rounded-lg transition-colors"
-                          title="Dettagli"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); if(window.confirm('Eliminare questo cliente?')) onDelete(cliente.id); }}
-                          className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Elimina"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {sortedClienti.map(cliente => (
+                <RigaCliente
+                  key={cliente.id}
+                  cliente={cliente}
+                  stats={statsPerCliente[cliente.id] || STATS_VUOTE}
+                  selezionata={selectedIds.includes(cliente.id)}
+                  onToggle={toggleSelect}
+                  onSelect={onSelect}
+                  onDelete={onDelete}
+                />
+              ))}
             </tbody>
           </table>
           {sortedClienti.length === 0 && (
@@ -4038,7 +4066,7 @@ function TeamTab({ users, currentUserId, onCreate, onEdit, onSetActive }) {
     admin: 'Admin', agente_admin: 'Agente Admin', agente: 'Agente', segnalatore: 'Segnalatore'
   };
   const coloreRuolo = {
-    admin: 'bg-oro-500/20 text-oro-300',
+    admin: 'bg-oro-500/20 text-oro-400',
     agente_admin: 'bg-violet-500/20 text-violet-300',
     agente: 'bg-blue-500/20 text-blue-300',
     segnalatore: 'bg-emerald-500/20 text-emerald-300'
@@ -4060,7 +4088,7 @@ function TeamTab({ users, currentUserId, onCreate, onEdit, onSetActive }) {
             </span>
             {!u.attivo && <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400">Disattivato</span>}
             {u.must_change_password && u.attivo && (
-              <span className="px-2 py-0.5 rounded-full text-xs bg-amber-500/20 text-amber-300">Password da impostare</span>
+              <span className="px-2 py-0.5 rounded-full text-xs bg-amber-500/20 text-amber-400">Password da impostare</span>
             )}
           </div>
           <p className="text-zinc-500 text-sm mt-1 truncate">
@@ -4247,7 +4275,7 @@ function AgentDetailView({ agent, sales, onBack }) {
           <h3 className="text-ink font-semibold mb-4">Ultimi Lead</h3>
           <div className="space-y-2">
             {agentSales.slice(0, 10).map(s => (
-              <div key={s.id} className="flex items-center gap-3 p-3 bg-zinc-700/50/50 rounded-xl">
+              <div key={s.id} className="flex items-center gap-3 p-3 bg-zinc-800 rounded-xl">
                 <div className="w-1 h-10 rounded-full" style={{ background: theme.status[s.stato || 'lead']?.color }} />
                 <div className="flex-1 min-w-0">
                   <p className="text-ink text-sm font-medium truncate">{s.progetto || 'TBD'}</p>
@@ -4554,7 +4582,7 @@ function ProjectCardCompact({ project, isSelected, onClick, onHover }) {
       onClick={onClick} 
       onMouseEnter={() => onHover && onHover(project.project_id)}
       onMouseLeave={() => onHover && onHover(null)}
-      className={'p-3 rounded-xl cursor-pointer transition-all ' + (isSelected ? 'bg-orange-500/20 border-2 border-orange-500' : 'bg-zinc-700/50/50 border border-transparent hover:bg-zinc-700/50 hover:border-zinc-600')}
+      className={'p-3 rounded-xl cursor-pointer transition-all ' + (isSelected ? 'bg-orange-500/20 border-2 border-orange-500' : 'bg-zinc-800 border border-transparent hover:bg-zinc-700/50 hover:border-zinc-600')}
     >
       <div className="flex gap-3">
         <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700">
@@ -4941,7 +4969,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
             <Button variant="ghost" size="sm" onClick={() => setShowStats(!showStats)} icon={PieChart}>
               {showStats ? 'Nascondi' : 'Stats'}
             </Button>
-            <div className="flex items-center gap-2 bg-zinc-700/50/50 p-1 rounded-xl">
+            <div className="flex items-center gap-2 bg-zinc-800 p-1 rounded-xl">
               <button onClick={() => { setViewMode('list'); setSelectedAreaProjects(null); }} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'list' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-ink')} title="Lista"><List className="w-5 h-5" /></button>
               <button onClick={() => setViewMode('map')} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'map' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-ink')} title="Mappa"><Map className="w-5 h-5" /></button>
               <button onClick={() => setViewMode('saved')} className={'p-2 rounded-lg transition-colors relative ' + (viewMode === 'saved' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-ink')} title="Salvati">
@@ -5696,7 +5724,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
             </div>
             {formatBedrooms(listing.bedrooms) && (
               <div className="flex items-center gap-4 text-zinc-300">
-                <div className="flex items-center gap-2 px-4 py-2 bg-zinc-700/50/50 rounded-xl">
+                <div className="flex items-center gap-2 px-4 py-2 bg-zinc-800 rounded-xl">
                   <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                   <span className="font-medium">{formatBedrooms(listing.bedrooms)}</span>
                 </div>
@@ -5736,20 +5764,20 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               <p className="text-zinc-500 text-xs mt-1">Stato progetto</p>
             </div>
             {formatDelivery(listing.delivery_date) && (
-              <div className="bg-zinc-700/50/50 rounded-xl p-4 text-center">
+              <div className="bg-zinc-800 rounded-xl p-4 text-center">
                 <p className="text-blue-400 text-2xl font-bold">📅</p>
                 <p className="text-ink font-medium mt-1">{formatDelivery(listing.delivery_date)}</p>
                 <p className="text-zinc-500 text-xs mt-1">Consegna prevista</p>
               </div>
             )}
             {listing.payment_plans?.plans?.[0]?.summary?.down_payment && (
-              <div className="bg-zinc-700/50/50 rounded-xl p-4 text-center">
+              <div className="bg-zinc-800 rounded-xl p-4 text-center">
                 <p className="text-green-400 text-2xl font-bold">{listing.payment_plans.plans[0].summary.down_payment}%</p>
                 <p className="text-ink font-medium mt-1">Anticipo</p>
                 <p className="text-zinc-500 text-xs mt-1">Down payment</p>
               </div>
             )}
-            <div className="bg-zinc-700/50/50 rounded-xl p-4 text-center">
+            <div className="bg-zinc-800 rounded-xl p-4 text-center">
               <p className="text-purple-400 text-2xl font-bold">{locationInsights.roi}</p>
               <p className="text-ink font-medium mt-1">ROI Stimato</p>
               <p className="text-zinc-500 text-xs mt-1">Rendimento annuo</p>
@@ -5862,7 +5890,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               ))}
             </div>
             {/* Mini Map Link */}
-            <a href={getMapUrl()} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center justify-center gap-2 p-3 bg-zinc-700/50/50 hover:bg-zinc-700/50 rounded-xl text-zinc-300 transition-colors">
+            <a href={getMapUrl()} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center justify-center gap-2 p-3 bg-zinc-800 hover:bg-zinc-700/50 rounded-xl text-zinc-300 transition-colors">
               <MapPin className="w-4 h-4" />
               <span className="text-sm">Apri in Google Maps</span>
               <ArrowUpRight className="w-4 h-4" />
@@ -5877,7 +5905,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               </h3>
               <div className="space-y-3">
                 {listing.payment_plans.plans.map((plan, idx) => (
-                  <div key={idx} className="p-4 bg-zinc-700/50/50 rounded-xl">
+                  <div key={idx} className="p-4 bg-zinc-800 rounded-xl">
                     {plan.title && <p className="text-zinc-300 font-medium mb-3">{plan.title}</p>}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="text-center p-3 bg-green-500/10 rounded-lg">
@@ -6117,7 +6145,7 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
         
         <div className="p-4 space-y-4">
           {/* Listing Summary */}
-          <div className="flex gap-3 p-3 bg-zinc-700/50/50 rounded-xl">
+          <div className="flex gap-3 p-3 bg-zinc-800 rounded-xl">
             {listing.images?.[0]?.small_image_url && <img src={listing.images[0].small_image_url} alt="" className="w-16 h-16 rounded-lg object-cover" />}
             <div className="flex-1 min-w-0">
               <p className="text-ink text-sm font-medium line-clamp-1">{listing.title}</p>
@@ -6359,7 +6387,7 @@ function LeadDetailSheet({
               </Card>
             ) : (
               <Card padding="p-4" className="border-amber-500/25 bg-amber-500/5">
-                <p className="text-amber-300 text-sm">Nessun prossimo contatto fissato su questo lead.</p>
+                <p className="text-amber-400 text-sm">Nessun prossimo contatto fissato su questo lead.</p>
               </Card>
             )}
 
@@ -6667,7 +6695,7 @@ function ConvertModal({ sale, onConvert, onCancel }) {
   return (
     <Modal isOpen={!!sale} onClose={onCancel} title="🎉 Registra Vendita" size="sm">
       <div className="space-y-4">
-        <Card padding="p-3" className="bg-zinc-700/50/50">
+        <Card padding="p-3" className="bg-zinc-800">
           <p className="text-ink font-medium">{sale?.progetto}</p>
           <p className="text-zinc-500 text-sm">{sale?.developer} • {sale?.zona}</p>
         </Card>
@@ -6774,7 +6802,7 @@ function PasswordModal({ obbligatorio = false, onSave, onClose }) {
     <Modal isOpen onClose={obbligatorio ? () => {} : onClose} title={obbligatorio ? 'Imposta la tua password' : 'Cambia password'} size="sm">
       <div className="space-y-4">
         {obbligatorio && (
-          <div className="bg-oro-500/10 border border-oro-500/25 text-oro-300 rounded-xl px-4 py-3 text-sm">
+          <div className="bg-oro-500/10 border border-oro-500/25 text-oro-400 rounded-xl px-4 py-3 text-sm">
             Questo e' il primo accesso: scegli una password personale prima di continuare.
           </div>
         )}
@@ -6799,7 +6827,7 @@ function NoteModal({ task, onSave, onClose }) {
   return (
     <Modal isOpen onClose={onClose} title="Aggiungi Nota" size="sm">
       <div className="space-y-4">
-        <Card padding="p-3" className="bg-zinc-700/50/50">
+        <Card padding="p-3" className="bg-zinc-800">
           <p className="text-ink font-medium">{task?.titolo}</p>
         </Card>
         <div>
@@ -6964,7 +6992,7 @@ function UserModal({ user, onSave, onClose }) {
     return (
       <Modal isOpen onClose={onClose} title="Credenziali da consegnare" size="sm">
         <div className="space-y-4">
-          <div className="bg-amber-500/10 border border-amber-500/25 text-amber-300 rounded-xl px-4 py-3 text-sm">
+          <div className="bg-amber-500/10 border border-amber-500/25 text-amber-400 rounded-xl px-4 py-3 text-sm">
             Copiale adesso: nel database viene salvato solo l'hash, quindi questa password non sara' piu' recuperabile.
           </div>
           <Card padding="p-4" className="space-y-2">
