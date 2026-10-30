@@ -4582,7 +4582,7 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
                 <X className="w-4 h-4" />
               </button>
               <div className="absolute bottom-2 left-2 px-2 py-1 bg-oro-500 text-ink text-xs font-medium rounded-lg">
-                {popupProject.construction_phase_key === 'completed' ? '✓ Completato' : popupProject.construction_phase_key === 'under_construction' ? '🏗️ In Costruzione' : '🚀 Lancio'}
+                {popupProject.construction_phase_key === 'completed' ? '✓ Pronto' : popupProject.construction_phase_key === 'under_construction' ? '🏗️ In Costruzione' : '🚀 Non partito'}
               </div>
             </div>
             <div className="p-4">
@@ -4748,11 +4748,20 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
   
   const topDevelopers = ['Emaar Properties', 'Damac Properties', 'Sobha Realty', 'Nakheel', 'Meraas', 'Aldar Properties', 'Azizi Developments', 'Binghatti', 'Ellington', 'Omniyat Group', 'Danube Properties', 'Select Group', 'Deyaar', 'MAG', 'Reportage Properties'];
   const bedroomOptions = ['Studio', '1', '2', '3', '4', '5+'];
+  /* Le fasi che il catalogo ha davvero: under_construction (2.452),
+     completed (546), not_started (172). "launch" non e' mai esistito nei
+     dati — chi lo sceglieva otteneva zero risultati e pensava che il
+     catalogo fosse vuoto.
+     E "Tutti gli stati" non erano tutti: i consegnati restavano fuori
+     comunque, perche' la ricerca li esclude di suo. Ora il valore vuoto
+     dice cosa fa, e chi cerca un'unita' pronta da rivendere ha una voce
+     che la nomina. */
   const statusOptions = [
-    { value: '', label: 'Tutti gli stati' },
-    { value: 'completed', label: 'Completato' },
-    { value: 'under_construction', label: 'In Costruzione' },
-    { value: 'launch', label: 'Lancio' }
+    { value: '', label: 'Off-plan (non consegnati)' },
+    { value: 'under_construction', label: 'In costruzione' },
+    { value: 'not_started', label: 'Non ancora partiti' },
+    { value: 'completed', label: 'Pronti / consegnati' },
+    { value: 'tutti', label: 'Tutte le fasi' }
   ];
   const deliveryYears = ['2024', '2025', '2026', '2027', '2028', '2029', '2030'];
   const sortOptions = [
@@ -4870,14 +4879,20 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
       
       // EXCLUDE completed projects by default (they're not off-plan anymore)
       // Only show completed if explicitly filtered
-      if (filters.status) {
+      if (filters.status === 'tutti') {
+        // nessun vincolo sulla fase
+      } else if (filters.status) {
         query = query.eq('construction_phase', filters.status);
       } else {
         query = query.neq('construction_phase', 'completed');
       }
       
-      // Exclude projects with past delivery dates (before 2024)
-      query = query.or('delivery_date.is.null,delivery_date.gte.2024-01-01');
+      // Una consegna vecchia su un off-plan vuol dire scheda ferma; su un
+      // progetto gia' consegnato e' solo la data in cui e' stato consegnato,
+      // e tagliarla toglierebbe proprio le unita' pronte che si cercano.
+      if (filters.status !== 'completed' && filters.status !== 'tutti') {
+        query = query.or('delivery_date.is.null,delivery_date.gte.2024-01-01');
+      }
       
       // Apply filters
       if (filters.search) {
@@ -4977,7 +4992,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
       if (filters.developer) query = query.ilike('developer_name', `%${filters.developer}%`);
       if (filters.minPrice) query = query.gte('price_from', parseInt(filters.minPrice));
       if (filters.maxPrice) query = query.lte('price_from', parseInt(filters.maxPrice));
-      if (filters.status) query = query.eq('construction_phase', filters.status);
+      if (filters.status && filters.status !== 'tutti') query = query.eq('construction_phase', filters.status);
       if (filters.deliveryYear) {
         query = query.gte('delivery_date', `${filters.deliveryYear}-01-01`).lte('delivery_date', `${filters.deliveryYear}-12-31`);
       }
@@ -4994,7 +5009,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         p.location_full,
         p.developer_name,
         p.price_from,
-        p.construction_phase === 'completed' ? 'Completato' : p.construction_phase === 'under_construction' ? 'In Costruzione' : 'Lancio',
+        p.construction_phase === 'completed' ? 'Pronto' : p.construction_phase === 'under_construction' ? 'In Costruzione' : 'Non partito',
         p.delivery_date,
         p.url
       ]);
@@ -5101,7 +5116,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
             <RicercaProgetti
               supabase={supabase}
               valore={filters.search}
-              soloAttivi={!filters.status}
+              soloAttivi={filters.status !== 'completed' && filters.status !== 'tutti'}
               onCambia={(v) => setFilters(f => ({ ...f, search: v }))}
               onCerca={() => { setSelectedAreaProjects(null); searchListings(1); }}
               onApriProgetto={setSelectedListing}
@@ -5164,7 +5179,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                       <div className="relative h-40 -mx-4 -mt-4 mb-3 overflow-hidden">
                         {project.images?.[0]?.medium_image_url ? <img src={project.images[0].medium_image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /> : <div className="w-full h-full bg-zinc-700/50 flex items-center justify-center"><Building2 className="w-12 h-12 text-zinc-600" /></div>}
                         <div className="absolute top-2 left-2 flex gap-1">
-                          <span className={'px-2 py-1 text-white text-xs font-medium rounded-lg ' + (project.construction_phase_key === 'completed' ? 'bg-emerald-500/90' : project.construction_phase_key === 'under_construction' ? 'bg-navy-500/90' : 'bg-oro-500/90 !text-ink')}>{project.construction_phase_key === 'completed' ? 'Completato' : project.construction_phase_key === 'under_construction' ? 'In Costruzione' : 'Lancio'}</span>
+                          <span className={'px-2 py-1 text-white text-xs font-medium rounded-lg ' + (project.construction_phase_key === 'completed' ? 'bg-emerald-500/90' : project.construction_phase_key === 'under_construction' ? 'bg-navy-500/90' : 'bg-oro-500/90 !text-ink')}>{project.construction_phase_key === 'completed' ? 'Pronto' : project.construction_phase_key === 'under_construction' ? 'In Costruzione' : 'Non partito'}</span>
                           {project.hotness_level >= 80 && <span className="px-2 py-1 bg-gradient-to-r from-red-500 to-oro-600 text-white text-xs font-medium rounded-lg">🔥</span>}
                         </div>
                         {formatDelivery(project.delivery_date) && <div className="absolute top-2 right-12 px-2 py-1 bg-zinc-800/70 text-ink text-xs rounded-lg">{formatDelivery(project.delivery_date)}</div>}
