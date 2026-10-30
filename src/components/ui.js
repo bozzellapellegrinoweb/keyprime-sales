@@ -6,7 +6,8 @@
 
 import React, { useEffect } from 'react';
 import {
-  Check, X, ChevronRight, ArrowUpRight, ArrowDownRight, Phone, Mail, MessageCircle
+  Check, X, ChevronRight, ArrowUpRight, ArrowDownRight, Phone, Mail, MessageCircle,
+  Info, AlertCircle
 } from 'lucide-react';
 import { theme } from '../lib/theme';
 import { pipelineLabels } from '../lib/costanti';
@@ -14,10 +15,14 @@ import { fmt, getInitials, getWhatsAppLink } from '../lib/format';
 
 export const Toast = ({ message, type = 'success', onClose }) => {
   useEffect(() => { const t = setTimeout(onClose, 2500); return () => clearTimeout(t); }, [onClose]);
+  // Un errore con la spunta accanto dice il contrario di quello che e'
+  // successo. E su questi tre riempimenti il testo va bianco: l'inchiostro
+  // navy sul rosso sta a 2,9:1, il bianco a 4,8:1.
   const colors = { success: 'bg-emerald-500', error: 'bg-red-500', info: 'bg-blue-500' };
+  const Icona = type === 'error' ? AlertCircle : type === 'info' ? Info : Check;
   return (
-    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 ${colors[type]} text-ink px-5 py-3 rounded-full shadow-2xl flex items-center gap-2 animate-slideUp`}>
-      <Check className="w-4 h-4" /><span className="text-sm font-medium">{message}</span>
+    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 ${colors[type]} text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2 animate-slideUp max-w-[90vw]`}>
+      <Icona className="w-4 h-4 shrink-0" /><span className="text-sm font-medium">{message}</span>
     </div>
   );
 };
@@ -151,7 +156,7 @@ export const Button = ({ children, variant = 'primary', size = 'md', icon: Icon,
 // Modal
 export const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   if (!isOpen) return null;
-  const sizes = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl' };
+  const sizes = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl', '2xl': 'max-w-3xl' };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-zinc-800/60 backdrop-blur-sm" onClick={onClose} />
