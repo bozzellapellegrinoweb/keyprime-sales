@@ -15,6 +15,7 @@
 import React, { useState } from 'react';
 import { HelpCircle } from 'lucide-react';
 import { theme } from '../lib/theme';
+import { CampoNumero } from './ui';
 
 /* ── Dati di riferimento per zona ────────────────────────────────────────
    Stime di mercato, non il preventivo di un immobile specifico.
@@ -93,6 +94,17 @@ export const roiZones = {
   // AJMAN
   'Ajman Downtown': { emirate: 'Ajman', cat: 'Affordable', e: '🏙️', lt: 10.5, rent: 28000, sqft: 380, occ: 70, night: 200, opAppr: 8, opDisc: 8, opHand: 20, secAppr: 5, scNew: 4, scOld: 7, dewa: 2500, ageNew: '2018+', ageMid: '2008-17', ageOld: '2000-07' },
   'Ajman Corniche': { emirate: 'Ajman', cat: 'Mid-Market', e: '🌅', lt: 9.0, rent: 35000, sqft: 500, occ: 65, night: 250, opAppr: 10, opDisc: 8, opHand: 22, secAppr: 6, scNew: 5, scOld: 9, dewa: 3000, ageNew: '2018+', ageMid: '2008-17', ageOld: '2000-07' },
+  /* FUJAIRAH — dati indicativi, non allineati agli altri.
+     Per gli altri emirati le cifre vengono da serie di transazioni; su
+     Fujairah le fonti pubbliche sono poche e in disaccordo fra loro: Bayut
+     dava 34 AED/sqft di affitto (+9,4% su dodici mesi), Sands of Wealth
+     400-600 AED/sqft di vendita e rendimenti 3,9-4,3%, Properties Market
+     7-9% lordo a fine 2025. Le voci qui sotto stanno nella parte bassa di
+     quelle forbici, e 'stima: true' le fa dichiarare a schermo: meglio un
+     emirato con numeri dichiarati indicativi che un emirato che non esiste.
+     Verificate: ottobre 2026. */
+  'Fujairah Corniche': { emirate: 'Fujairah', cat: 'Mid-Market', e: '🌊', stima: true, lt: 7.0, rent: 28000, sqft: 700, occ: 55, night: 240, opAppr: 10, opDisc: 5, opHand: 24, secAppr: 5, scNew: 8, scOld: 12, dewa: 3000, ageNew: '2018+', ageMid: '2005-17', ageOld: '1995-04' },
+  'Al Faseel': { emirate: 'Fujairah', cat: 'Affordable', e: '🏝️', stima: true, lt: 7.8, rent: 24000, sqft: 620, occ: 50, night: 200, opAppr: 8, opDisc: 5, opHand: 24, secAppr: 4, scNew: 6, scOld: 10, dewa: 2600, ageNew: '2018+', ageMid: '2005-17', ageOld: '1995-04' },
   // UAQ
   'UAQ Marina': { emirate: 'UAQ', cat: 'Affordable', e: '⛵', lt: 9.5, rent: 30000, sqft: 420, occ: 55, night: 220, opAppr: 12, opDisc: 10, opHand: 24, secAppr: 7, scNew: 5, scOld: 8, dewa: 2800, ageNew: '2020+', ageMid: '2015-19', ageOld: null },
 };
@@ -117,7 +129,11 @@ const REGISTRAZIONE = {
   'RAK':       { pct: 2, ente: 'RAK Municipality' },
   'Sharjah':   { pct: 2, ente: 'Sharjah Real Estate Registration' },
   'Ajman':     { pct: 2, ente: 'Ajman Municipality' },
-  'UAQ':       { pct: 2, ente: 'UAQ Municipality' }
+  'UAQ':       { pct: 2, ente: 'UAQ Municipality' },
+  // Le guide concordano sul 4%, ma nessuna rimanda a un tariffario ufficiale
+  // della municipalita': va confermato prima di metterlo per iscritto a un
+  // cliente, quindi si dichiara.
+  'Fujairah':  { pct: 4, ente: 'Fujairah Municipality', stima: true }
 };
 const AGENZIA_PCT = 2;
 
@@ -182,12 +198,21 @@ function Dato({ valore, etichetta, tinta, spiegazione, nota }) {
 export default function CalcolatoreRoi() {
   const [emirate, setEmirate] = useState('all');
   const [z, setZ] = useState('Business Bay');
-  const [price, setPrice] = useState(1200000);
-  const [sqft, setSqft] = useState(850);
+  const [prezzoInserito, setPrezzoInserito] = useState(1200000);
+  const [sqftInserito, setSqftInserito] = useState(850);
   const [br, setBr] = useState(1);
   const [mkt, setMkt] = useState('offplan');
   const [age, setAge] = useState('new');
   const [tab, setTab] = useState('overview');
+
+  /* I due campi possono restare vuoti mentre si scrive — prima non potevano,
+     ed era la segnalazione: svuotandoli ricompariva uno 0 incancellabile.
+     Per i conti un campo vuoto vale 0, e le divisioni per il prezzo si
+     fermano prima di produrre Infinity, che poi si stamperebbe cosi' com'e'. */
+  const price = prezzoInserito ?? 0;
+  const sqft = sqftInserito ?? 0;
+  const prezzoMancante = !(price > 0);
+  const suPrezzo = (n) => (price > 0 ? n / price * 100 : 0);
 
   const d = roiZones[z];
   const a = roiAgeMult[age];
@@ -203,8 +228,8 @@ export default function CalcolatoreRoi() {
   /* Affitto lungo termine */
   const rent = d.rent * roiBrMult.rent[br] * a.rent;
   const ltNet = rent - costs;
-  const ltLordo = rent / price * 100;
-  const ltYield = (ltNet / price * 100).toFixed(1);
+  const ltLordo = suPrezzo(rent);
+  const ltYield = suPrezzo(ltNet).toFixed(1);
 
   /* Affitto breve */
   const QUOTA_GESTIONE = 0.28;     // gestione + Tourism Dirham + permesso
@@ -212,7 +237,7 @@ export default function CalcolatoreRoi() {
   const stGross = d.night * roiBrMult.night[br] * 365 * d.occ / 100;
   const stCommissioni = stGross * QUOTA_GESTIONE;
   const stNet = stGross - costs - LICENZA_ANNUA - stCommissioni;
-  const stYield = (stNet / price * 100).toFixed(1);
+  const stYield = suPrezzo(stNet).toFixed(1);
 
   /* Rivalutazione.
      L'apprezzamento si applica al prezzo che si paga. Prima veniva applicato
@@ -233,8 +258,9 @@ export default function CalcolatoreRoi() {
   const reg = REGISTRAZIONE[d.emirate] || { pct: 2, ente: 'registro locale' };
   const costiAcquisto = price * (reg.pct + AGENZIA_PCT) / 100;
   const capitale = price + costiAcquisto;
-  const ltYieldCap = ltNet / capitale * 100;
-  const stYieldCap = stNet / capitale * 100;
+  const suCapitale = (n) => (capitale > 0 ? n / capitale * 100 : 0);
+  const ltYieldCap = suCapitale(ltNet);
+  const stYieldCap = suCapitale(stNet);
 
   /* ROI complessivo: affitto per gli anni fino alla consegna, piu' la
      rivalutazione sullo stesso orizzonte. Prima sommava 3 anni di affitto a
@@ -244,7 +270,7 @@ export default function CalcolatoreRoi() {
   // d'acquisto compresi. E un off-plan in costruzione non si affitta, quindi
   // fino alla consegna l'unico ritorno e' la rivalutazione.
   const affittoNelPeriodo = mkt === 'offplan' ? 0 : ltNet * anni;
-  const roiTotale = (affittoNelPeriodo + profit) / capitale * 100;
+  const roiTotale = suCapitale(affittoNelPeriodo + profit);
 
   const fmt = (n) => new Intl.NumberFormat('it-IT').format(Math.round(n));
   const pct = (n) => `${Number(n).toLocaleString('it-IT', { maximumFractionDigits: 1 })}%`;
@@ -257,6 +283,19 @@ export default function CalcolatoreRoi() {
   });
   const filteredZones = emirate === 'all' ? grouped : { [emirate]: grouped[emirate] };
 
+  /* Cambiando emirato la tendina delle zone si restringe, ma la zona scelta
+     restava quella di prima: si vedeva "Fujairah Corniche" nella tendina e
+     sotto i numeri di Business Bay, perche' il valore dello stato non era
+     fra le opzioni rimaste e il browser mostrava la prima. Quello che si
+     legge e quello che si calcola devono essere la stessa cosa. */
+  const cambiaEmirato = (em) => {
+    setEmirate(em);
+    if (em === 'all') return;
+    if (roiZones[z]?.emirate === em) return;
+    const prima = Object.keys(roiZones).find((nome) => roiZones[nome].emirate === em);
+    if (prima) setZ(prima);
+  };
+
   const pillola = (attiva) => attiva
     ? { background: theme.text.primary, color: '#ffffff' }
     : { background: theme.bg.tertiary, color: theme.text.secondary };
@@ -267,14 +306,14 @@ export default function CalcolatoreRoi() {
     <div className="space-y-4">
       {/* Emirato */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        <button onClick={() => setEmirate('all')} style={pillola(emirate === 'all')}
+        <button onClick={() => cambiaEmirato('all')} style={pillola(emirate === 'all')}
                 className="py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all">
           🇦🇪 Tutti
         </button>
-        {['Dubai', 'Abu Dhabi', 'RAK', 'Sharjah', 'Ajman', 'UAQ'].map((em) => (
-          <button key={em} onClick={() => setEmirate(em)} style={pillola(emirate === em)}
+        {['Dubai', 'Abu Dhabi', 'RAK', 'Sharjah', 'Ajman', 'UAQ', 'Fujairah'].map((em) => (
+          <button key={em} onClick={() => cambiaEmirato(em)} style={pillola(emirate === em)}
                   className="py-1.5 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all">
-            {em === 'RAK' ? '🏝️' : em === 'Dubai' ? '🌆' : em === 'Abu Dhabi' ? '🏛️' : em === 'Sharjah' ? '📚' : em === 'Ajman' ? '🏠' : '⛵'} {em}
+            {({ RAK: '🏝️', Dubai: '🌆', 'Abu Dhabi': '🏛️', Sharjah: '📚', Ajman: '🏠', UAQ: '⛵', Fujairah: '🌊' })[em] || '🏙️'} {em}
           </button>
         ))}
       </div>
@@ -300,16 +339,12 @@ export default function CalcolatoreRoi() {
             </select>
           </div>
           <div>
-            <label className="text-xs block mb-1" style={{ color: theme.text.tertiary }}>Prezzo che paghi (AED)</label>
-            <input type="number" value={price} onChange={(e) => setPrice(+e.target.value)}
-                   className="w-full border-none rounded-lg px-3 py-2 text-sm"
-                   style={{ background: theme.bg.tertiary, color: theme.text.primary }} />
+            <CampoNumero label="Prezzo che paghi (AED)" value={prezzoInserito} onChange={setPrezzoInserito}
+                         separatori min={0} placeholder="es. 1.200.000" />
           </div>
           <div>
-            <label className="text-xs block mb-1" style={{ color: theme.text.tertiary }}>Sqft</label>
-            <input type="number" value={sqft} onChange={(e) => setSqft(+e.target.value)}
-                   className="w-full border-none rounded-lg px-3 py-2 text-sm"
-                   style={{ background: theme.bg.tertiary, color: theme.text.primary }} />
+            <CampoNumero label="Superficie" value={sqftInserito} onChange={setSqftInserito}
+                         suffisso="sqft" min={0} placeholder="es. 850" />
           </div>
           <div>
             <label className="text-xs block mb-1" style={{ color: theme.text.tertiary }}>Camere</label>
@@ -339,6 +374,28 @@ export default function CalcolatoreRoi() {
             </select>
           </div>
         </div>
+
+        {d.stima && (
+          <p className="mt-3 text-xs flex items-start gap-1.5 rounded-lg px-3 py-2"
+             style={{ background: theme.stato.attenzione.bg, color: theme.stato.attenzione.text }}>
+            <HelpCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <span>
+              Su <strong>{z}</strong> i numeri di riferimento sono <strong>indicativi</strong>:
+              le fonti pubbliche su {d.emirate} sono poche e in disaccordo, quindi qui si sta
+              sulla parte bassa delle forbici. Usali per ragionare, non per mettere una cifra
+              per iscritto a un cliente.
+            </span>
+          </p>
+        )}
+
+        {prezzoMancante && (
+          <p className="mt-3 text-xs flex items-start gap-1.5 rounded-lg px-3 py-2"
+             style={{ background: theme.stato.attenzione.bg, color: theme.stato.attenzione.text }}>
+            <HelpCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            Senza prezzo i rendimenti non si possono calcolare: qui sotto restano a zero
+            finche' non lo scrivi. Non e' un risultato.
+          </p>
+        )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-sm">
           <div className="rounded-lg p-2" style={{ background: theme.bg.tertiary }}>
@@ -467,7 +524,7 @@ export default function CalcolatoreRoi() {
           <div className="rounded-xl p-4 border" style={scheda}>
             <h3 className="font-semibold mb-4" style={{ color: theme.text.primary }}>🏖️ Affitto breve (turistico)</h3>
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <Dato valore={pct(stGross / price * 100)} etichetta="Lordo"
+              <Dato valore={pct(suPrezzo(stGross))} etichetta="Lordo"
                     spiegazione="Ricavo delle notti diviso il prezzo, prima di qualunque costo." />
               <Dato valore={pct(stYield)} etichetta="Netto" tinta={theme.stato.buono.text}
                     spiegazione="Dopo costi fissi, gestione e licenza." />
@@ -564,9 +621,11 @@ export default function CalcolatoreRoi() {
               Non inclusi: i costi d'acquisto, circa {fmt(costiAcquisto)} AED
             </p>
             <p className="text-xs leading-relaxed" style={{ color: theme.text.secondary }}>
-              Registrazione ({reg.ente}, {reg.pct}%), commissione d'agenzia (circa {AGENZIA_PCT}%), più spese di
-              pratica e, se c'è un mutuo, i costi di istruttoria. Sono una tantum e non entrano nel rendimento annuo,
-              ma sul primo anno pesano: su {fmt(price)} AED sono circa {fmt(costiAcquisto)} AED.
+              Registrazione ({reg.ente}, {reg.pct}%{reg.stima ? ', da confermare' : ''}), commissione d'agenzia
+              (circa {AGENZIA_PCT}%), più spese di pratica e, se c'è un mutuo, i costi di istruttoria. Sono una
+              tantum e non entrano nel rendimento annuo, ma sul primo anno pesano: su {fmt(price)} AED sono
+              circa {fmt(costiAcquisto)} AED.
+              {reg.stima && ' La percentuale di registrazione per questo emirato non ha un tariffario ufficiale pubblicato: verificala in municipalità prima di indicarla a un cliente.'}
             </p>
           </div>
         </div>

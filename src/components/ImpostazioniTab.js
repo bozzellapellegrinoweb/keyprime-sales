@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { RefreshCw, Check, AlertCircle, Copy, Link2, Clock, Users } from 'lucide-react';
-import { Card, Button, Input } from './ui';
+import { Card, Button, CampoNumero } from './ui';
 import { theme } from '../lib/theme';
 import { leggiConfigGhl } from '../lib/api';
 import { salvaImpostazioni, SLA_PREDEFINITO } from '../lib/leads';
@@ -194,14 +194,25 @@ export default function ImpostazioniTab({ impostazioni, onRicarica, onToast, age
           promemoria giornaliero.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Input label="Primo contatto (ore)" type="number" min="1" value={sla.primo_contatto_ore ?? 24}
-                 onChange={(e) => setSla({ ...sla, primo_contatto_ore: Number(e.target.value) })} />
-          <Input label="Lead fermo (giorni)" type="number" min="1" value={sla.lead_fermo_giorni ?? 7}
-                 onChange={(e) => setSla({ ...sla, lead_fermo_giorni: Number(e.target.value) })} />
-          <Input label="Trattativa ferma (giorni)" type="number" min="1" value={sla.trattativa_ferma_giorni ?? 14}
-                 onChange={(e) => setSla({ ...sla, trattativa_ferma_giorni: Number(e.target.value) })} />
+          {/* Svuotando il campo si torna al valore predefinito, invece di
+              restare incastrati su uno 0 che qui vorrebbe dire "subito". */}
+          <CampoNumero aspetto="modulo" label="Primo contatto (ore)" min={1} suffisso="ore"
+                       value={sla.primo_contatto_ore ?? null}
+                       placeholder={String(SLA_PREDEFINITO.primo_contatto_ore)}
+                       onChange={(n) => setSla({ ...sla, primo_contatto_ore: n })} />
+          <CampoNumero aspetto="modulo" label="Lead fermo (giorni)" min={1} suffisso="gg"
+                       value={sla.lead_fermo_giorni ?? null}
+                       placeholder={String(SLA_PREDEFINITO.lead_fermo_giorni)}
+                       onChange={(n) => setSla({ ...sla, lead_fermo_giorni: n })} />
+          <CampoNumero aspetto="modulo" label="Trattativa ferma (giorni)" min={1} suffisso="gg"
+                       value={sla.trattativa_ferma_giorni ?? null}
+                       placeholder={String(SLA_PREDEFINITO.trattativa_ferma_giorni)}
+                       onChange={(n) => setSla({ ...sla, trattativa_ferma_giorni: n })} />
         </div>
-        <Button onClick={() => salva('sla', sla)} disabled={salvando === 'sla'} className="w-full mt-4">
+        {/* Un campo lasciato vuoto non si salva come zero: torna al predefinito. */}
+        <Button onClick={() => salva('sla', { ...SLA_PREDEFINITO,
+                 ...Object.fromEntries(Object.entries(sla).filter(([, v]) => v !== null && v !== undefined && v !== '')) })}
+                disabled={salvando === 'sla'} className="w-full mt-4">
           {salvando === 'sla' ? 'Salvataggio...' : 'Salva tempi'}
         </Button>
       </Card>

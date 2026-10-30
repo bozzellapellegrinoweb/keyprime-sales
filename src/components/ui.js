@@ -203,3 +203,87 @@ export const QuickActions = ({ phone, whatsapp, email, clienteName }) => (
   </div>
 );
 
+
+/* ── Campo numerico ──────────────────────────────────────────────────────
+   Nasce da una segnalazione precisa: nel Calcolatore ROI «quando si clicca
+   per inserire un numero negli sqft rimane sempre uno 0 che da' fastidio e
+   puo' portare a errori».
+
+   Non era un vezzo grafico. Il campo teneva un numero in stato e scriveva
+   setSqft(+e.target.value): svuotandolo, +'' fa 0, lo stato diventa 0 e
+   React ridisegna il campo con "0" dentro. Lo zero non si puo' cancellare,
+   e chi scrive 850 sopra ottiene 0850 — cioe' ottocentocinquanta, ma solo
+   se nessuno si distrae.
+
+   Qui il testo digitato resta testo finche' si scrive. Vuoto e' vuoto, e
+   verso l'esterno diventa null: chi legge decide cosa farne. Al fuoco si
+   seleziona tutto, cosi' digitare sostituisce invece di accodare; fuori
+   fuoco i numeri lunghi prendono i separatori, che a nove cifre servono. */
+export const CampoNumero = ({
+  value, onChange, label, suffisso, separatori = false, min, max,
+  aspetto = 'compatto', className = '', style, ...props
+}) => {
+  const formatta = (n) =>
+    n === null || n === undefined || n === '' ? ''
+      : separatori ? Number(n).toLocaleString('it-IT') : String(n);
+
+  const [testo, setTesto] = React.useState(() => formatta(value));
+  const [inFuoco, setInFuoco] = React.useState(false);
+
+  // Se il valore cambia da fuori (un preset, un reset) il campo si adegua —
+  // ma non mentre ci si sta scrivendo dentro, o cancellerebbe la battuta.
+  React.useEffect(() => {
+    if (!inFuoco) setTesto(formatta(value));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, separatori]);
+
+  const scrivi = (grezzo) => {
+    const pulito = grezzo.replace(/[^\d.,-]/g, '').replace(',', '.');
+    setTesto(pulito);
+    if (pulito === '' || pulito === '-') { onChange(null); return; }
+    const n = Number(pulito);
+    if (Number.isNaN(n)) return;            // "1.2.3": si lascia scrivere, non si propaga
+    onChange(n);
+  };
+
+  // Due vestiti: quello compatto delle barre di controllo e quello dei moduli,
+  // che deve stare in riga con gli altri Input senza stonare.
+  const modulo = aspetto === 'modulo';
+  const classiBase = modulo
+    ? 'w-full rounded-xl px-4 py-3 text-sm tabular-nums border focus:outline-none transition-all'
+    : 'w-full border-none rounded-lg px-3 py-2 text-sm tabular-nums';
+  const stileBase = modulo
+    ? { background: theme.bg.secondary, borderColor: theme.border.subtle, color: theme.text.primary }
+    : { background: theme.bg.tertiary, color: theme.text.primary };
+
+  return (
+    <div className={label ? '' : 'contents'}>
+      {label && (
+        <label className={modulo ? 'block text-sm text-zinc-400 mb-2' : 'text-xs block mb-1'}
+               style={modulo ? undefined : { color: theme.text.tertiary }}>{label}</label>
+      )}
+      <div className="relative">
+        <input
+          {...props}
+          type="text"
+          inputMode="decimal"
+          value={inFuoco ? testo : formatta(value)}
+          onChange={(e) => scrivi(e.target.value)}
+          onFocus={(e) => { setInFuoco(true); setTesto(value === null || value === undefined ? '' : String(value)); e.target.select(); }}
+          onBlur={() => {
+            setInFuoco(false);
+            if (value === null || value === undefined) return;
+            if (min !== undefined && value < min) onChange(min);
+            if (max !== undefined && value > max) onChange(max);
+          }}
+          className={`${classiBase} ${suffisso ? 'pr-12' : ''} ${className}`}
+          style={{ ...stileBase, ...style }}
+        />
+        {suffisso && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none"
+                style={{ color: theme.text.tertiary }}>{suffisso}</span>
+        )}
+      </div>
+    </div>
+  );
+};
