@@ -26,6 +26,10 @@ import { generaOffertaPdf, proprietaCompilata } from './lib/offertaPdf';
 import DashboardAdmin from './components/DashboardAdmin';
 import CalcolatoreRoi from './components/CalcolatoreRoi';
 import Paginazione, { usePaginazione } from './components/Paginazione';
+import RicercaProgetti from './components/RicercaProgetti';
+import { SceltaTipiCliente, PastiglieTipi, FiltroTipiCliente } from './components/TipiCliente';
+import { trasformaProgetto, luogoLeggibile } from './lib/offplan';
+import { testoScheda, creaImmagineScheda, condividiScheda } from './lib/schedaWhatsapp';
 import { istantaneaCatalogo, trimestreAnno, etichettaFase } from './lib/offerta';
 import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List, ExternalLink, Calculator } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
@@ -121,6 +125,8 @@ const DUBAI_AREAS_COORDS = {
   'Sharjah': { lat: 25.3463, lng: 55.4209, zoom: 11 },
   'Ajman': { lat: 25.4052, lng: 55.5136, zoom: 11 },
   'Ras Al Khaimah': { lat: 25.7895, lng: 55.9432, zoom: 11 },
+  'Umm Al Quwain': { lat: 25.5647, lng: 55.5532, zoom: 11 },
+  'Fujairah': { lat: 25.1288, lng: 56.3265, zoom: 11 },
 };
 
 const DUBAI_CENTER = { lat: 25.1972, lng: 55.2744 };
@@ -1255,7 +1261,7 @@ export default function App() {
   
   // Filters
   const [filters, setFilters] = useState({ search: '', stato: '' });
-  const [clienteFilters, setClienteFilters] = useState({ search: '', stato: '' });
+  const [clienteFilters, setClienteFilters] = useState({ search: '', stato: '', tipi: [] });
   const [periodFilter, setPeriodFilter] = useState('all'); // all, 30, 60, 90
   const [showAgentDetail, setShowAgentDetail] = useState(null);
   
@@ -1938,8 +1944,19 @@ export default function App() {
   const filteredClienti = clienti.filter(c => {
     if (clienteFilters.search && !`${c.nome} ${c.cognome} ${c.email} ${c.telefono}`.toLowerCase().includes(clienteFilters.search.toLowerCase())) return false;
     if (clienteFilters.stato && c.stato !== clienteFilters.stato) return false;
+    // Le categorie sono in OR: "proprietario oppure informatore" e' la domanda
+    // che si fa davvero (chi puo' portarmi un immobile), non l'intersezione.
+    if (clienteFilters.tipi?.length && !clienteFilters.tipi.some(t => (c.tipi || []).includes(t))) return false;
     return true;
   });
+
+  // I numeri accanto alle categorie contano su tutta la rubrica, non su
+  // quella gia' filtrata: servono a decidere se vale la pena filtrare.
+  const conteggiTipiCliente = useMemo(() => {
+    const m = {};
+    for (const c of clienti) for (const t of (c.tipi || [])) m[t] = (m[t] || 0) + 1;
+    return m;
+  }, [clienti]);
 
   const myPendingTasks = tasks.filter(t => t.stato === 'pending' && (user?.ruolo === 'admin' || t.assegnato_a === user?.nome));
   const overdueTasks = myPendingTasks.filter(t => isOverdue(t.scadenza));
@@ -2341,7 +2358,7 @@ export default function App() {
             {activeTab === 'offplan' && <OffPlanTab clienti={myClienti} onCreateLead={createLeadFromListing} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeListing} user={user} />}
             {activeTab === 'calculator' && <CalcolatoreRoi />}
             {activeTab === 'offerte' && <OffertaTab offerte={offerte} user={user} onCrea={() => setShowOffertaModal({})} onEdit={setShowOffertaModal} onDelete={deleteOfferta} onGeneraPDF={generateOffertaPDF} />}
-            {activeTab === 'crm' && (showClienteDetail ? <ClienteDetailView cliente={showClienteDetail} sales={sales.filter(s => s.cliente_id === showClienteDetail.id)} tasks={tasks.filter(t => t.cliente_id === showClienteDetail.id)} onBack={() => setShowClienteDetail(null)} onEdit={() => setShowClienteModal(showClienteDetail)} onDelete={() => deleteCliente(showClienteDetail.id)} updateCliente={updateCliente} onAddTask={() => setShowTaskModal({ cliente_id: showClienteDetail.id })} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(showClienteDetail, sales.filter(s => s.cliente_id === showClienteDetail.id), tasks.filter(t => t.cliente_id === showClienteDetail.id))} /> : <CRMTab clienti={myClienti} filters={clienteFilters} setFilters={setClienteFilters} sales={mySales} onSelect={setShowClienteDetail} onCreate={() => setShowClienteModal({})} onDelete={deleteCliente} onUpdateCliente={updateCliente} users={users} />)}
+            {activeTab === 'crm' && (showClienteDetail ? <ClienteDetailView cliente={showClienteDetail} sales={sales.filter(s => s.cliente_id === showClienteDetail.id)} tasks={tasks.filter(t => t.cliente_id === showClienteDetail.id)} onBack={() => setShowClienteDetail(null)} onEdit={() => setShowClienteModal(showClienteDetail)} onDelete={() => deleteCliente(showClienteDetail.id)} updateCliente={updateCliente} onAddTask={() => setShowTaskModal({ cliente_id: showClienteDetail.id })} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(showClienteDetail, sales.filter(s => s.cliente_id === showClienteDetail.id), tasks.filter(t => t.cliente_id === showClienteDetail.id))} /> : <CRMTab clienti={myClienti} conteggiTipi={conteggiTipiCliente} filters={clienteFilters} setFilters={setClienteFilters} sales={mySales} onSelect={setShowClienteDetail} onCreate={() => setShowClienteModal({})} onDelete={deleteCliente} onUpdateCliente={updateCliente} users={users} />)}
 
             {activeTab === 'settings' && (
               <Card className="max-w-lg">
@@ -2668,7 +2685,7 @@ export default function App() {
             {activeTab === 'pipeline' && <PipelineTab byStato={byStato} onSelectLead={setShowLeadDetail} onUpdateSaleStatus={(id, stato) => updateSale(id, { stato })} />}
 
             {/* CRM */}
-            {activeTab === 'crm' && (showClienteDetail ? <ClienteDetailView cliente={showClienteDetail} sales={sales.filter(s => s.cliente_id === showClienteDetail.id)} tasks={tasks.filter(t => t.cliente_id === showClienteDetail.id)} onBack={() => setShowClienteDetail(null)} onEdit={() => setShowClienteModal(showClienteDetail)} onDelete={() => deleteCliente(showClienteDetail.id)} updateCliente={updateCliente} onAddTask={() => setShowTaskModal({ cliente_id: showClienteDetail.id })} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(showClienteDetail, sales.filter(s => s.cliente_id === showClienteDetail.id), tasks.filter(t => t.cliente_id === showClienteDetail.id))} /> : <CRMTab clienti={filteredClienti} filters={clienteFilters} setFilters={setClienteFilters} sales={sales} onSelect={setShowClienteDetail} onCreate={() => setShowClienteModal({})} onDelete={deleteCliente} onUpdateCliente={updateCliente} users={users} />)}
+            {activeTab === 'crm' && (showClienteDetail ? <ClienteDetailView cliente={showClienteDetail} sales={sales.filter(s => s.cliente_id === showClienteDetail.id)} tasks={tasks.filter(t => t.cliente_id === showClienteDetail.id)} onBack={() => setShowClienteDetail(null)} onEdit={() => setShowClienteModal(showClienteDetail)} onDelete={() => deleteCliente(showClienteDetail.id)} updateCliente={updateCliente} onAddTask={() => setShowTaskModal({ cliente_id: showClienteDetail.id })} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(showClienteDetail, sales.filter(s => s.cliente_id === showClienteDetail.id), tasks.filter(t => t.cliente_id === showClienteDetail.id))} /> : <CRMTab clienti={filteredClienti} conteggiTipi={conteggiTipiCliente} filters={clienteFilters} setFilters={setClienteFilters} sales={sales} onSelect={setShowClienteDetail} onCreate={() => setShowClienteModal({})} onDelete={deleteCliente} onUpdateCliente={updateCliente} users={users} />)}
 
             {/* OFF-PLAN */}
             {activeTab === 'offplan' && <OffPlanTab clienti={clienti} onCreateLead={createLeadFromListing} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeListing} user={user} />}
@@ -3170,7 +3187,7 @@ function VenditeTab({ sales, filters, setFilters, updateSale, deleteSale, loadin
                     </select>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <select value={s.referente || ''} onChange={(e) => updateSale(s.id, { referente: e.target.value || null })} className={`rounded px-2 py-1 text-xs font-medium min-w-[52px] focus:outline-none ${s.referente === 'Pellegrino' ? 'bg-green-500/20 text-green-400' : s.referente === 'Giovanni' ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-700/50 text-zinc-500'}`}>
+                    <select value={s.referente || ''} onChange={(e) => updateSale(s.id, { referente: e.target.value || null })} className={`rounded px-2 py-1 text-xs font-medium min-w-[52px] focus:outline-none ${s.referente === 'Pellegrino' ? 'bg-green-500/20 text-green-400' : s.referente === 'Giovanni' ? 'bg-oro-500/20 text-oro-400' : 'bg-zinc-700/50 text-zinc-500'}`}>
                       <option value="">-</option>
                       <option value="Pellegrino">P</option>
                       <option value="Giovanni">G</option>
@@ -3283,7 +3300,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
       <span className="flex items-center gap-1">
         {children}
         {sortField === field && (
-          <span className="text-orange-400">{sortDir === 'asc' ? '↑' : '↓'}</span>
+          <span className="text-oro-400">{sortDir === 'asc' ? '↑' : '↓'}</span>
         )}
       </span>
     </th>
@@ -3301,13 +3318,13 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
               placeholder="Cerca lead..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-zinc-700/50 border border-zinc-700 rounded-lg pl-9 pr-4 py-2 text-ink text-sm w-64 focus:border-orange-500 focus:outline-none"
+              className="bg-zinc-700/50 border border-zinc-700 rounded-lg pl-9 pr-4 py-2 text-ink text-sm w-64 focus:border-oro-500 focus:outline-none"
             />
           </div>
           <select
             value={filterStato}
             onChange={(e) => setFilterStato(e.target.value)}
-            className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none"
+            className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm focus:border-oro-500 focus:outline-none"
           >
             <option value="">Tutti gli stati</option>
             {pipelineStati.map(s => (
@@ -3320,9 +3337,9 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
 
       {/* Bulk Actions Bar */}
       {selectedIds.length > 0 && (
-        <Card className="bg-orange-500/10 border-orange-500/30">
+        <Card className="bg-oro-500/10 border-oro-500/40">
           <div className="flex items-center justify-between">
-            <p className="text-orange-400 font-medium">
+            <p className="text-oro-400 font-medium">
               {selectedIds.length} lead selezionati
             </p>
             <div className="flex items-center gap-2">
@@ -3370,7 +3387,7 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
                     type="checkbox"
                     checked={selectedIds.length === filteredLeads.length && filteredLeads.length > 0}
                     onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-orange-500 focus:ring-orange-500"
+                    className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-oro-600 focus:ring-oro-500"
                   />
                 </th>
                 <SortHeader field="cliente">Cliente</SortHeader>
@@ -3390,14 +3407,14 @@ function LeadsTableView({ leads, clienti, onSelectLead, onUpdateStatus, onDelete
                 return (
                   <tr 
                     key={lead.id} 
-                    className={`hover:bg-zinc-800 cursor-pointer transition-colors ${isSelected ? 'bg-orange-500/10' : ''}`}
+                    className={`hover:bg-zinc-800 cursor-pointer transition-colors ${isSelected ? 'bg-oro-500/10' : ''}`}
                   >
                     <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelect(lead.id)}
-                        className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-orange-500 focus:ring-orange-500"
+                        className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-oro-600 focus:ring-oro-500"
                       />
                     </td>
                     <td className="py-3 px-4" onClick={() => onSelectLead(lead)}>
@@ -3566,8 +3583,11 @@ const RigaCliente = React.memo(function RigaCliente({
                     <td className="py-3 px-4" onClick={() => onSelect(cliente)}>
                       <div className="flex items-center gap-3">
                         <Avatar nome={cliente.nome} cognome={cliente.cognome} size="sm" />
-                        <div>
-                          <p className="text-ink font-medium">{cliente.nome} {cliente.cognome || ''}</p>
+                        <div className="min-w-0">
+                          <p className="text-ink font-medium flex items-center gap-2 flex-wrap">
+                            {cliente.nome} {cliente.cognome || ''}
+                            <PastiglieTipi tipi={cliente.tipi} breve />
+                          </p>
                           {cliente.azienda && <p className="text-zinc-500 text-xs">{cliente.azienda}</p>}
                         </div>
                       </div>
@@ -3630,7 +3650,7 @@ const RigaCliente = React.memo(function RigaCliente({
   );
 });
 
-function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDelete, onUpdateCliente, users }) {
+function CRMTab({ clienti, conteggiTipi = {}, filters, setFilters, sales, onSelect, onCreate, onDelete, onUpdateCliente, users }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [sortField, setSortField] = useState('created_at');
   const [sortDir, setSortDir] = useState('desc');
@@ -3742,6 +3762,11 @@ function CRMTab({ clienti, filters, setFilters, sales, onSelect, onCreate, onDel
         </div>
         <Button icon={UserPlus} onClick={onCreate}>Nuovo Cliente</Button>
       </div>
+
+      {/* Le categorie del contatto: la «bandiera» per cercare chi porta
+          immobili invece di chi li compra. */}
+      <FiltroTipiCliente scelti={filters.tipi || []} conteggi={conteggiTipi}
+                         onCambia={(tipi) => setFilters({ ...filters, tipi })} />
 
       {/* Bulk Actions Bar */}
       {selectedIds.length > 0 && (
@@ -3862,6 +3887,7 @@ function ClienteDetailView({ cliente, sales, tasks, onBack, onEdit, onDelete, up
             <h1 className="text-2xl font-semibold text-ink">{cliente.nome} {cliente.cognome}</h1>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <StatusBadge status={cliente.stato} type="cliente" />
+              <PastiglieTipi tipi={cliente.tipi} massimo={6} />
               {cliente.nazionalita && <span className="text-zinc-500 text-sm">{cliente.nazionalita}</span>}
               {cliente.assegnato_a && (
                 <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full flex items-center gap-1">
@@ -4536,7 +4562,7 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
       
       {!mapLoaded && (
         <div className="absolute inset-0 bg-zinc-800 flex items-center justify-center z-[1000]">
-          <RefreshCw className="w-8 h-8 text-orange-400 animate-spin" />
+          <RefreshCw className="w-8 h-8 text-oro-400 animate-spin" />
         </div>
       )}
 
@@ -4555,17 +4581,17 @@ function MapboxMap({ projects, onSelectProject, selectedProject, onAreaClick }) 
               <button onClick={(e) => { e.stopPropagation(); setPopupProject(null); }} className="absolute top-2 right-2 p-1.5 bg-zinc-800/50 rounded-full text-ink hover:bg-zinc-800/70">
                 <X className="w-4 h-4" />
               </button>
-              <div className="absolute bottom-2 left-2 px-2 py-1 bg-orange-500 text-white text-xs font-medium rounded-lg">
+              <div className="absolute bottom-2 left-2 px-2 py-1 bg-oro-500 text-ink text-xs font-medium rounded-lg">
                 {popupProject.construction_phase_key === 'completed' ? '✓ Completato' : popupProject.construction_phase_key === 'under_construction' ? '🏗️ In Costruzione' : '🚀 Lancio'}
               </div>
             </div>
             <div className="p-4">
               <h3 className="text-ink font-semibold truncate">{popupProject.title}</h3>
-              <p className="text-zinc-400 text-sm truncate">{popupProject.location?.full_name || popupProject.location?.name}</p>
+              <p className="text-zinc-400 text-sm truncate">{luogoLeggibile(popupProject.location?.full_name, popupProject.location?.name)}</p>
               <div className="flex items-center justify-between mt-3">
                 <p className="text-oro-400 font-bold">{popupProject.price_from > 0 ? 'AED ' + formatPrice(popupProject.price_from) : 'TBD'}</p>
                 {popupProject.url ? (
-                  <a href={popupProject.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg flex items-center gap-1">
+                  <a href={popupProject.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="px-3 py-1.5 bg-oro-500 hover:bg-oro-600 text-ink text-sm font-medium rounded-lg flex items-center gap-1">
                     <ExternalLink className="w-3.5 h-3.5" /> PropertyFinder
                   </a>
                 ) : (
@@ -4639,7 +4665,7 @@ function ProjectCardCompact({ project, isSelected, onClick, onHover }) {
       onClick={onClick} 
       onMouseEnter={() => onHover && onHover(project.project_id)}
       onMouseLeave={() => onHover && onHover(null)}
-      className={'p-3 rounded-xl cursor-pointer transition-all ' + (isSelected ? 'bg-orange-500/20 border-2 border-orange-500' : 'bg-zinc-800 border border-transparent hover:bg-zinc-700/50 hover:border-zinc-600')}
+      className={'p-3 rounded-xl cursor-pointer transition-all ' + (isSelected ? 'bg-oro-500/20 border-2 border-oro-500' : 'bg-zinc-800 border border-transparent hover:bg-zinc-700/50 hover:border-zinc-600')}
     >
       <div className="flex gap-3">
         <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700">
@@ -4651,7 +4677,7 @@ function ProjectCardCompact({ project, isSelected, onClick, onHover }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-ink font-medium text-sm truncate">{project.title}</p>
-          <p className="text-zinc-500 text-xs truncate">{project.location?.full_name}</p>
+          <p className="text-zinc-500 text-xs truncate">{luogoLeggibile(project.location?.full_name, project.location?.name)}</p>
           <div className="flex items-center gap-2 mt-1.5">
             <p className="text-oro-400 font-bold text-sm">{project.price_from > 0 ? 'AED ' + formatPrice(project.price_from) : 'TBD'}</p>
             {formatBedrooms(project.bedrooms) && <span className="text-zinc-500 text-xs">• {formatBedrooms(project.bedrooms)}</span>}
@@ -4697,7 +4723,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
   
   const ITEMS_PER_PAGE = 24;
 
-  const emirates = ['Dubai', 'Abu Dhabi', 'Ras Al Khaimah', 'Sharjah', 'Ajman', 'Umm Al Quwain'];
+  const emirates = ['Dubai', 'Abu Dhabi', 'Ras Al Khaimah', 'Sharjah', 'Ajman', 'Umm Al Quwain', 'Fujairah'];
   
   const zonesByEmirate = {
     'Dubai': ['Dubai Marina', 'Downtown Dubai', 'Business Bay', 'Palm Jumeirah', 'JBR', 'Dubai Hills Estate', 
@@ -4710,7 +4736,11 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
     'Ras Al Khaimah': ['Al Marjan Island', 'Mina Al Arab', 'Al Hamra Village', 'Hayat Island', 'RAK Central', 'Yasmin Village'],
     'Sharjah': ['Aljada', 'Al Mamzar Sharjah', 'Al Nahda Sharjah', 'Al Majaz', 'Muwaileh', 'Al Khan'],
     'Ajman': ['Ajman Downtown', 'Ajman Corniche', 'Al Rashidiya', 'Al Nuaimiya', 'Emirates City'],
-    'Umm Al Quwain': ['UAQ Marina', 'UAQ Corniche', 'Al Salamah']
+    'Umm Al Quwain': ['UAQ Marina', 'UAQ Corniche', 'Al Salamah'],
+    // Le prime due sono le zone che compaiono davvero nel catalogo
+    // (Oceana ad Al Fqait, Ocean Living a Sharm); le altre sono le aree
+    // residenziali dell'emirato, pronte per quando arriveranno progetti.
+    'Fujairah': ['Al Fqait', 'Sharm', 'Fujairah Corniche', 'Al Faseel', 'Dibba Al Fujairah', 'Fujairah City']
   };
   
   // Get zones based on selected emirate or all
@@ -4904,30 +4934,8 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
       if (queryError) throw queryError;
       
       // Transform data to match expected format
-      const transformedData = (data || []).map(p => ({
-        project_id: p.project_id,
-        title: p.title,
-        location: { 
-          name: p.location_name, 
-          full_name: p.location_full 
-        },
-        developer: { 
-          name: p.developer_name,
-          logo: p.raw_data?.developer?.logo
-        },
-        price_from: p.price_from,
-        bedrooms: p.bedrooms,
-        delivery_date: p.delivery_date,
-        construction_phase_key: p.construction_phase,
-        hotness_level: p.hotness_level,
-        images: p.images || [],
-        payment_plans: p.payment_plans,
-        url: p.url,
-        // Try to get brochure from data, or construct from project_id if it's a UUID
-        brochure_url: p.brochure_url || p.raw_data?.brochure?.url || p.raw_data?.brochure || 
-          (p.project_id && p.project_id.includes('-') ? `https://new-projects-media.propertyfinder.com/project/${p.project_id}/brochure/application/original.pdf` : null)
-      }));
-      
+      const transformedData = (data || []).map(trasformaProgetto);
+
       // Additional client-side filter for 5+ bedrooms
       let finalData = transformedData;
       if (filters.bedrooms === '5+') {
@@ -5006,6 +5014,16 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
 
   useEffect(() => { searchListings(1); }, []);
 
+  /* Scegliendo un developer o una zona dai suggerimenti la ricerca deve
+     ripartire da sola. Non si puo' chiamarla subito dopo setFilters: quella
+     chiamata leggerebbe i filtri vecchi. Si alza un contatore e si lascia
+     ripartire al rendering successivo, quando i filtri nuovi ci sono. */
+  const [daRicercare, setDaRicercare] = useState(0);
+  useEffect(() => {
+    if (daRicercare > 0) searchListings(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [daRicercare]);
+
   const isListingSaved = (projectId) => savedListings?.some(s => s.property_id === projectId);
   const formatPrice = (price) => { if (!price || price === 0) return 'TBD'; const num = parseFloat(price); if (num >= 1000000) return (num/1000000).toFixed(1) + 'M'; if (num >= 1000) return (num/1000).toFixed(0) + 'K'; return num.toLocaleString(); };
   const formatBedrooms = (bedrooms) => { if (!bedrooms?.available?.length) return null; const beds = bedrooms.available; if (beds.length === 1) return beds[0] === 0 ? 'Studio' : beds[0] + ' BR'; const min = Math.min(...beds); const max = Math.max(...beds); return min === 0 ? 'Studio - ' + max + ' BR' : min + ' - ' + max + ' BR'; };
@@ -5019,7 +5037,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
       <div className="flex-shrink-0 mb-4">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl font-semibold text-ink flex items-center gap-2"><Building2 className="w-6 h-6 text-orange-400" />Off-Plan Projects</h2>
+            <h2 className="text-xl font-semibold text-ink flex items-center gap-2"><Building2 className="w-6 h-6 text-oro-400" />Off-Plan Projects</h2>
             <p className="text-zinc-500 text-sm mt-1">{totalResults > 0 ? totalResults.toLocaleString() + ' progetti' : 'Cerca progetti'}{selectedAreaName && ' • ' + selectedAreaName}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -5027,11 +5045,11 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
               {showStats ? 'Nascondi' : 'Stats'}
             </Button>
             <div className="flex items-center gap-2 bg-zinc-800 p-1 rounded-xl">
-              <button onClick={() => { setViewMode('list'); setSelectedAreaProjects(null); }} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'list' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-ink')} title="Lista"><List className="w-5 h-5" /></button>
-              <button onClick={() => setViewMode('map')} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'map' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-ink')} title="Mappa"><Map className="w-5 h-5" /></button>
-              <button onClick={() => setViewMode('saved')} className={'p-2 rounded-lg transition-colors relative ' + (viewMode === 'saved' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-ink')} title="Salvati">
+              <button onClick={() => { setViewMode('list'); setSelectedAreaProjects(null); }} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'list' ? 'bg-oro-500 text-ink' : 'text-zinc-400 hover:text-ink')} title="Lista"><List className="w-5 h-5" /></button>
+              <button onClick={() => setViewMode('map')} className={'p-2 rounded-lg transition-colors ' + (viewMode === 'map' ? 'bg-oro-500 text-ink' : 'text-zinc-400 hover:text-ink')} title="Mappa"><Map className="w-5 h-5" /></button>
+              <button onClick={() => setViewMode('saved')} className={'p-2 rounded-lg transition-colors relative ' + (viewMode === 'saved' ? 'bg-oro-500 text-ink' : 'text-zinc-400 hover:text-ink')} title="Salvati">
                 <svg className="w-5 h-5" fill={viewMode === 'saved' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
-                {savedListings?.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold">{savedListings.length}</span>}
+                {savedListings?.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-oro-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold">{savedListings.length}</span>}
               </button>
             </div>
           </div>
@@ -5041,7 +5059,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         {showStats && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <Card className="p-4">
-              <h3 className="text-ink font-medium mb-3 flex items-center gap-2"><MapPin className="w-4 h-4 text-orange-400" />Top Zone</h3>
+              <h3 className="text-ink font-medium mb-3 flex items-center gap-2"><MapPin className="w-4 h-4 text-oro-400" />Top Zone</h3>
               <div className="space-y-2">
                 {stats.byZone.slice(0, 5).map((z, i) => (
                   <div key={z.name} className="flex items-center justify-between">
@@ -5052,7 +5070,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
               </div>
             </Card>
             <Card className="p-4">
-              <h3 className="text-ink font-medium mb-3 flex items-center gap-2"><Building2 className="w-4 h-4 text-orange-400" />Top Developer</h3>
+              <h3 className="text-ink font-medium mb-3 flex items-center gap-2"><Building2 className="w-4 h-4 text-oro-400" />Top Developer</h3>
               <div className="space-y-2">
                 {stats.byDeveloper.slice(0, 5).map((d, i) => (
                   <div key={d.name} className="flex items-center justify-between">
@@ -5063,7 +5081,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
               </div>
             </Card>
             <Card className="p-4">
-              <h3 className="text-ink font-medium mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-orange-400" />Statistiche</h3>
+              <h3 className="text-ink font-medium mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-oro-400" />Statistiche</h3>
               <div className="space-y-3">
                 <div>
                   <p className="text-zinc-500 text-xs">Totale Progetti</p>
@@ -5079,20 +5097,31 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
         )}
 
         <Card className="mb-4">
-          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" /><input type="text" placeholder="Cerca progetto, zona o developer..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl pl-10 pr-4 py-3 text-ink placeholder:text-zinc-600 focus:border-orange-500 focus:outline-none" /></div>
+          <div className="mb-3">
+            <RicercaProgetti
+              supabase={supabase}
+              valore={filters.search}
+              soloAttivi={!filters.status}
+              onCambia={(v) => setFilters(f => ({ ...f, search: v }))}
+              onCerca={() => { setSelectedAreaProjects(null); searchListings(1); }}
+              onApriProgetto={setSelectedListing}
+              onScegliDeveloper={(nome) => { setFilters(f => ({ ...f, search: '', developer: nome })); setSelectedAreaProjects(null); setDaRicercare(n => n + 1); }}
+              onScegliZona={(nome) => { setFilters(f => ({ ...f, search: '', location: nome })); setSelectedAreaProjects(null); setDaRicercare(n => n + 1); }}
+            />
+          </div>
           {/* Nove colonne uguali schiacciavano ogni filtro sotto la larghezza
               della propria etichetta ("Tutte le zo…"). Cinque per riga danno
               a ciascuno lo spazio per leggersi, e i nove controlli vanno
               semplicemente a capo. */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            <select value={filters.emirate} onChange={(e) => setFilters(f => ({ ...f, emirate: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none"><option value="">🇦🇪 Emirato</option>{emirates.map(e => <option key={e} value={e}>{e}</option>)}</select>
-            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none"><option value="">Tutte le zone</option>{availableZones.map(a => <option key={a} value={a}>{a}</option>)}</select>
-            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
-            <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
-            <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
-            <select value={filters.deliveryYear} onChange={(e) => setFilters(f => ({ ...f, deliveryYear: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none"><option value="">Consegna</option>{deliveryYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
-            <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none" />
-            <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none" />
+            <select value={filters.emirate} onChange={(e) => setFilters(f => ({ ...f, emirate: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-oro-500 focus:outline-none"><option value="">🇦🇪 Emirato</option>{emirates.map(e => <option key={e} value={e}>{e}</option>)}</select>
+            <select value={filters.location} onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-oro-500 focus:outline-none"><option value="">Tutte le zone</option>{availableZones.map(a => <option key={a} value={a}>{a}</option>)}</select>
+            <select value={filters.developer} onChange={(e) => setFilters(f => ({ ...f, developer: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-oro-500 focus:outline-none"><option value="">Developer</option>{topDevelopers.map(d => <option key={d} value={d}>{d}</option>)}</select>
+            <select value={filters.bedrooms} onChange={(e) => setFilters(f => ({ ...f, bedrooms: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-oro-500 focus:outline-none"><option value="">Camere</option>{bedroomOptions.map(b => <option key={b} value={b}>{b === 'Studio' ? 'Studio' : b + ' BR'}</option>)}</select>
+            <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-oro-500 focus:outline-none">{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
+            <select value={filters.deliveryYear} onChange={(e) => setFilters(f => ({ ...f, deliveryYear: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-oro-500 focus:outline-none"><option value="">Consegna</option>{deliveryYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
+            <input type="number" placeholder="Min AED" value={filters.minPrice} onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-oro-500 focus:outline-none" />
+            <input type="number" placeholder="Max AED" value={filters.maxPrice} onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))} className="bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-3 py-2 text-ink text-sm focus:border-oro-500 focus:outline-none" />
             <Button onClick={() => { setSelectedAreaProjects(null); searchListings(1); }} icon={Search} disabled={loading}>{loading ? '...' : 'Cerca'}</Button>
           </div>
           {/* Sorting and active filters */}
@@ -5100,7 +5129,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-zinc-500 text-sm">Ordina:</span>
-                <select value={filters.sortBy} onChange={(e) => { setFilters(f => ({ ...f, sortBy: e.target.value })); searchListings(1); }} className="bg-transparent border-none text-orange-400 text-sm focus:outline-none cursor-pointer">
+                <select value={filters.sortBy} onChange={(e) => { setFilters(f => ({ ...f, sortBy: e.target.value })); searchListings(1); }} className="bg-transparent border-none text-oro-400 text-sm focus:outline-none cursor-pointer">
                   {sortOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
               </div>
@@ -5117,7 +5146,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
             )}
           </div>
         </Card>
-        {selectedAreaProjects && <div className="flex items-center gap-2 mb-4"><span className="text-zinc-400 text-sm">Filtrato: <span className="text-orange-400">{selectedAreaName}</span></span><Button variant="ghost" size="sm" onClick={() => { setSelectedAreaProjects(null); setSelectedAreaName(''); }}><X className="w-4 h-4 mr-1" />Rimuovi</Button></div>}
+        {selectedAreaProjects && <div className="flex items-center gap-2 mb-4"><span className="text-zinc-400 text-sm">Filtrato: <span className="text-oro-400">{selectedAreaName}</span></span><Button variant="ghost" size="sm" onClick={() => { setSelectedAreaProjects(null); setSelectedAreaName(''); }}><X className="w-4 h-4 mr-1" />Rimuovi</Button></div>}
       </div>
 
       {error && <Card className="border-red-500/20 bg-red-500/5 mb-4"><div className="flex items-center gap-3 text-red-400"><AlertCircle className="w-5 h-5" /><span>{error}</span><Button variant="ghost" size="sm" onClick={() => searchListings(1)}>Riprova</Button></div></Card>}
@@ -5136,14 +5165,14 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                         {project.images?.[0]?.medium_image_url ? <img src={project.images[0].medium_image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /> : <div className="w-full h-full bg-zinc-700/50 flex items-center justify-center"><Building2 className="w-12 h-12 text-zinc-600" /></div>}
                         <div className="absolute top-2 left-2 flex gap-1">
                           <span className={'px-2 py-1 text-white text-xs font-medium rounded-lg ' + (project.construction_phase_key === 'completed' ? 'bg-emerald-500/90' : project.construction_phase_key === 'under_construction' ? 'bg-navy-500/90' : 'bg-oro-500/90 !text-ink')}>{project.construction_phase_key === 'completed' ? 'Completato' : project.construction_phase_key === 'under_construction' ? 'In Costruzione' : 'Lancio'}</span>
-                          {project.hotness_level >= 80 && <span className="px-2 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-medium rounded-lg">🔥</span>}
+                          {project.hotness_level >= 80 && <span className="px-2 py-1 bg-gradient-to-r from-red-500 to-oro-600 text-white text-xs font-medium rounded-lg">🔥</span>}
                         </div>
                         {formatDelivery(project.delivery_date) && <div className="absolute top-2 right-12 px-2 py-1 bg-zinc-800/70 text-ink text-xs rounded-lg">{formatDelivery(project.delivery_date)}</div>}
-                        <button onClick={(e) => { e.stopPropagation(); isListingSaved(project.project_id) ? onRemoveListing(project.project_id) : onSaveListing(project); }} className={'absolute top-2 right-2 p-2 rounded-full transition-colors ' + (isListingSaved(project.project_id) ? 'bg-orange-500 text-white' : 'bg-zinc-800/50 text-white hover:bg-orange-500')}><svg className="w-4 h-4" fill={isListingSaved(project.project_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg></button>
+                        <button onClick={(e) => { e.stopPropagation(); isListingSaved(project.project_id) ? onRemoveListing(project.project_id) : onSaveListing(project); }} className={'absolute top-2 right-2 p-2 rounded-full transition-colors ' + (isListingSaved(project.project_id) ? 'bg-oro-500 text-ink' : 'bg-zinc-800/50 text-white hover:bg-oro-500')}><svg className="w-4 h-4" fill={isListingSaved(project.project_id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg></button>
                       </div>
                       <div className="space-y-2">
                         <p className="text-ink font-medium line-clamp-1">{project.title}</p>
-                        <p className="text-zinc-500 text-sm line-clamp-1">{project.location?.full_name}</p>
+                        <p className="text-zinc-500 text-sm line-clamp-1">{luogoLeggibile(project.location?.full_name, project.location?.name)}</p>
                         <div className="flex items-center gap-3 text-xs text-zinc-400">
                           {formatBedrooms(project.bedrooms) && <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" />{formatBedrooms(project.bedrooms)}</span>}
                           {project.payment_plans && <span>{formatPaymentPlan(project.payment_plans)}</span>}
@@ -5190,7 +5219,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                           onClick={() => handlePageChange(pageNum)}
                           className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
                             page === pageNum 
-                              ? 'bg-orange-500 text-white' 
+                              ? 'bg-oro-500 text-ink' 
                               : 'bg-zinc-700/50 text-zinc-400 hover:bg-zinc-700'
                           }`}
                         >
@@ -5261,19 +5290,19 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                   <div className="p-3 border-b border-zinc-800">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                      <input type="text" placeholder="Cerca progetto..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-ink text-sm placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none" />
+                      <input type="text" placeholder="Cerca progetto..." value={filters.search} onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && searchListings(1)} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-ink text-sm placeholder:text-zinc-500 focus:border-oro-500 focus:outline-none" />
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto">
                     {displayProjects.map(project => (
-                      <div key={project.project_id} onClick={() => setSelectedListing(project)} className={'p-3 border-b border-zinc-800/50 cursor-pointer hover:bg-zinc-700/30 transition-colors ' + (selectedListing?.project_id === project.project_id ? 'bg-orange-500/10 border-l-2 border-l-orange-500' : '')}>
+                      <div key={project.project_id} onClick={() => setSelectedListing(project)} className={'p-3 border-b border-zinc-800/50 cursor-pointer hover:bg-zinc-700/30 transition-colors ' + (selectedListing?.project_id === project.project_id ? 'bg-oro-500/10 border-l-2 border-l-oro-500' : '')}>
                         <div className="flex gap-3">
                           <div className="w-20 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700">
                             {project.images?.[0]?.medium_image_url ? <img src={project.images[0].medium_image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Building2 className="w-6 h-6 text-zinc-600" /></div>}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-ink text-sm truncate">{project.title}</h3>
-                            <p className="text-xs text-zinc-500 truncate">{project.location?.full_name}</p>
+                            <p className="text-xs text-zinc-500 truncate">{luogoLeggibile(project.location?.full_name, project.location?.name)}</p>
                             <p className="text-oro-400 font-semibold text-sm mt-1">{project.price_from > 0 ? 'From ' + formatPrice(project.price_from) : 'TBD'}</p>
                             <div className="flex items-center gap-2 text-xs text-zinc-500">
                               {formatBedrooms(project.bedrooms) && <span>{formatBedrooms(project.bedrooms)}</span>}
@@ -5312,7 +5341,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                       <div 
                         key={project.project_id} 
                         onClick={() => setSelectedListing(project)}
-                        className={'flex-shrink-0 w-72 bg-[#ffffff] rounded-xl p-3 border transition-all snap-start ' + (selectedListing?.project_id === project.project_id ? 'border-orange-500 scale-[1.02]' : 'border-zinc-800')}
+                        className={'flex-shrink-0 w-72 bg-[#ffffff] rounded-xl p-3 border transition-all snap-start ' + (selectedListing?.project_id === project.project_id ? 'border-oro-500 scale-[1.02]' : 'border-zinc-800')}
                       >
                         <div className="flex gap-3">
                           <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-700">
@@ -5324,7 +5353,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-ink text-sm line-clamp-1">{project.title}</h3>
-                            <p className="text-xs text-zinc-500 line-clamp-1">{project.location?.full_name}</p>
+                            <p className="text-xs text-zinc-500 line-clamp-1">{luogoLeggibile(project.location?.full_name, project.location?.name)}</p>
                             <p className="text-oro-400 font-bold mt-1">{project.price_from > 0 ? 'From ' + formatPrice(project.price_from) : 'TBD'}</p>
                             <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
                               {formatBedrooms(project.bedrooms) && <span>{formatBedrooms(project.bedrooms)}</span>}
@@ -5378,7 +5407,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                           )}
                           <button 
                             onClick={(e) => { e.stopPropagation(); onRemoveListing(saved.property_id); }} 
-                            className="absolute top-2 right-2 p-2 rounded-full bg-orange-500 text-white hover:bg-red-500 transition-colors"
+                            className="absolute top-2 right-2 p-2 rounded-full bg-oro-500 text-ink hover:bg-red-500 hover:text-white transition-colors"
                             title="Rimuovi dai salvati"
                           >
                             <X className="w-4 h-4" />
@@ -5386,7 +5415,7 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                           {saved.completion_status && (
                             <span className={'absolute top-2 left-2 px-2 py-1 text-ink text-xs font-medium rounded-lg ' + 
                               (saved.completion_status === 'completed' ? 'bg-green-500/90' : 
-                               saved.completion_status === 'under_construction' ? 'bg-orange-500/90' : 'bg-blue-500/90')}>
+                               saved.completion_status === 'under_construction' ? 'bg-oro-500/90' : 'bg-blue-500/90')}>
                               {saved.completion_status === 'completed' ? 'Completato' : 
                                saved.completion_status === 'under_construction' ? 'In Costruzione' : 'Lancio'}
                             </span>
@@ -5394,9 +5423,9 @@ function OffPlanTab({ clienti, onCreateLead, savedListings, onSaveListing, onRem
                         </div>
                         <div className="space-y-2">
                           <p className="text-ink font-medium line-clamp-1">{project.title || saved.title}</p>
-                          <p className="text-zinc-500 text-sm line-clamp-1">{project.location?.full_name || saved.location_full}</p>
+                          <p className="text-zinc-500 text-sm line-clamp-1">{luogoLeggibile(project.location?.full_name || saved.location_full)}</p>
                           <div className="flex items-center justify-between pt-2">
-                            <p className="text-orange-400 font-semibold">
+                            <p className="text-oro-400 font-semibold">
                               {(project.price_from || saved.price) > 0 ? 'da AED ' + parseFloat(project.price_from || saved.price).toLocaleString() : 'Prezzo TBD'}
                             </p>
                             {(project.developer?.name || saved.agent_name) && (
@@ -5440,6 +5469,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showFullGallery, setShowFullGallery] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [inviandoWa, setInviandoWa] = useState(false);
   const [brochureUrl, setBrochureUrl] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
   const [videoType, setVideoType] = useState(null);
@@ -5491,9 +5521,9 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
   const getStatusLabel = (status) => {
     switch(status) {
       case 'completed': return { text: 'Completato', color: 'bg-green-500', icon: '✓' };
-      case 'under_construction': return { text: 'In Costruzione', color: 'bg-orange-500', icon: '🏗️' };
+      case 'under_construction': return { text: 'In Costruzione', color: 'bg-oro-500', icon: '🏗️' };
       case 'not_started': return { text: 'Nuovo Lancio', color: 'bg-blue-500', icon: '🚀' };
-      default: return { text: 'Off-Plan', color: 'bg-orange-500', icon: '📋' };
+      default: return { text: 'Off-Plan', color: 'bg-oro-500', icon: '📋' };
     }
   };
 
@@ -5687,7 +5717,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
         {/* Thumbnails */}
         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 px-4 overflow-x-auto">
           {images.slice(0, 10).map((img, idx) => (
-            <button key={idx} onClick={() => setActiveImageIndex(idx)} className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${idx === activeImageIndex ? 'border-orange-500 scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+            <button key={idx} onClick={() => setActiveImageIndex(idx)} className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${idx === activeImageIndex ? 'border-oro-500 scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}>
               <img src={img.small_image_url || img.medium_image_url} alt="" className="w-full h-full object-cover" />
             </button>
           ))}
@@ -5721,7 +5751,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                 <span>{status.icon}</span> {status.text}
               </span>
               {listing.hotness_level >= 80 && (
-                <span className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-orange-500 text-white text-sm font-medium rounded-full flex items-center gap-1.5 shadow-lg">
+                <span className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-oro-600 text-white text-sm font-medium rounded-full flex items-center gap-1.5 shadow-lg">
                   🔥 Popolare
                 </span>
               )}
@@ -5732,7 +5762,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               )}
             </div>
             <div className="flex gap-2">
-              <button onClick={onToggleSave} className={`p-2.5 rounded-full shadow-lg transition-all ${isSaved ? 'bg-orange-500 text-white' : 'bg-zinc-800/60 backdrop-blur text-white hover:bg-orange-500'}`}>
+              <button onClick={onToggleSave} className={`p-2.5 rounded-full shadow-lg transition-all ${isSaved ? 'bg-oro-500 text-ink' : 'bg-zinc-800/60 backdrop-blur text-white hover:bg-oro-500'}`}>
                 <svg className="w-5 h-5" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
               </button>
               <button onClick={onClose} className="p-2.5 bg-zinc-800/60 backdrop-blur rounded-full text-ink hover:bg-zinc-800/80 shadow-lg">
@@ -5745,7 +5775,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           {images.length > 1 && (
             <div className="absolute bottom-20 left-0 right-0 flex justify-center gap-1.5">
               {images.slice(0, 8).map((_, idx) => (
-                <button key={idx} onClick={() => setActiveImageIndex(idx)} className={`w-2 h-2 rounded-full transition-all ${idx === activeImageIndex ? 'bg-orange-500 w-6' : 'bg-white/50 hover:bg-white/80'}`} />
+                <button key={idx} onClick={() => setActiveImageIndex(idx)} className={`w-2 h-2 rounded-full transition-all ${idx === activeImageIndex ? 'bg-oro-500 w-6' : 'bg-white/50 hover:bg-white/80'}`} />
               ))}
               {images.length > 8 && <span className="text-ink/50 text-xs ml-1">+{images.length - 8}</span>}
             </div>
@@ -5774,7 +5804,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           {/* Price & Quick Info */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-zinc-800">
             <div>
-              <p className="text-3xl font-bold text-orange-400">
+              <p className="text-3xl font-bold text-oro-400">
                 {listing.price_from > 0 ? `AED ${formatPrice(listing.price_from)}` : 'Prezzo su richiesta'}
               </p>
               {listing.price_from > 0 && <p className="text-zinc-500 text-sm mt-1">Prezzo iniziale</p>}
@@ -5782,7 +5812,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
             {formatBedrooms(listing.bedrooms) && (
               <div className="flex items-center gap-4 text-zinc-300">
                 <div className="flex items-center gap-2 px-4 py-2 bg-zinc-800 rounded-xl">
-                  <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                  <svg className="w-5 h-5 text-oro-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                   <span className="font-medium">{formatBedrooms(listing.bedrooms)}</span>
                 </div>
               </div>
@@ -5793,7 +5823,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           {listing.bedrooms?.available?.length > 0 && listing.price_from > 0 && (
             <div className="mb-6 p-4 bg-zinc-700/50/30 border border-zinc-700/50 rounded-xl">
               <h4 className="text-ink font-medium mb-3 flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-orange-400" />
+                <DollarSign className="w-4 h-4 text-oro-400" />
                 Prezzi per Tipologia
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -5815,8 +5845,8 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           
           {/* Info Grid - 2 columns on mobile, 4 on desktop */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-orange-500/20 rounded-xl p-4 text-center">
-              <p className="text-orange-400 text-2xl font-bold">{status.icon}</p>
+            <div className="bg-gradient-to-br from-oro-500/14 to-oro-600/6 border border-oro-500/30 rounded-xl p-4 text-center">
+              <p className="text-oro-400 text-2xl font-bold">{status.icon}</p>
               <p className="text-ink font-medium mt-1">{status.text}</p>
               <p className="text-zinc-500 text-xs mt-1">Stato progetto</p>
             </div>
@@ -5847,8 +5877,8 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
               {listing.developer.logo ? (
                 <img src={listing.developer.logo} alt={listing.developer.name} className="w-16 h-16 rounded-xl object-contain bg-white p-2" />
               ) : (
-                <div className="w-16 h-16 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                  <Building2 className="w-8 h-8 text-orange-400" />
+                <div className="w-16 h-16 rounded-xl bg-oro-500/20 flex items-center justify-center">
+                  <Building2 className="w-8 h-8 text-oro-400" />
                 </div>
               )}
               <div className="flex-1">
@@ -5859,19 +5889,19 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                 )}
               </div>
               <div className="text-right">
-                <span className="px-3 py-1 bg-orange-500/20 text-orange-400 text-xs font-medium rounded-full">Verificato ✓</span>
+                <span className="px-3 py-1 bg-oro-500/20 text-oro-400 text-xs font-medium rounded-full">Verificato ✓</span>
               </div>
             </div>
           )}
           
           {/* Construction Progress - Only for under construction projects */}
           {listing.construction_phase_key === 'under_construction' && (
-            <div className="bg-gradient-to-r from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-xl p-4 mb-6">
+            <div className="bg-gradient-to-r from-oro-500/14 to-oro-400/6 border border-oro-500/30 rounded-xl p-4 mb-6">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-ink font-semibold flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-orange-400" /> Stato Avanzamento Lavori
+                  <Building2 className="w-4 h-4 text-oro-400" /> Stato Avanzamento Lavori
                 </h3>
-                <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs font-medium rounded-full">In Costruzione</span>
+                <span className="px-2 py-1 bg-oro-500/20 text-oro-400 text-xs font-medium rounded-full">In Costruzione</span>
               </div>
               {(() => {
                 // Use real completion percentage if available, otherwise estimate
@@ -5892,7 +5922,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                   <>
                     <div className="relative h-4 bg-zinc-700/50 rounded-full overflow-hidden mb-2">
                       <div 
-                        className="absolute left-0 top-0 h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full transition-all duration-500"
+                        className="absolute left-0 top-0 h-full bg-gradient-to-r from-oro-500 to-oro-300 rounded-full transition-all duration-500"
                         style={{ width: `${progress}%` }}
                       />
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -5904,15 +5934,15 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                       <span>Consegna: {formatDelivery(listing.delivery_date) || 'TBD'}</span>
                     </div>
                     <div className="mt-3 grid grid-cols-4 gap-2">
-                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 25 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-700/50 text-zinc-500')}>
+                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 25 ? 'bg-oro-500/20 text-oro-400' : 'bg-zinc-700/50 text-zinc-500')}>
                         <p className="font-medium">Fondazioni</p>
                         <p>{progress >= 25 ? '✓' : '...'}</p>
                       </div>
-                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 50 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-700/50 text-zinc-500')}>
+                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 50 ? 'bg-oro-500/20 text-oro-400' : 'bg-zinc-700/50 text-zinc-500')}>
                         <p className="font-medium">Struttura</p>
                         <p>{progress >= 50 ? '✓' : '...'}</p>
                       </div>
-                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 75 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-700/50 text-zinc-500')}>
+                      <div className={'p-2 rounded-lg text-center text-xs ' + (progress >= 75 ? 'bg-oro-500/20 text-oro-400' : 'bg-zinc-700/50 text-zinc-500')}>
                         <p className="font-medium">Finiture</p>
                         <p>{progress >= 75 ? '✓' : '...'}</p>
                       </div>
@@ -5969,8 +5999,8 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
                         <p className="text-2xl font-bold text-green-400">{plan.summary.down_payment}%</p>
                         <p className="text-zinc-500 text-xs mt-1">Anticipo</p>
                       </div>
-                      <div className="text-center p-3 bg-orange-500/10 rounded-lg">
-                        <p className="text-2xl font-bold text-orange-400">{plan.summary.during_construction}%</p>
+                      <div className="text-center p-3 bg-oro-500/10 rounded-lg">
+                        <p className="text-2xl font-bold text-oro-400">{plan.summary.during_construction}%</p>
                         <p className="text-zinc-500 text-xs mt-1">Costruzione</p>
                       </div>
                       <div className="text-center p-3 bg-blue-500/10 rounded-lg">
@@ -5994,7 +6024,7 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           {images.length > 1 && (
             <div className="mb-6">
               <h3 className="text-ink font-semibold mb-3 flex items-center gap-2">
-                <Eye className="w-4 h-4 text-orange-400" /> Galleria
+                <Eye className="w-4 h-4 text-oro-400" /> Galleria
                 <span className="text-zinc-500 text-sm font-normal">({images.length} immagini)</span>
               </h3>
               <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
@@ -6018,18 +6048,30 @@ function ListingDetailModal({ listing, onClose, onCreateLead, isSaved, onToggleS
           
           {/* Actions */}
           <div className="flex flex-wrap gap-3 pt-4 border-t border-zinc-800">
-            <Button className="flex-1 py-3 bg-orange-500 hover:bg-orange-600" onClick={onCreateLead}>
+            <Button className="flex-1 py-3 bg-oro-500 hover:bg-oro-600" onClick={onCreateLead}>
               <Plus className="w-5 h-5 mr-2" /> Crea Lead
             </Button>
-            <Button variant="secondary" className="flex-1 py-3" onClick={() => {
-              const bedsText = formatBedrooms(listing.bedrooms) || 'Varie tipologie';
-              const deliveryText = formatDelivery(listing.delivery_date) || 'TBD';
-              const paymentText = listing.payment_plans?.plans?.[0]?.summary ? 
-                `💳 ${listing.payment_plans.plans[0].summary.down_payment}% anticipo` : '';
-              const text = `🏗️ *${listing.title}*\n\n📍 ${listing.location?.full_name}\n💰 ${listing.price_from > 0 ? `da AED ${formatPrice(listing.price_from)}` : 'Prezzo su richiesta'}\n🏠 ${bedsText}\n📅 Consegna: ${deliveryText}\n🏢 Developer: ${listing.developer?.name || 'TBD'}\n${paymentText}\n\n_Progetto Off-Plan Dubai_\n\n🔗 Per info: contattami!`;
-              window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+            <Button variant="secondary" className="flex-1 py-3" disabled={inviandoWa} onClick={async () => {
+              setInviandoWa(true);
+              try {
+                const dati = {
+                  bedsText: formatBedrooms(listing.bedrooms) || 'Varie tipologie',
+                  deliveryText: formatDelivery(listing.delivery_date) || 'TBD',
+                  paymentText: listing.payment_plans?.plans?.[0]?.summary
+                    ? `${listing.payment_plans.plans[0].summary.down_payment}% anticipo` : ''
+                };
+                const testo = testoScheda(listing, dati);
+                // Se la foto non si riesce a disegnare si parte lo stesso col
+                // solo testo: meglio il messaggio di prima che nessun messaggio.
+                const immagine = await creaImmagineScheda(listing, dati).catch(() => null);
+                await condividiScheda(listing, testo, immagine);
+              } finally {
+                setInviandoWa(false);
+              }
             }}>
-              <MessageCircle className="w-5 h-5 mr-2" /> WhatsApp
+              {inviandoWa
+                ? <><RefreshCw className="w-5 h-5 mr-2 animate-spin" /> Preparo...</>
+                : <><MessageCircle className="w-5 h-5 mr-2" /> WhatsApp</>}
             </Button>
             {/* Video button */}
             {mediaLoading ? (
@@ -6214,17 +6256,17 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
           {/* Client Selection */}
           <div>
             <label className="text-sm text-zinc-400 mb-2 block">Associa a Cliente <span className="text-red-400">*</span></label>
-            <input type="text" placeholder="Cerca cliente o digita nome per crearne uno nuovo..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setSelectedCliente(null); setCreateNew(false); }} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-xl px-3 py-2 text-ink text-sm focus:border-orange-500 focus:outline-none" />
+            <input type="text" placeholder="Cerca cliente o digita nome per crearne uno nuovo..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setSelectedCliente(null); setCreateNew(false); }} className="w-full bg-zinc-700/50 border border-zinc-700 rounded-xl px-3 py-2 text-ink text-sm focus:border-oro-500 focus:outline-none" />
             
             {searchQuery && !createNew && !selectedCliente && (
               <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
                 {filteredClienti.slice(0, 5).map(c => (
-                  <button key={c.id} onClick={() => { setSelectedCliente(c); setSearchQuery(`${c.nome} ${c.cognome}`); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${selectedCliente?.id === c.id ? 'bg-orange-500/20 text-orange-400' : 'hover:bg-zinc-700/50 text-zinc-300'}`}>
+                  <button key={c.id} onClick={() => { setSelectedCliente(c); setSearchQuery(`${c.nome} ${c.cognome}`); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${selectedCliente?.id === c.id ? 'bg-oro-500/20 text-oro-400' : 'hover:bg-zinc-700/50 text-zinc-300'}`}>
                     <Avatar nome={c.nome} cognome={c.cognome} size="xs" />
                     <span className="text-sm">{c.nome} {c.cognome}</span>
                   </button>
                 ))}
-                <button onClick={() => { setCreateNew(true); setNewCliente(n => ({ ...n, nome: searchQuery.split(' ')[0], cognome: searchQuery.split(' ')[1] || '' })); }} className="w-full text-left p-2 rounded-lg text-orange-400 hover:bg-zinc-700/50 text-sm">
+                <button onClick={() => { setCreateNew(true); setNewCliente(n => ({ ...n, nome: searchQuery.split(' ')[0], cognome: searchQuery.split(' ')[1] || '' })); }} className="w-full text-left p-2 rounded-lg text-oro-400 hover:bg-zinc-700/50 text-sm">
                   + Crea nuovo cliente "{searchQuery}"
                 </button>
               </div>
@@ -6241,8 +6283,8 @@ function AssignListingModal({ listing, clienti, onClose, onCreateLead, user }) {
           
           {/* New Client Form */}
           {createNew && (
-            <div className="space-y-3 p-3 bg-zinc-700/30 rounded-xl border border-orange-500/30">
-              <p className="text-sm text-orange-400 font-medium">Nuovo Cliente</p>
+            <div className="space-y-3 p-3 bg-zinc-700/30 rounded-xl border border-oro-500/40">
+              <p className="text-sm text-oro-400 font-medium">Nuovo Cliente</p>
               <div className="grid grid-cols-2 gap-2">
                 <input type="text" placeholder="Nome *" value={newCliente.nome} onChange={(e) => setNewCliente(n => ({ ...n, nome: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm" />
                 <input type="text" placeholder="Cognome" value={newCliente.cognome} onChange={(e) => setNewCliente(n => ({ ...n, cognome: e.target.value }))} className="bg-zinc-700/50 border border-zinc-700 rounded-lg px-3 py-2 text-ink text-sm" />
@@ -6903,7 +6945,7 @@ function NoteModal({ task, onSave, onClose }) {
 
 // Cliente Modal
 function ClienteModal({ cliente, onSave, onClose }) {
-  const [form, setForm] = useState(cliente || { nome: '', cognome: '', email: '', telefono: '', whatsapp: '', nazionalita: '', budget_min: '', budget_max: '', stato: 'nuovo', fonte: '', note: '' });
+  const [form, setForm] = useState(cliente || { nome: '', cognome: '', email: '', telefono: '', whatsapp: '', nazionalita: '', budget_min: '', budget_max: '', stato: 'nuovo', fonte: '', note: '', tipi: [] });
   
   const save = async () => {
     if (!form.nome) { alert('Nome obbligatorio'); return; }
@@ -6933,6 +6975,7 @@ function ClienteModal({ cliente, onSave, onClose }) {
           </Select>
           <Input label="Fonte" value={form.fonte || ''} onChange={(e) => setForm({ ...form, fonte: e.target.value })} />
         </div>
+        <SceltaTipiCliente valore={form.tipi || []} onCambia={(tipi) => setForm({ ...form, tipi })} />
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Note</label>
           <textarea value={form.note || ''} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full bg-[#ffffff] border border-[#e4e0d8] rounded-xl px-4 py-3 text-ink text-sm h-20 resize-none focus:outline-none focus:border-[#d8d3c9]" />

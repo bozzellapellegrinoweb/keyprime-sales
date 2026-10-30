@@ -27,3 +27,20 @@ export const motiviPerdita = [
   'Contatto non valido',
   'Altro'
 ];
+
+/* Categorie del contatto in rubrica.
+   Un contatto puo' averne piu' di una: il proprietario che poi compra resta
+   proprietario, e il collaboratore puo' essere anche informatore. Per questo
+   sul database e' un array e non una colonna sola — "o entrambi" era nella
+   richiesta, ed e' la ragione della forma. */
+export const clienteTipi = [
+  { id: 'acquirente',   label: 'Acquirente',   breve: 'Acq.',  descrizione: 'Cerca casa: e\' la domanda.' },
+  { id: 'proprietario', label: 'Proprietario', breve: 'Prop.', descrizione: 'Ha un immobile: e\' l\'offerta.' },
+  { id: 'agente',       label: 'Agente',       breve: 'Ag.',   descrizione: 'Agente di un\'altra agenzia.' },
+  { id: 'collaboratore',label: 'Collaboratore',breve: 'Coll.', descrizione: 'Lavora con noi su una pratica.' },
+  { id: 'informatore',  label: 'Informatore',  breve: 'Info.', descrizione: 'Segnala occasioni, non tratta.' },
+  { id: 'servizi',      label: 'Servizi',      breve: 'Serv.', descrizione: 'Notaio, banca, arredo, manutenzione.' }
+];
+
+export const clienteTipoLabel = (id) =>
+  clienteTipi.find((t) => t.id === id)?.label || id;
