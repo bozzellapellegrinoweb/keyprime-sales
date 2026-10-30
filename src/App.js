@@ -24,6 +24,7 @@ import ImpostazioniTab from './components/ImpostazioniTab';
 import ControlloAccessi from './components/ControlloAccessi';
 import { generaOffertaPdf, proprietaCompilata } from './lib/offertaPdf';
 import DashboardAdmin from './components/DashboardAdmin';
+import HomeOperativa from './components/HomeOperativa';
 import CalcolatoreRoi from './components/CalcolatoreRoi';
 import Paginazione, { usePaginazione } from './components/Paginazione';
 import RicercaProgetti from './components/RicercaProgetti';
@@ -2173,6 +2174,17 @@ export default function App() {
             {/* HOME TAB */}
             {activeTab === 'home' && (
               <>
+                {/* Lo stesso quadro dell'admin, sui dati dell'agente: la
+                    richiesta era che la funzione la capissero loro. */}
+                <HomeOperativa
+                  clienti={myClienti}
+                  sales={mySales}
+                  tasks={myTasks}
+                  followUps={myFollowUps}
+                  offerte={offerte}
+                  onVai={setActiveTab}
+                  onNuovoCliente={() => setShowClienteModal({})}
+                />
                 <div className="lg:hidden grid grid-cols-2 gap-3">
                   <button onClick={() => setShowForm('lead')} className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 rounded-2xl p-5 text-left">
                     <Target className="w-6 h-6 text-blue-400 mb-3" />
@@ -2637,6 +2649,18 @@ export default function App() {
 
             {/* DASHBOARD */}
             {activeTab === 'dashboard' && (
+              <>
+              {/* Lo schema della revisione: "cosa faccio adesso" sopra,
+                  l'analisi di come sta andando sotto. */}
+              <HomeOperativa
+                clienti={clienti}
+                sales={sales}
+                tasks={tasks}
+                followUps={followUps}
+                offerte={offerte}
+                onVai={setActiveTab}
+                onNuovoCliente={() => setShowClienteModal({})}
+              />
               <DashboardAdmin
                 sales={sales}
                 periodSales={periodSales}
@@ -2654,6 +2678,7 @@ export default function App() {
                 onVai={setActiveTab}
                 onEsporta={() => generateDashboardPDF(totals, periodSales, vendite, byAgente, byZona)}
               />
+              </>
             )}
             
             {/* AGENT DETAIL VIEW */}
