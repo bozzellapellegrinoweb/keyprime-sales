@@ -25,6 +25,7 @@ import ControlloAccessi from './components/ControlloAccessi';
 import { generaOffertaPdf, proprietaCompilata } from './lib/offertaPdf';
 import DashboardAdmin from './components/DashboardAdmin';
 import HomeOperativa from './components/HomeOperativa';
+import ImmobiliTab from './components/ImmobiliTab';
 import CalcolatoreRoi from './components/CalcolatoreRoi';
 import Paginazione, { usePaginazione } from './components/Paginazione';
 import RicercaProgetti from './components/RicercaProgetti';
@@ -32,7 +33,7 @@ import { SceltaTipiCliente, PastiglieTipi, FiltroTipiCliente } from './component
 import { trasformaProgetto, luogoLeggibile } from './lib/offplan';
 import { testoScheda, creaImmagineScheda, condividiScheda } from './lib/schedaWhatsapp';
 import { istantaneaCatalogo, trimestreAnno, etichettaFase } from './lib/offerta';
-import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List, ExternalLink, Calculator } from 'lucide-react';
+import { Download, Trash2, Check, RefreshCw, AlertCircle, LogOut, Eye, EyeOff, Copy, UserPlus, Search, Phone, Mail, X, Edit2, TrendingUp, DollarSign, Target, Users, Menu, Key, Bell, MapPin, Award, User, MessageCircle, ChevronLeft, ChevronRight, Clock, FileText, Plus, Send, LayoutDashboard, PieChart, ListTodo, Settings, Building2, Home, ArrowUpRight, ArrowDownRight, Sparkles, Command, Printer, Map, List, ExternalLink, Calculator } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Keyboard } from '@capacitor/keyboard';
@@ -2058,6 +2059,7 @@ export default function App() {
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.vendite.accent, primaria: true },
       { id: 'crm', icon: Users, label: 'Clienti', accent: theme.sections.crm.accent, primaria: true },
       { id: 'home', icon: LayoutDashboard, label: 'Riepilogo', accent: theme.sections.dashboard.accent },
+      { id: 'immobili', icon: Home, label: 'Immobili', accent: theme.sections.offplan.accent },
       { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent },
       { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent },
       { id: 'offerte', icon: FileText, label: 'Offerte', accent: theme.sections.offerte.accent },
@@ -2150,6 +2152,7 @@ export default function App() {
                   {activeTab === 'home' && 'Il tuo riepilogo'}
                   {activeTab === 'leads' && `${mySales.length} lead totali`}
                   {activeTab === 'pipeline' && 'Stato dei tuoi lead'}
+                  {activeTab === 'immobili' && 'I tuoi immobili'}
                   {activeTab === 'offplan' && 'Progetti Off-Plan'}
                   {activeTab === 'calculator' && 'Calcola rendimenti immobiliari UAE'}
                   {activeTab === 'tasks' && `${myTasks.length} task pendenti`}
@@ -2367,6 +2370,7 @@ export default function App() {
             )}
 
             {activeTab === 'tasks' && <AgentTasksTab tasks={myTasks} allTasks={tasks.filter(t => t.assegnato_a === user?.nome)} clienti={clienti} onComplete={completeTask} onAddNote={(t) => setShowNoteModal(t)} />}
+            {activeTab === 'immobili' && <ImmobiliTab clienti={myClienti} onToast={showToast} />}
             {activeTab === 'offplan' && <OffPlanTab clienti={myClienti} onCreateLead={createLeadFromListing} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeListing} user={user} />}
             {activeTab === 'calculator' && <CalcolatoreRoi />}
             {activeTab === 'offerte' && <OffertaTab offerte={offerte} user={user} onCrea={() => setShowOffertaModal({})} onEdit={setShowOffertaModal} onDelete={deleteOfferta} onGeneraPDF={generateOffertaPDF} />}
@@ -2544,6 +2548,7 @@ export default function App() {
       { id: 'vendite', icon: DollarSign, label: 'Vendite', accent: theme.sections.vendite.accent },
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.pipeline.accent },
       { id: 'crm', icon: Users, label: 'CRM', accent: theme.sections.crm.accent },
+      { id: 'immobili', icon: Home, label: 'Immobili', accent: theme.sections.offplan.accent },
       { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent, isNew: true },
       { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent, isNew: true },
       { id: 'offerte', icon: FileText, label: 'Offerte', accent: theme.sections.offerte.accent },
@@ -2622,6 +2627,7 @@ export default function App() {
                   {activeTab === 'inbox' && (daAssegnare + daLavorare > 0 ? `${daAssegnare} senza agente, ${daLavorare} mai contattati` : 'Tutti i lead sono presi in carico')}
                                     {activeTab === 'pipeline' && 'Gestisci il flusso di vendita'}
                   {activeTab === 'crm' && `${clienti.length} clienti in database`}
+                  {activeTab === 'immobili' && 'Portafoglio dell\'agenzia e vetrina pubblica'}
                   {activeTab === 'offplan' && `Progetti Off-Plan • ${savedListings.length} salvati`}
                   {activeTab === 'calculator' && 'Calcola rendimenti immobiliari UAE'}
                   {activeTab === 'tasks' && `${pendingTasks.length} task da completare`}
@@ -2713,6 +2719,7 @@ export default function App() {
             {activeTab === 'crm' && (showClienteDetail ? <ClienteDetailView cliente={showClienteDetail} sales={sales.filter(s => s.cliente_id === showClienteDetail.id)} tasks={tasks.filter(t => t.cliente_id === showClienteDetail.id)} onBack={() => setShowClienteDetail(null)} onEdit={() => setShowClienteModal(showClienteDetail)} onDelete={() => deleteCliente(showClienteDetail.id)} updateCliente={updateCliente} onAddTask={() => setShowTaskModal({ cliente_id: showClienteDetail.id })} onCompleteTask={completeTask} onDeleteTask={deleteTask} onExportPDF={() => generateClientePDF(showClienteDetail, sales.filter(s => s.cliente_id === showClienteDetail.id), tasks.filter(t => t.cliente_id === showClienteDetail.id))} /> : <CRMTab clienti={filteredClienti} conteggiTipi={conteggiTipiCliente} filters={clienteFilters} setFilters={setClienteFilters} sales={sales} onSelect={setShowClienteDetail} onCreate={() => setShowClienteModal({})} onDelete={deleteCliente} onUpdateCliente={updateCliente} users={users} />)}
 
             {/* OFF-PLAN */}
+            {activeTab === 'immobili' && <ImmobiliTab clienti={clienti} onToast={showToast} />}
             {activeTab === 'offplan' && <OffPlanTab clienti={clienti} onCreateLead={createLeadFromListing} savedListings={savedListings} onSaveListing={saveListing} onRemoveListing={removeListing} user={user} />}
 
             {/* CALCULATOR */}
