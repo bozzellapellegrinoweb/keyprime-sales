@@ -24,6 +24,7 @@ import {
 import { theme } from '../lib/theme';
 import { supabase } from '../lib/supabaseClient';
 import { luogoLeggibile } from '../lib/offplan';
+import { caricaImmobili } from '../lib/immobili';
 
 /* ── Pezzi comuni ──────────────────────────────────────────────────────── */
 
@@ -157,6 +158,9 @@ export default function HomeOperativa({
 }) {
   // Il catalogo non e' in memoria: lo conta il database, e sono due numeri.
   const [catalogo, setCatalogo] = useState({ totale: null, offplan: null, recenti: [] });
+  // Il portafoglio proprio: da ieri esiste, quindi i suoi riquadri non sono
+  // piu' segnaposto.
+  const [portafoglio, setPortafoglio] = useState(null);
 
   useEffect(() => {
     let vivo = true;
@@ -177,6 +181,14 @@ export default function HomeOperativa({
         recenti: ultimi.data || []
       });
     })();
+    return () => { vivo = false; };
+  }, []);
+
+  useEffect(() => {
+    let vivo = true;
+    caricaImmobili().then((esito) => {
+      if (vivo && esito.ok) setPortafoglio(esito.elenco);
+    });
     return () => { vivo = false; };
   }, []);
 
@@ -229,6 +241,11 @@ export default function HomeOperativa({
       .slice(0, 6)
       .map((f) => ({ ...f, cliente: perId[f.cliente_id] }));
   }, [followUps, clienti]);
+
+  // Finche' il portafoglio non e' arrivato i riquadri restano a null, cioe'
+  // in attesa: meglio nessun numero che uno zero che poi cambia.
+  const quantiImmobili = (contratto) =>
+    portafoglio === null ? null : portafoglio.filter((i) => i.contratto === contratto).length;
 
   const prezzo = (n) => (n > 0 ? `da AED ${Number(n).toLocaleString('it-IT')}` : 'Prezzo su richiesta');
 
@@ -296,10 +313,12 @@ export default function HomeOperativa({
           <Casella icona={Building2} etichetta="Off-plan projects" valore={catalogo.offplan}
                    onClick={() => onVai?.('offplan')}
                    nota="Progetti non ancora consegnati. I pronti si filtrano dal catalogo." />
-          <Casella icona={Home} etichetta="Immobili in vendita" valore={null} esempio="42"
-                   nota="Il tuo portafoglio di unità pronte, non il catalogo dei developer." />
-          <Casella icona={KeyRound} etichetta="Immobili in affitto" valore={null} esempio="17"
-                   nota="Gli immobili che gestisci in locazione." />
+          <Casella icona={Home} etichetta="Immobili in vendita" valore={quantiImmobili('vendita')}
+                   onClick={() => onVai?.('immobili')}
+                   nota="Il portafoglio dell'agenzia, non il catalogo dei developer." />
+          <Casella icona={KeyRound} etichetta="Immobili in affitto" valore={quantiImmobili('affitto')}
+                   onClick={() => onVai?.('immobili')}
+                   nota="Gli immobili dati in locazione." />
           <Casella icona={FilePlus} etichetta="Richieste vendita" valore={null} esempio="8"
                    nota="Chi ti ha chiesto di vendere casa sua." />
           <Casella icona={FilePlus} etichetta="Richieste affitto" valore={null} esempio="5"
@@ -320,8 +339,7 @@ export default function HomeOperativa({
         <Titolo>Scorciatoie</Titolo>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <Scorciatoia icona={UserPlus} label="Nuovo cliente" onClick={onNuovoCliente} />
-          <Scorciatoia icona={Home} label="Nuovo immobile" inArrivo
-                       nota="Arriva con il portafoglio immobili." />
+          <Scorciatoia icona={Home} label="Nuovo immobile" onClick={() => onVai?.('immobili')} />
           <Scorciatoia icona={CalendarPlus} label="Nuovo appuntamento" inArrivo
                        nota="Arriva con l'agenda." />
           <Scorciatoia icona={FilePlus} label="Nuova richiesta" inArrivo
