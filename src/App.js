@@ -2059,7 +2059,7 @@ export default function App() {
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.vendite.accent, primaria: true },
       { id: 'crm', icon: Users, label: 'Clienti', accent: theme.sections.crm.accent, primaria: true },
       { id: 'home', icon: LayoutDashboard, label: 'Riepilogo', accent: theme.sections.dashboard.accent },
-      { id: 'immobili', icon: Home, label: 'Immobili', accent: theme.sections.offplan.accent },
+      { id: 'immobili', icon: Home, label: 'Annunci KP', accent: theme.sections.offplan.accent },
       { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent },
       { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent },
       { id: 'offerte', icon: FileText, label: 'Offerte', accent: theme.sections.offerte.accent },
@@ -2152,7 +2152,7 @@ export default function App() {
                   {activeTab === 'home' && 'Il tuo riepilogo'}
                   {activeTab === 'leads' && `${mySales.length} lead totali`}
                   {activeTab === 'pipeline' && 'Stato dei tuoi lead'}
-                  {activeTab === 'immobili' && 'I tuoi immobili'}
+                  {activeTab === 'immobili' && 'Annunci KP'}
                   {activeTab === 'offplan' && 'Progetti Off-Plan'}
                   {activeTab === 'calculator' && 'Calcola rendimenti immobiliari UAE'}
                   {activeTab === 'tasks' && `${myTasks.length} task pendenti`}
@@ -2548,7 +2548,7 @@ export default function App() {
       { id: 'vendite', icon: DollarSign, label: 'Vendite', accent: theme.sections.vendite.accent },
       { id: 'pipeline', icon: PieChart, label: 'Pipeline', accent: theme.sections.pipeline.accent },
       { id: 'crm', icon: Users, label: 'CRM', accent: theme.sections.crm.accent },
-      { id: 'immobili', icon: Home, label: 'Immobili', accent: theme.sections.offplan.accent },
+      { id: 'immobili', icon: Home, label: 'Annunci KP', accent: theme.sections.offplan.accent },
       { id: 'offplan', icon: Building2, label: 'Off-Plan', accent: theme.sections.offplan.accent, isNew: true },
       { id: 'calculator', icon: Calculator, label: 'Calcolatore ROI', accent: theme.sections.calculator.accent, isNew: true },
       { id: 'offerte', icon: FileText, label: 'Offerte', accent: theme.sections.offerte.accent },
