@@ -447,7 +447,7 @@ export default function ImmobiliTab({ clienti = [], user, onToast }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-ink font-semibold text-lg">Immobili</h2>
+          <h2 className="text-ink font-semibold text-lg">Annunci KP</h2>
           <p className="text-zinc-500 text-sm">
             {elenco.length} in portafoglio · {inVetrina} sulla vetrina pubblica
           </p>
