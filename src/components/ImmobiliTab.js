@@ -36,7 +36,7 @@ const VUOTO = {
 
 /* ── Scheda in elenco ──────────────────────────────────────────────────── */
 
-function SchedaImmobile({ immobile, onModifica, onVetrina, onElimina, occupato, puoPubblicare = true }) {
+function SchedaImmobile({ immobile, onModifica, onVetrina, onElimina, occupato, puoPubblicare = true, mio = true }) {
   const foto = primaFoto(immobile);
   const stato = STATI.find((s) => s.id === immobile.stato);
   const link = linkVetrina(immobile);
@@ -99,7 +99,7 @@ function SchedaImmobile({ immobile, onModifica, onVetrina, onElimina, occupato, 
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}
-            {puoPubblicare && (
+            {puoPubblicare && mio && (
             <button onClick={() => onVetrina(immobile)} disabled={occupato}
                     aria-label={immobile.pubblicato ? 'Togli dalla vetrina' : 'Metti in vetrina'}
                     title={immobile.pubblicato ? 'Togli dalla vetrina' : 'Metti in vetrina'}
@@ -110,15 +110,26 @@ function SchedaImmobile({ immobile, onModifica, onVetrina, onElimina, occupato, 
               {immobile.pubblicato ? <EyeOff className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
             </button>
             )}
-            <button onClick={() => onModifica(immobile)} aria-label="Modifica"
-                    className="p-1.5 rounded-lg" style={{ background: theme.bg.tertiary, color: theme.text.secondary }}>
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-            <button onClick={() => onElimina(immobile)} aria-label="Elimina"
-                    className="p-1.5 rounded-lg"
-                    style={{ background: theme.stato.critico.bg, color: theme.stato.critico.text }}>
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
+            {mio ? (
+              <>
+                <button onClick={() => onModifica(immobile)} aria-label="Modifica"
+                        className="p-1.5 rounded-lg" style={{ background: theme.bg.tertiary, color: theme.text.secondary }}>
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => onElimina(immobile)} aria-label="Elimina"
+                        className="p-1.5 rounded-lg"
+                        style={{ background: theme.stato.critico.bg, color: theme.stato.critico.text }}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </>
+            ) : (
+              /* Lo si puo' mostrare a un cliente, non modificare: chi lo
+                 segue ha un nome, e si legge. */
+              <span className="text-xs truncate max-w-[9rem]" style={{ color: theme.text.tertiary }}
+                    title={`Segue ${immobile.agente || 'un collega'}`}>
+                {immobile.agente || 'Collega'}
+              </span>
+            )}
           </span>
         </div>
       </div>
@@ -393,7 +404,7 @@ export default function ImmobiliTab({ clienti = [], user, onToast }) {
   const [caricamento, setCaricamento] = useState(true);
   const [modulo, setModulo] = useState(null);      // null | {} | immobile
   const [occupato, setOccupato] = useState(null);  // id in corso di pubblicazione
-  const [filtri, setFiltri] = useState({ cerca: '', contratto: '', vetrina: '' });
+  const [filtri, setFiltri] = useState({ cerca: '', contratto: '', vetrina: '', soloMiei: false });
 
   const ricarica = async () => {
     setCaricamento(true);
@@ -411,13 +422,15 @@ export default function ImmobiliTab({ clienti = [], user, onToast }) {
     if (filtri.contratto && i.contratto !== filtri.contratto) return false;
     if (filtri.vetrina === 'si' && !i.pubblicato) return false;
     if (filtri.vetrina === 'no' && i.pubblicato) return false;
+    if (filtri.soloMiei && !eMio(i)) return false;
     if (filtri.cerca) {
       const q = filtri.cerca.toLowerCase();
       const dove = `${i.titolo} ${i.zona || ''} ${i.riferimento || ''} ${i.emirato || ''}`.toLowerCase();
       if (!dove.includes(q)) return false;
     }
     return true;
-  }), [elenco, filtri]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [elenco, filtri, user]);
 
   const pag = usePaginazione(filtrati, 25);
 
@@ -443,6 +456,13 @@ export default function ImmobiliTab({ clienti = [], user, onToast }) {
   // che risponderebbe solo "non puoi".
   const puoPubblicare = user?.ruolo !== 'segnalatore';
 
+  // Il portafoglio e' condiviso: si vede tutto il pubblicato dei colleghi,
+  // piu' le proprie bozze. Modificare resta cosa di chi l'ha caricato — e a
+  // dirlo e' il database, non questo controllo, che serve solo a non
+  // mostrare pulsanti destinati a rispondere "non e' tuo".
+  const eMio = (i) =>
+    user?.ruolo === 'admin' || i.agente === user?.nome || i.created_by === user?.nome;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -450,6 +470,7 @@ export default function ImmobiliTab({ clienti = [], user, onToast }) {
           <h2 className="text-ink font-semibold text-lg">Annunci KP</h2>
           <p className="text-zinc-500 text-sm">
             {elenco.length} in portafoglio · {inVetrina} sulla vetrina pubblica
+            {user?.ruolo !== 'admin' && elenco.length > 0 && ` · ${elenco.filter(eMio).length} tuoi`}
           </p>
         </div>
         <Button icon={Plus} onClick={() => setModulo({})}>Nuovo immobile</Button>
@@ -469,6 +490,16 @@ export default function ImmobiliTab({ clienti = [], user, onToast }) {
           <option value="">Vendita e affitto</option>
           {CONTRATTI.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
         </select>
+        {user?.ruolo !== 'admin' && (
+          <button onClick={() => setFiltri((f) => ({ ...f, soloMiei: !f.soloMiei }))}
+                  aria-pressed={filtri.soloMiei}
+                  className="rounded-xl px-4 py-2.5 text-sm font-medium border transition-colors"
+                  style={filtri.soloMiei
+                    ? { background: theme.text.primary, borderColor: theme.text.primary, color: '#ffffff' }
+                    : { background: theme.bg.secondary, borderColor: theme.border.subtle, color: theme.text.secondary }}>
+            Solo i miei
+          </button>
+        )}
         <select value={filtri.vetrina} onChange={(e) => setFiltri((f) => ({ ...f, vetrina: e.target.value }))}
                 className="rounded-xl px-3 py-2.5 text-sm border"
                 style={{ background: theme.bg.secondary, borderColor: theme.border.subtle, color: theme.text.primary }}>
@@ -484,7 +515,7 @@ export default function ImmobiliTab({ clienti = [], user, onToast }) {
         <EmptyState
           icon={Home}
           title="Nessun immobile in portafoglio"
-          description="Qui vanno gli immobili che gestisci tu, non il catalogo off-plan. Quando ne pubblichi uno finisce sul sito di KeyPrime."
+          description="Qui va il portafoglio dell'agenzia, non il catalogo off-plan: lo vedono tutti i colleghi, e quando ne pubblichi uno finisce sul sito di KeyPrime."
           action="Aggiungi il primo"
           onAction={() => setModulo({})}
         />
@@ -495,6 +526,7 @@ export default function ImmobiliTab({ clienti = [], user, onToast }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {pag.elementi.map((i) => (
               <SchedaImmobile key={i.id} immobile={i} occupato={occupato === i.id} puoPubblicare={puoPubblicare}
+                              mio={eMio(i)}
                               onModifica={setModulo} onVetrina={cambiaVetrina} onElimina={elimina} />
             ))}
           </div>
