@@ -36,7 +36,7 @@ const VUOTO = {
 
 /* ── Scheda in elenco ──────────────────────────────────────────────────── */
 
-function SchedaImmobile({ immobile, onModifica, onVetrina, onElimina, occupato }) {
+function SchedaImmobile({ immobile, onModifica, onVetrina, onElimina, occupato, puoPubblicare = true }) {
   const foto = primaFoto(immobile);
   const stato = STATI.find((s) => s.id === immobile.stato);
   const link = linkVetrina(immobile);
@@ -99,6 +99,7 @@ function SchedaImmobile({ immobile, onModifica, onVetrina, onElimina, occupato }
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}
+            {puoPubblicare && (
             <button onClick={() => onVetrina(immobile)} disabled={occupato}
                     aria-label={immobile.pubblicato ? 'Togli dalla vetrina' : 'Metti in vetrina'}
                     title={immobile.pubblicato ? 'Togli dalla vetrina' : 'Metti in vetrina'}
@@ -108,6 +109,7 @@ function SchedaImmobile({ immobile, onModifica, onVetrina, onElimina, occupato }
                       : { background: theme.bg.tertiary, color: theme.text.secondary }}>
               {immobile.pubblicato ? <EyeOff className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
             </button>
+            )}
             <button onClick={() => onModifica(immobile)} aria-label="Modifica"
                     className="p-1.5 rounded-lg" style={{ background: theme.bg.tertiary, color: theme.text.secondary }}>
               <Pencil className="w-3.5 h-3.5" />
@@ -211,7 +213,7 @@ function Galleria({ foto, onCambia }) {
 
 /* ── Modulo ────────────────────────────────────────────────────────────── */
 
-function ModuloImmobile({ immobile, clienti, onChiudi, onSalvato }) {
+function ModuloImmobile({ immobile, clienti, puoPubblicare = true, onChiudi, onSalvato }) {
   const [form, setForm] = useState({ ...VUOTO, ...(immobile || {}) });
   const [salvando, setSalvando] = useState(false);
   const [errore, setErrore] = useState(null);
@@ -368,8 +370,9 @@ function ModuloImmobile({ immobile, clienti, onChiudi, onSalvato }) {
         )}
 
         <p className="text-xs" style={{ color: theme.text.tertiary }}>
-          Salvare non pubblica. Per mandarlo sul sito di KeyPrime serve l'interruttore
-          <strong> In vetrina</strong> dall'elenco, e lì servono prezzo, zona, descrizione e almeno una foto.
+          {puoPubblicare
+            ? <>Salvare non pubblica. Per mandarlo sul sito di KeyPrime serve l&apos;interruttore <strong>In vetrina</strong> dall&apos;elenco, e lì servono prezzo, zona, descrizione e almeno una foto.</>
+            : <>Salvare non pubblica. La pubblicazione sul sito la fa un agente o l&apos;amministratore: tu puoi inserire l&apos;immobile e segnalarlo.</>}
         </p>
 
         <div className="flex gap-3 pt-1">
@@ -385,7 +388,7 @@ function ModuloImmobile({ immobile, clienti, onChiudi, onSalvato }) {
 
 /* ── Scheda principale ─────────────────────────────────────────────────── */
 
-export default function ImmobiliTab({ clienti = [], onToast }) {
+export default function ImmobiliTab({ clienti = [], user, onToast }) {
   const [elenco, setElenco] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
   const [modulo, setModulo] = useState(null);      // null | {} | immobile
@@ -436,6 +439,9 @@ export default function ImmobiliTab({ clienti = [], onToast }) {
   };
 
   const inVetrina = elenco.filter((i) => i.pubblicato).length;
+  // Il database lo impedisce comunque; qui si evita di mostrare un pulsante
+  // che risponderebbe solo "non puoi".
+  const puoPubblicare = user?.ruolo !== 'segnalatore';
 
   return (
     <div className="space-y-4">
@@ -488,7 +494,7 @@ export default function ImmobiliTab({ clienti = [], onToast }) {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {pag.elementi.map((i) => (
-              <SchedaImmobile key={i.id} immobile={i} occupato={occupato === i.id}
+              <SchedaImmobile key={i.id} immobile={i} occupato={occupato === i.id} puoPubblicare={puoPubblicare}
                               onModifica={setModulo} onVetrina={cambiaVetrina} onElimina={elimina} />
             ))}
           </div>
@@ -500,6 +506,7 @@ export default function ImmobiliTab({ clienti = [], onToast }) {
         <ModuloImmobile
           immobile={modulo.id ? modulo : null}
           clienti={clienti}
+          puoPubblicare={puoPubblicare}
           onChiudi={() => setModulo(null)}
           onSalvato={(salvato) => {
             setElenco((e) => {
