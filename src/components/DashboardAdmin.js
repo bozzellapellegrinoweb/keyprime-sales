@@ -334,8 +334,15 @@ export default function DashboardAdmin({
   sales = [], periodSales = [], vendite = [], totals = {}, byStato = {},
   byAgente = {}, byZona = {}, volTrattativa = 0,
   periodFilter = 'all', onPeriodo, onVai, onEsporta,
-  overdueTasks = [], todayTasks = [], daAssegnare = 0
+  overdueTasks = [], todayTasks = [], daAssegnare = 0,
+  vista = 'admin', splitCommissioni = null
 }) {
+  /* La stessa dashboard serve due persone diverse.
+     L'admin guarda l'azienda; l'agente guarda se stesso. Tre blocchi non
+     devono attraversare quella linea: le quote fra i soci, il netto
+     dell'agenzia e la classifica col volume dei colleghi. Non e' una
+     questione di spazio sullo schermo — e' che non sono affari suoi. */
+  const eAdmin = vista === 'admin';
   const animato = useMovimento();
   const uno = () => 1;
   const valore = (s) => Number(s.valore || 0);
@@ -388,9 +395,11 @@ export default function DashboardAdmin({
             </button>
           ))}
         </div>
-        <button onClick={onEsporta} className="kp-bottone-chiaro" style={{ color: theme.text.primary, borderColor: theme.border.default }}>
-          <Printer className="w-4 h-4" /> Esporta report
-        </button>
+        {eAdmin && (
+          <button onClick={onEsporta} className="kp-bottone-chiaro" style={{ color: theme.text.primary, borderColor: theme.border.default }}>
+            <Printer className="w-4 h-4" /> Esporta report
+          </button>
+        )}
       </div>
 
       {/* Cose che vogliono una mano, oggi */}
@@ -404,7 +413,7 @@ export default function DashboardAdmin({
             <Avviso icona={AlertCircle} tono="attenzione" onClick={() => onVai?.('tasks')}
                     titolo="Task di oggi" dettaglio={`${todayTasks.length} in scadenza`} />
           )}
-          {daAssegnare > 0 && (
+          {eAdmin && daAssegnare > 0 && (
             <Avviso icona={UserPlus} tono="serio" onClick={() => onVai?.('inbox')}
                     titolo="Lead senza agente" dettaglio={`${daAssegnare} da assegnare`} />
           )}
@@ -443,11 +452,11 @@ export default function DashboardAdmin({
             <Curva punti={serieComm} colore={theme.accento.text} animato={animato} />
           </div>
           <div className="kp-eroe-split">
-            {[
+            {(splitCommissioni || [
               ['Netto KeyPrime', totals.netto],
               ['Agenti', totals.ag],
               ['Segnalatori', totals.sg]
-            ].map(([k, v]) => (
+            ]).map(([k, v]) => (
               <div key={k}>
                 <span style={{ color: theme.text.tertiary }}>{k}</span>
                 <span style={{ color: theme.text.primary }}>{fmt(v)}</span>
@@ -464,6 +473,7 @@ export default function DashboardAdmin({
           <Imbuto byStato={byStato} totale={periodSales.length} onVai={onVai} />
         </Riquadro>
 
+        {eAdmin && (
         <Riquadro ritardo={360} animato={animato}>
           <div className="kp-testa-card">
             <h3 style={{ color: theme.text.primary }}>Quote soci</h3>
@@ -504,10 +514,12 @@ export default function DashboardAdmin({
             ))}
           </div>
         </Riquadro>
+        )}
       </div>
 
       {/* Gli elenchi: e' qui che sta il lavoro */}
       <div className="kp-griglia-elenchi">
+        {eAdmin && (
         <Riquadro ritardo={420} animato={animato}>
           <div className="kp-testa-card">
             <h3 style={{ color: theme.text.primary }}>Agenti per volume</h3>
@@ -516,6 +528,7 @@ export default function DashboardAdmin({
           <Classifica dati={byAgente} vuoto="Nessun lead assegnato nel periodo."
                       onVai={() => onVai?.('utenti')} animato={animato} />
         </Riquadro>
+        )}
 
         <Riquadro ritardo={480} animato={animato}>
           <div className="kp-testa-card">

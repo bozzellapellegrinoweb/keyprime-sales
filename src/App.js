@@ -2051,6 +2051,25 @@ export default function App() {
     const pagate = myVendite.filter(s => s.pagato).reduce((sum, s) => sum + (Number(s.valore) * (s.commission_pct || 5) / 100 * getMyRate(s)), 0);
     const byStato = pipelineStati.reduce((acc, st) => { acc[st] = mySales.filter(s => (s.stato || 'lead') === st); return acc; }, {});
 
+    /* Numeri dell'agente per la dashboard, filtrati dal periodo scelto in
+       cima alla pagina — gli stessi conti dell'admin, su cio' che e' suo. */
+    const nelPeriodo = (elenco) => {
+      const giorni = Number(periodFilter);
+      if (!giorni) return elenco;
+      const soglia = new Date(Date.now() - giorni * 86400000);
+      return elenco.filter(s => new Date(s.created_at || s.data || 0) >= soglia);
+    };
+    const mioPeriodo = nelPeriodo(mySales);
+    const mieVenditePeriodo = mioPeriodo.filter(s => s.stato === 'venduto' || s.stato === 'incassato');
+    const byStatoPeriodo = pipelineStati.reduce((a, st) => { a[st] = mioPeriodo.filter(s => (s.stato || 'lead') === st); return a; }, {});
+    const mieZone = mioPeriodo.reduce((a, s) => { if (s.zona) a[s.zona] = (a[s.zona] || 0) + Number(s.valore || 0); return a; }, {});
+    const mioVolTrattativa = mioPeriodo.filter(s => s.stato === 'trattativa')
+      .reduce((sum, s) => sum + Number(s.valore || 0), 0);
+    const mieiTotali = {
+      comm: mieVenditePeriodo.reduce((sum, s) => sum + (Number(s.valore || 0) * (s.commission_pct || 5) / 100 * getMyRate(s)), 0),
+      valore: mioPeriodo.reduce((sum, s) => sum + Number(s.valore || 0), 0)
+    };
+
     // "Oggi" apre l'app: la prima domanda di un agente e' cosa deve fare adesso.
     // primaria = visibile nella barra mobile; il resto sta sotto "Altro".
     const tabs = [
@@ -2199,39 +2218,29 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <MetricCard label="Lead Attivi" value={mySales.filter(s => s.stato !== 'venduto' && s.stato !== 'incassato').length} icon={Target} onClick={() => setActiveTab('leads')} />
-                  <MetricCard label="Vendite (SPA)" value={myVendite.length} icon={TrendingUp} />
-                  <MetricCard label="Comm. Maturate" value={fmt(totalComm)} icon={DollarSign} />
-                  <MetricCard label="Comm. Pagate" value={fmt(pagate)} icon={Check} />
-                </div>
-
-                {/* Pipeline */}
-                <Card>
-                  <h3 className="text-ink font-medium mb-4">Pipeline</h3>
-                  <div className="grid grid-cols-5 gap-2">
-                    {pipelineStati.map(st => (
-                      <div key={st} className="text-center">
-                        <div className="rounded-xl py-3 px-2" style={{ background: theme.status[st]?.bg || '#2b323d' }}>
-                          <p className="text-2xl font-bold" style={{ color: theme.status[st]?.color || '#fff' }}>{byStato[st]?.length || 0}</p>
-                        </div>
-                        <p className="text-xs text-zinc-500 mt-2">{pipelineLabels[st] || st}</p>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-
-                <Card>
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-ink font-medium">Commissioni</span>
-                    <span className="text-zinc-400 text-sm">{fmt(totalComm)} AED maturate</span>
-                  </div>
-                  <ProgressBar value={pagate} max={totalComm || 1} />
-                  <div className="flex justify-between mt-3 text-sm">
-                    <span className="text-emerald-400">✓ Pagate: {fmt(pagate)} AED</span>
-                    <span className="text-amber-400">Da incassare: {fmt(totalComm - pagate)} AED</span>
-                  </div>
-                </Card>
+                {/* La stessa dashboard dell'admin, sui suoi numeri. Fuori
+                    restano le quote soci, il netto dell'agenzia e la
+                    classifica dei colleghi: non sono affari suoi. */}
+                <DashboardAdmin
+                  vista="agente"
+                  sales={mySales}
+                  periodSales={mioPeriodo}
+                  vendite={mieVenditePeriodo}
+                  totals={mieiTotali}
+                  byStato={byStatoPeriodo}
+                  byZona={mieZone}
+                  volTrattativa={mioVolTrattativa}
+                  periodFilter={periodFilter}
+                  overdueTasks={overdueTasks}
+                  todayTasks={todayTasks}
+                  splitCommissioni={[
+                    ['Maturate', totalComm],
+                    ['Pagate', pagate],
+                    ['Da incassare', Math.max(0, totalComm - pagate)]
+                  ]}
+                  onPeriodo={setPeriodFilter}
+                  onVai={setActiveTab}
+                />
 
                 {myTasks.length > 0 && (
                   <Card hover onClick={() => setActiveTab('tasks')} className="border-pink-500/20 bg-pink-500/5">
