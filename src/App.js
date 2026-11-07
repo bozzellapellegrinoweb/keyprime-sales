@@ -1319,7 +1319,12 @@ export default function App() {
   // Porta l'utente nella vista giusta in base al ruolo verificato.
   const applicaUtente = (u) => {
     setUser(u);
-    setActiveTab(u.ruolo === 'admin' ? 'dashboard' : 'oggi');
+    // L'agente entra dal riepilogo, non dalla coda. La coda e' una fetta —
+    // e quando sei in pari e' una pagina vuota con un segno di spunta. Il
+    // riepilogo ha sempre qualcosa da dire, e la coda la contiene: c'e' il
+    // conto di quanti aspettano, l'elenco delle prossime chiamate e il
+    // riquadro che ci porta dentro.
+    setActiveTab(u.ruolo === 'admin' ? 'dashboard' : 'home');
     // agente_admin lavora nella vista agente
     const vista = u.ruolo === 'admin' ? 'admin' : (u.ruolo === 'agente_admin' ? 'agente' : u.ruolo);
     setView(vista);
@@ -2233,6 +2238,7 @@ export default function App() {
                   periodFilter={periodFilter}
                   overdueTasks={overdueTasks}
                   todayTasks={todayTasks}
+                  inCoda={codaDiLavoro.length}
                   splitCommissioni={[
                     ['Maturate', totalComm],
                     ['Pagate', pagate],
@@ -2689,6 +2695,7 @@ export default function App() {
                 overdueTasks={overdueTasks}
                 todayTasks={todayTasks}
                 daAssegnare={daAssegnare}
+                inCoda={codaDiLavoro.length}
                 onPeriodo={setPeriodFilter}
                 onVai={setActiveTab}
                 onEsporta={() => generateDashboardPDF(totals, periodSales, vendite, byAgente, byZona)}

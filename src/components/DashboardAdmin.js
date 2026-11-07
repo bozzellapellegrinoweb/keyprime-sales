@@ -335,7 +335,7 @@ export default function DashboardAdmin({
   byAgente = {}, byZona = {}, volTrattativa = 0,
   periodFilter = 'all', onPeriodo, onVai, onEsporta,
   overdueTasks = [], todayTasks = [], daAssegnare = 0,
-  vista = 'admin', splitCommissioni = null
+  vista = 'admin', splitCommissioni = null, inCoda = null
 }) {
   /* La stessa dashboard serve due persone diverse.
      L'admin guarda l'azienda; l'agente guarda se stesso. Tre blocchi non
@@ -543,11 +543,16 @@ export default function DashboardAdmin({
           <div>
             <p className="kp-etichetta" style={{ color: theme.text.tertiary }}>Il lavoro di oggi</p>
             <p className="kp-invito-titolo" style={{ color: theme.text.primary }}>
-              {sales.length} lead in archivio
+              {inCoda === null
+                ? `${sales.length} lead in archivio`
+                : inCoda === 0
+                  ? 'Nessuno in attesa'
+                  : inCoda === 1 ? '1 da richiamare' : `${inCoda} da richiamare`}
             </p>
             <p className="kp-invito-nota" style={{ color: theme.text.secondary }}>
-              La coda di lavoro ordina chi va richiamato prima, per tempo di attesa
-              e per quanto vale la trattativa.
+              {inCoda === 0
+                ? `Tutti i follow-up sono in regola. In archivio ci sono ${sales.length} lead.`
+                : 'La coda di lavoro ordina chi va richiamato prima, per tempo di attesa e per quanto vale la trattativa.'}
             </p>
           </div>
           <span className="kp-invito-bottone" style={{ background: theme.text.primary, color: '#ffffff' }}>
