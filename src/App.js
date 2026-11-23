@@ -1522,18 +1522,45 @@ export default function App() {
         if (clienteError) { console.error('Cliente error:', clienteError); }
         if (cd) cliente_id = cd.id;
       }
-      const { error } = await supabase.from('sales').insert([{
+      /* Se chi inserisce ha scelto un agente, quella scelta vince. Se non lo
+         ha scelto, il lead va a rotazione invece di restare a chi l'ha
+         scritto: e' tutto il punto della distribuzione automatica. */
+      const aRotazione = !ld.agente;
+      const { data: creato, error } = await supabase.from('sales').insert([{
         data: ld.data, developer: ld.developer, progetto: ld.progetto, zona: ld.zona, valore: ld.valore || 0,
         agente: ld.agente, segnalatore: ld.segnalatore, referente: user?.referente, commission_pct: 5,
         inserted_by: user?.nome, inserted_as: user?.ruolo, pagato: false, stato: ld.stato || 'lead', cliente_id,
         assegnato_a: ld.agente || user?.nome, fonte: 'Inserimento manuale'
-      }]);
+      }]).select('id').single();
       if (error) { console.error('Insert error:', error); showToast('Errore: ' + error.message); setSubmitting(false); return; }
+
+      let assegnatoA = ld.agente || user?.nome;
+      if (aRotazione && creato?.id) {
+        const giro = await leadLib.assegnaARotazione(creato.id, user?.nome);
+        if (giro.ok) assegnatoA = giro.agente;
+        // Se la rotazione non riesce il lead resta a chi l'ha inserito: meglio
+        // un lead assegnato male che un lead di nessuno.
+        else console.error('Rotazione non riuscita:', giro.error);
+      }
+
+      // L'agente che se lo trova in mano lo deve sapere adesso, non domani.
+      if (assegnatoA && assegnatoA !== user?.nome) {
+        const destinatario = users.find((u) => u.nome === assegnatoA);
+        if (destinatario?.username) {
+          await sendPushNotification(
+            'Nuovo lead assegnato',
+            `${ld.progetto || 'Lead'}${ld.zona ? ` · ${ld.zona}` : ''} — apri la scheda Oggi`,
+            APP_URL,
+            { type: 'user', username: destinatario.username }
+          );
+        }
+      }
       if (user?.ruolo !== 'admin') {
         await notifyNewLeadToAdmin({ progetto: ld.progetto, zona: ld.zona }, user?.nome, user?.ruolo);
         if (user?.ruolo === 'segnalatore') await notifySegnalatoreConfermaInserimento(user?.email, user?.username, 'Lead', ld.progetto);
       }
-      showToast('Lead aggiunto'); setShowForm(null); loadSales(); loadClienti();
+      showToast(aRotazione && assegnatoA !== user?.nome ? `Lead aggiunto e assegnato a ${assegnatoA}` : 'Lead aggiunto');
+      setShowForm(null); loadSales(); loadClienti();
     } catch (err) { console.error('addLead error:', err); showToast('Errore salvataggio'); }
     setSubmitting(false);
   };
