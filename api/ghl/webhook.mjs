@@ -305,20 +305,37 @@ export default async function handler(req, res) {
     // si spedisce dal dominio mail.keyprimere.com gia' verificato in GHL, dove
     // il volume costa molto meno e la mail resta attaccata alla conversazione
     // del contatto, cosi' una risposta non si perde.
+    // Una ricevuta GHL la manda gia' per conto suo sui lead che arrivano dal
+    // modulo ("Abbiamo ricevuto la tua richiesta. Un consulente ti contattera'
+    // a breve."): verificato in `search-conversation`, parte da marzo. Due
+    // ricevute di fila sembrano un errore, non due attenzioni.
+    //
+    // Quindi quando un agente c'e' questa email NON e' una ricevuta: dice le
+    // due cose che quella generica non sa — CHI chiama ed ENTRO QUANDO — e
+    // lascia in mano il calendario di quell'agente. Le due si leggono bene
+    // anche una dopo l'altra, e se un giorno si spegne quella di GHL questa
+    // sta in piedi da sola.
+    //
+    // Senza agente assegnato invece la ricevuta serve, e resta com'era: in quel
+    // caso puo' essere l'unica mail che il lead riceve, perche' la rotazione
+    // non ha trovato nessuno e non e' detto che il lead venga da un modulo GHL.
     if (lead.email) {
       const nomeLead = (cliente.nome || '').trim() || 'ciao';
       const link = utente?.ghl_calendario_url || null;
+      const suZona = lead.zona ? ` su <strong>${lead.zona}</strong>` : '';
 
       const corpo = agente
-        ? `<p style="margin:0 0 14px">Grazie per averci scritto: abbiamo ricevuto la tua richiesta${lead.zona ? ` su <strong>${lead.zona}</strong>` : ''}.</p>
-           <p style="margin:0 0 14px">Se ne occupa <strong>${agente}</strong>, che ti contatterà entro ${ore} ore al numero che ci hai lasciato.</p>
+        ? `<p style="margin:0 0 14px">Della tua richiesta${suZona} si occupa <strong>${agente}</strong>: ti chiama entro ${ore} ore al numero che ci hai lasciato.</p>
            ${link ? `<p style="margin:0">Se preferisci scegliere tu quando sentirvi, puoi fissare una call di 30 minuti quando ti è comodo.</p>` : ''}`
-        : `<p style="margin:0 0 14px">Grazie per averci scritto: abbiamo ricevuto la tua richiesta${lead.zona ? ` su <strong>${lead.zona}</strong>` : ''}.</p>
+        : `<p style="margin:0 0 14px">Grazie per averci scritto: abbiamo ricevuto la tua richiesta${suZona}.</p>
            <p style="margin:0">Un nostro consulente ti contatterà a breve al numero che ci hai lasciato.</p>`;
 
-      const oggetto = 'Abbiamo ricevuto la tua richiesta — KeyPrime Real Estate';
+      const oggetto = agente
+        ? `Ti chiama ${agente} entro ${ore} ore — KeyPrime Real Estate`
+        : 'Abbiamo ricevuto la tua richiesta — KeyPrime Real Estate';
+
       const html = templateCliente({
-        titolo: `Ciao ${nomeLead}, ci siamo.`,
+        titolo: agente ? `Ciao ${nomeLead}, se ne occupa ${agente}.` : `Ciao ${nomeLead}, ci siamo.`,
         corpo,
         azione: link ? 'Prenota la tua call' : null,
         urlAzione: link,

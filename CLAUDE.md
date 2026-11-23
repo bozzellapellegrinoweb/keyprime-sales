@@ -203,12 +203,23 @@ nuovo lead..."). Quindi il punto 6-bis era doppiamente sbagliato: non solo il
 workflow non serve piu', ma **un'automazione in GHL esiste da sempre** — l'API
 dei workflow e' chiusa in lettura, quindi non si vedeva.
 
-Conseguenza da risolvere prima delle campagne: la catena del portale manda la
-*sua* mail di conferma (`conferma_lead`, col link al calendario dell'agente
-assegnato), quindi **il lead ne riceve due**. Quella del portale e' la
-migliore delle due, perche' porta il calendario di chi lo chiamera'; quella di
-GHL e' generica. Va spenta una delle due, e spegnere quella di GHL si fa solo
-dall'interfaccia.
+Le due si sommavano: il portale manda la *sua* (`conferma_lead`) e apriva
+anche quella con "abbiamo ricevuto la tua richiesta", quindi il lead leggeva
+due ricevute quasi identiche. **Risolto nel portale**, non spegnendola — era
+l'unica delle due a portare il calendario dell'agente, cioe' la cosa che fa
+prenotare il lead mentre e' caldo.
+
+Come: quando un agente e' assegnato quella del portale non e' piu' una
+ricevuta ma l'invito a prenotare. Oggetto `Ti chiama <agente> entro <ore> ore`,
+titolo `Ciao <nome>, se ne occupa <agente>.`, corpo che dice chi chiama ed
+entro quando, bottone sul calendario. Dice le due cose che la generica di GHL
+non sa, quindi le due si leggono bene anche una dopo l'altra. Quando un agente
+**non** c'e' resta la ricevuta di prima, perche' in quel caso puo' essere
+l'unica mail che il lead riceve: la rotazione non ha trovato nessuno e non e'
+detto che quel lead venga da un modulo GHL.
+
+Resta comunque meglio spegnere quella di GHL dall'interfaccia, e allora quella
+del portale sta in piedi da sola senza toccare altro.
 
 **Una pipeline sola per tutti**: `OKvPvoWtJKRZQx5kM20n` — "Pipeline Lead
 KeyPrime", stadio di ingresso "Da contattare"
