@@ -26,10 +26,28 @@ import { APP_URL } from '../_lib/notify.mjs';
 
 const MAX_PER_GIRO = 25;
 
+// GHL tiene DUE blocchi di attribuzione: `attributionSource` e' il primo
+// contatto, `lastAttributionSource` l'ultimo. Non sono intercambiabili e
+// nessuno dei due e' completo. Misurato su una scheda vera (lead ads Meta di
+// giugno, contatto mpvl4tYg2ZhLMogoW0S0): `utmKeyword` — che porta l'id della
+// creativita' — c'e' nel primo e vale `null` nel secondo. Prendere un blocco
+// solo, com'era prima (`last || first`), buttava via l'id dell'annuncio.
+// Qui si fondono campo per campo: vince l'ultimo contatto dove ha un valore,
+// il primo riempie i buchi.
+function unisciAttribuzione(primo, ultimo) {
+  const unito = { ...(primo || {}) };
+  for (const [chiave, valore] of Object.entries(ultimo || {})) {
+    if (valore !== undefined && valore !== null && String(valore).trim() !== '') {
+      unito[chiave] = valore;
+    }
+  }
+  return unito;
+}
+
 // Da scheda contatto GHL al corpo che /api/ghl/webhook sa gia' leggere.
 // Esportata per poterla provare su schede vere senza creare lead.
 export function aPayload(c) {
-  const a = c.lastAttributionSource || c.attributionSource || {};
+  const a = unisciAttribuzione(c.attributionSource, c.lastAttributionSource);
 
   // I campi personalizzati arrivano come [{id, value}]: senza le definizioni
   // non si sa quale sia quale, ma il testo libero e' quasi sempre la
@@ -68,9 +86,14 @@ export function aPayload(c) {
     utm_campaign: a.campaign || null,
     utm_content: a.utmContent || null,
     utm_term: a.utmTerm || null,
-    // utmKeyword e' l'id dell'annuncio nelle lead ads Meta; mediumId e' il
-    // modulo. Il primo identifica la creativita', che e' quello che serve.
-    ad_id: a.utmKeyword || a.mediumId || null,
+    // Serve l'id della CREATIVITA'. `adId` lo porta quando GHL lo compila;
+    // sulle lead ads Meta arriva invece in `utmKeyword`, e `utmTerm` tiene lo
+    // stesso valore in entrambi i blocchi, quindi fa da rete.
+    // `mediumId` e' escluso di proposito: e' l'id del MODULO, identico per
+    // ogni lead dello stesso form. In una colonna che si chiama `ad_id`
+    // falserebbe qualunque confronto fra annunci, e un buco onesto e' meglio
+    // di una costante che sembra un dato.
+    ad_id: a.adId || a.utmKeyword || a.utmTerm || null,
     landing: a.url || null
   };
 }
