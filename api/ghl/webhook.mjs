@@ -9,7 +9,9 @@
 
 import { serviceClient } from '../_lib/supabase.mjs';
 import { checkSecret } from '../_lib/auth.mjs';
-import { logSync } from '../_lib/ghl.mjs';
+import {
+  logSync, ghlConfigured, sendMessage, createOpportunity, assegnaContatto
+} from '../_lib/ghl.mjs';
 import { push, email, template, templateCliente, riga, APP_URL } from '../_lib/notify.mjs';
 
 // I payload dei workflow GHL non hanno una forma fissa: ogni campo puo'
@@ -219,7 +221,7 @@ export default async function handler(req, res) {
       // service_role, che la legge senza problemi.
       const { data } = await supabase
         .from('user_credentials')
-        .select('username, email, ghl_calendario_url')
+        .select('username, email, ghl_calendario_url, ghl_user_id, ghl_pipeline_id, ghl_stadio_iniziale_id')
         .eq('nome', agente).maybeSingle();
       utente = data;
 
@@ -247,6 +249,44 @@ export default async function handler(req, res) {
       await push({ titolo: 'Lead non assegnato', messaggio: `${lead.fonte}: nessun agente attivo in rotazione`, url: APP_URL });
     }
 
+    // 6-bis. Il lead prende posto nella pipeline dell'agente, nello stadio
+    // "Da contattare", e il contatto GHL passa in carico a lui.
+    //
+    // Senza questo l'agente apre GHL e non vede niente: gira con
+    // assignedDataOnly, quindi un contatto non assegnato per lui non esiste.
+    if (agente && lead.ghlContactId && ghlConfigured()) {
+      if (utente?.ghl_user_id) {
+        try {
+          await assegnaContatto(lead.ghlContactId, utente.ghl_user_id);
+        } catch (err) {
+          await logSync(supabase, {
+            direzione: 'out', evento: 'assegna_contatto', entita: 'contact',
+            entita_id: lead.ghlContactId, sale_id: sale.id,
+            esito: 'errore', errore: err.message.slice(0, 400)
+          });
+        }
+      }
+
+      if (utente?.ghl_pipeline_id && utente?.ghl_stadio_iniziale_id) {
+        try {
+          const opp = await createOpportunity({
+            pipelineId: utente.ghl_pipeline_id,
+            pipelineStageId: utente.ghl_stadio_iniziale_id,
+            nome: `${nominativo} — ${sale.progetto}`,
+            contactId: lead.ghlContactId,
+            valore: 0
+          });
+          const oppId = opp?.opportunity?.id || opp?.id || null;
+          if (oppId) await supabase.from('sales').update({ ghl_opportunity_id: oppId }).eq('id', sale.id);
+        } catch (err) {
+          await logSync(supabase, {
+            direzione: 'out', evento: 'crea_opportunita', entita: 'opportunity',
+            sale_id: sale.id, esito: 'errore', errore: err.message.slice(0, 400)
+          });
+        }
+      }
+    }
+
     // 7. Conferma al lead.
     //
     // Chi lascia i dati su un'inserzione e poi non riceve niente pensa di aver
@@ -255,9 +295,16 @@ export default async function handler(req, res) {
     // mano il link del calendario di quell'agente: se ha fretta prenota da
     // solo invece di aspettare.
     //
-    // Sta qui e non in un workflow GHL per due motivi: l'API dei workflow non
-    // e' abilitata su questo sotto-account, e qui il testo e' versionato e si
-    // prova prima di pubblicarlo.
+    // Il testo sta qui e non in un workflow GHL perche' l'API dei workflow non
+    // e' abilitata su questo sotto-account: cosi' e' versionato e si prova
+    // prima di pubblicarlo. La SPEDIZIONE invece passa da GHL, non da Resend.
+    //
+    // Non e' un dettaglio di gusto: le mail ai lead sono tante e crescono con
+    // le campagne, mentre quelle interne al team sono poche e fisse. Resend
+    // resta per il portale (avvisi agli agenti, promemoria); verso i clienti
+    // si spedisce dal dominio mail.keyprimere.com gia' verificato in GHL, dove
+    // il volume costa molto meno e la mail resta attaccata alla conversazione
+    // del contatto, cosi' una risposta non si perde.
     if (lead.email) {
       const nomeLead = (cliente.nome || '').trim() || 'ciao';
       const link = utente?.ghl_calendario_url || null;
@@ -269,17 +316,39 @@ export default async function handler(req, res) {
         : `<p style="margin:0 0 14px">Grazie per averci scritto: abbiamo ricevuto la tua richiesta${lead.zona ? ` su <strong>${lead.zona}</strong>` : ''}.</p>
            <p style="margin:0">Un nostro consulente ti contatterà a breve al numero che ci hai lasciato.</p>`;
 
-      await email({
-        a: lead.email,
-        oggetto: 'Abbiamo ricevuto la tua richiesta — KeyPrime Real Estate',
-        html: templateCliente({
-          titolo: `Ciao ${nomeLead}, ci siamo.`,
-          corpo,
-          azione: link ? 'Prenota la tua call' : null,
-          urlAzione: link,
-          poscritto: 'Se nel frattempo vuoi aggiungere qualcosa, rispondi pure a questa email: la leggiamo noi.'
-        })
+      const oggetto = 'Abbiamo ricevuto la tua richiesta — KeyPrime Real Estate';
+      const html = templateCliente({
+        titolo: `Ciao ${nomeLead}, ci siamo.`,
+        corpo,
+        azione: link ? 'Prenota la tua call' : null,
+        urlAzione: link,
+        poscritto: 'Se nel frattempo vuoi aggiungere qualcosa, rispondi pure a questa email: la leggiamo noi.'
       });
+
+      let spedita = false;
+      if (lead.ghlContactId && ghlConfigured()) {
+        try {
+          await sendMessage({ tipo: 'Email', contactId: lead.ghlContactId, oggetto, html });
+          spedita = true;
+        } catch (err) {
+          await logSync(supabase, {
+            direzione: 'out', evento: 'conferma_lead', entita: 'contact',
+            entita_id: lead.ghlContactId, sale_id: sale.id,
+            esito: 'errore', errore: err.message.slice(0, 400)
+          });
+        }
+      }
+
+      // Resend solo se GHL non ha potuto: un lead che non riceve conferma e'
+      // un lead che pensa di aver sbagliato qualcosa. Meglio pagare una mail
+      // che perderlo. Resta un ripiego, e nel log si vede quando scatta.
+      if (!spedita) {
+        await email({ a: lead.email, oggetto, html });
+        await logSync(supabase, {
+          direzione: 'out', evento: 'conferma_lead_ripiego_resend', entita: 'contact',
+          entita_id: lead.ghlContactId, sale_id: sale.id
+        });
+      }
     }
 
     await logSync(supabase, {
