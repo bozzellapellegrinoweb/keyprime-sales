@@ -185,6 +185,33 @@ che fa RLS nel portale. I due id e i due link stanno in `user_credentials`
 (`ghl_user_id`, `ghl_calendario_url`): la mail di conferma al lead pesca il
 link da li', quindi cambiare agente in rotazione non richiede toccare codice.
 
+**La posta ai clienti esce da GHL, non da Resend.** `mail.keyprimere.com` e'
+gia' un dominio verificato sulla location. Resend resta per il portale
+(avvisi agli agenti, promemoria) e come ripiego se GHL fallisce — quando
+scatta si vede in `ghl_sync_log` come `conferma_lead_ripiego_resend`. Il
+motivo e' il volume: le mail ai lead crescono con le campagne, quelle interne
+no. In piu' la mail spedita da GHL resta attaccata alla conversazione del
+contatto, quindi una risposta non si perde.
+
+**Una pipeline per agente in rotazione**, con gli id sull'anagrafica
+(`ghl_pipeline_id`, `ghl_stadio_iniziale_id`):
+
+| | pipeline | stadio "Da contattare" |
+|---|---|---|
+| Giovanni Aguit | `OKvPvoWtJKRZQx5kM20n` | `016c2631-fe68-42a3-9afd-73c64e9d06cb` |
+| Alessandro Banfi | `OhKjF55e9h8gIKSICuPq` | `207df880-593b-4c94-8441-afd7465ed5cf` |
+
+Stadi: Da contattare, Call fissata, Qualificato, Proposta inviata, Trattativa,
+Chiuso. Quando la rotazione assegna un lead nasce l'opportunita' li' dentro, e
+il contatto passa in carico all'agente anche in GHL — senza, lui apre GHL e
+non vede niente, perche' gira con `assignedDataOnly`.
+
+**L'indice di ricerca di GHL e' in ritardo sulla scrittura.** Un contatto
+appena creato non compare subito in `/contacts/search`: misurato, il primo
+giro trovava zero e quello dopo lo trovava. Non e' un bug del nostro codice.
+Il giro ogni due minuti lo copre da solo, ma non fidarsi di una singola
+chiamata subito dopo una creazione.
+
 Trappola gia' incontrata: `openHours` vuole **una voce per giorno**
 (`daysOfTheWeek: [1]`, poi `[2]`...). Passare `[1,2,3,4,5]` in una sola voce
 da' `must be a valid day of week`.

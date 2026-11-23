@@ -27,7 +27,8 @@ import { APP_URL } from '../_lib/notify.mjs';
 const MAX_PER_GIRO = 25;
 
 // Da scheda contatto GHL al corpo che /api/ghl/webhook sa gia' leggere.
-function aPayload(c) {
+// Esportata per poterla provare su schede vere senza creare lead.
+export function aPayload(c) {
   const a = c.lastAttributionSource || c.attributionSource || {};
 
   // I campi personalizzati arrivano come [{id, value}]: senza le definizioni
