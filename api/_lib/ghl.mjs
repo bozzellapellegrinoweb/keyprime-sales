@@ -141,6 +141,40 @@ export async function ghlGetConRipiego(path) {
   return { ok: false, tentativi };
 }
 
+// --- Contatti nuovi, da andare a prendere ----------------------------------
+
+// GHL non ci spinge i lead: l'API dei workflow e' chiusa su questo
+// sotto-account, quindi l'azione "Webhook" si puo' solo aggiungere a mano
+// nell'interfaccia. Invece di dipendere da quel passo, li andiamo a prendere.
+//
+// Non e' un ripiego: la scheda del contatto porta attributionSource, che ha
+// utm, campagna, annuncio, referrer e perfino la landing — piu' di quanto un
+// webhook passerebbe senza mappare i campi a mano.
+//
+// Ordine crescente di proposito: si avanza una sentinella e si riprende da
+// dove si era rimasti, quindi i piu' vecchi vanno elaborati per primi.
+export async function contattiDopo(dopoIso, limite = 25) {
+  const body = {
+    locationId: GHL_LOCATION_ID,
+    pageLimit: Math.min(limite, 100),
+    filters: [{ field: 'dateAdded', operator: 'range', value: { gt: dopoIso } }],
+    sort: [{ field: 'dateAdded', direction: 'asc' }]
+  };
+  // Stessa storia delle letture: la versione giusta per questo endpoint non
+  // e' la stessa di contatti e opportunita'. Invece di indovinare, si prova.
+  let ultimo = null;
+  for (const version of ['2021-07-28', 'v3', '2023-02-21']) {
+    try {
+      const dati = await ghlFetch('/contacts/search', { body, version });
+      return Array.isArray(dati?.contacts) ? dati.contacts : [];
+    } catch (err) {
+      ultimo = err;
+      if (err.status === 401 || err.status === 403) break;
+    }
+  }
+  throw ultimo || new Error('Ricerca contatti GHL fallita');
+}
+
 export function listaPipeline() {
   return ghlGetConRipiego(`/opportunities/pipelines?locationId=${encodeURIComponent(GHL_LOCATION_ID)}`);
 }
