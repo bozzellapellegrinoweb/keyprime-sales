@@ -101,14 +101,71 @@ un'azione **Webhook**:
 - URL: `https://portal.keyprimere.com/api/ghl/webhook`
 - Header: `x-kp-secret` = il valore di `GHL_WEBHOOK_SECRET`
 
+**Senza questo webhook non arriva niente.** Tutto il resto della catena è
+pronto e provato, ma non viene mai chiamato: i lead delle inserzioni restano
+in GHL e nell'Inbox del portale non compaiono. È l'unico passo che non si può
+fare dal codice — l'API dei workflow non è abilitata su questo sotto-account.
+
 Alla ricezione il portale, in ordine: riconosce il cliente (per id GHL, email o
 telefono) o lo crea, apre il lead, lo assegna a rotazione, programma il primo
-follow-up secondo lo SLA e avvisa l'agente con push ed email.
+follow-up secondo lo SLA, avvisa l'agente con push ed email, e **manda al lead
+la mail di conferma** con il nome dell'agente e il link del suo calendario.
+
+### Campi da mappare nel webhook, per sapere quale campagna ha portato cosa
+
+Se nell'azione Webhook passi anche questi, il portale li salva sul lead e
+diventano filtrabili:
+
+| Campo nel payload | Dove finisce |
+|---|---|
+| `utm_source` | `sales.utm_source`, e da qui si deduce `canale` (meta / google / tiktok / altro) |
+| `utm_campaign` | `sales.campagna` |
+| `utm_medium`, `utm_content`, `utm_term` | le colonne omonime |
+| `ad_id` (o `adset_id`, `creative_id`) | `sales.ad_id` — il singolo annuncio |
+
+Senza questi, `fonte` dice solo `GHL`: sai che il lead è arrivato dal tubo, non
+da quale inserzione. Con le campagne attive è la differenza fra decidere il
+budget sui numeri e deciderlo a sensazione.
 
 Il payload viene letto in modo tollerante: `firstName`/`first_name`/`full_name`,
 `phone`, `email`, `source`, più i campi personalizzati `zona`, `progetto`,
 `budget`, `message`. Ogni chiamata, riuscita o no, finisce in `ghl_sync_log`
 con la risposta completa di GHL.
+
+---
+
+## 2bis. Calendari degli agenti — fatti, con una cosa da correggere
+
+Creati il 23/11, uno a testa, con i link pubblici da dare ai clienti:
+
+| | Link da condividere |
+|---|---|
+| Giovanni Aguit | https://api.leadconnectorhq.com/widget/bookings/giovanni-aguit |
+| Alessandro Banfi | https://api.leadconnectorhq.com/widget/bookings/alessandro-banfi |
+
+Call da 30 minuti, lunedi'-venerdi' 9:00-18:00, massimo 8 al giorno, con 15
+minuti di respiro fra una e l'altra. Si prenota da 2 ore a 30 giorni di
+distanza. Chi prenota viene assegnato automaticamente a quell'agente, e
+l'agente riceve l'avviso. Questi sono anche i link che finiscono nella mail di
+conferma al lead: li pesca da `user_credentials.ghl_calendario_url`, quindi se
+un domani cambia l'agente in rotazione basta aggiornare quella riga.
+
+**Da correggere a mano, e conviene farlo prima delle campagne.** La location
+GHL e' impostata su fuso `Europe/Amsterdam`, ma l'agenzia e' a Dubai. Oggi
+quindi le 9:00-18:00 qui sopra sono in realta' le **12:00-21:00 ora di
+Dubai**. Si cambia in GHL: Settings, Business Profile, Timezone, `Asia/Dubai`.
+Non esiste un'operazione API per farlo, altrimenti l'avrei gia' cambiato.
+
+### Gli accessi GHL di Giovanni e Alessandro
+
+Sono stati creati due utenti, `giovanni@keyprimere.com` e
+`alessandro@keyprimere.com`, ruolo **user** e non admin: vedono solo i
+contatti assegnati a loro, non le impostazioni, non i workflow, non i
+pagamenti. La stessa separazione che il portale fa con RLS.
+
+La password iniziale non la comunico: al primo accesso usino **"Forgot
+password"** sulla pagina di login GHL. Cosi' nessuna credenziale passa da una
+chat o da un'email.
 
 ---
 
