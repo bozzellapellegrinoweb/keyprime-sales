@@ -26,6 +26,31 @@ export default async function handler(req, res) {
   try { supabase = serviceClient(); }
   catch (err) { return res.status(500).json({ error: err.message }); }
 
+  // Prima di tutto: i lead nuovi da GHL.
+  //
+  // Il giro vive anche nel portale (ogni due minuti mentre qualcuno lo ha
+  // aperto), ma di notte e nei giorni morti non c'e' nessuno davanti allo
+  // schermo. Appeso qui perche' questo cron gira comunque, e aggiungerne un
+  // altro in vercel.json puo' sbattere contro il limite del piano.
+  //
+  // Non blocca il resto: se GHL non risponde, i promemoria partono lo stesso.
+  try {
+    const base = process.env.APP_URL || 'https://portal.keyprimere.com';
+    const r = await fetch(`${base}/api/ghl/pull-lead`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(req.headers.authorization ? { authorization: req.headers.authorization } : {}),
+        ...(req.headers['x-kp-secret'] ? { 'x-kp-secret': req.headers['x-kp-secret'] } : {})
+      },
+      body: '{}'
+    });
+    const esito = await r.json().catch(() => null);
+    if (esito?.creati) console.log(`pull-lead dal cron: ${esito.creati} lead nuovi`);
+  } catch (err) {
+    console.error('pull-lead dal cron fallito:', err.message);
+  }
+
   try {
     const oggi = new Date().toISOString().split('T')[0];
 
