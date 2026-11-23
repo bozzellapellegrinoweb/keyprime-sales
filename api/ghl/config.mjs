@@ -8,6 +8,7 @@
 import { serviceClient } from '../_lib/supabase.mjs';
 import { requireSession } from '../_lib/auth.mjs';
 import { ghlConfigured, listaPipeline, listaWorkflow, GHL_LOCATION_ID } from '../_lib/ghl.mjs';
+import { hasServiceKey } from '../_lib/supabase.mjs';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -38,6 +39,7 @@ export default async function handler(req, res) {
     location_id: GHL_LOCATION_ID,
     pipelines,
     workflows,
+    service_role_configurata: hasServiceKey,
     diagnostica: {
       pipeline: pip.ok ? { esito: 'ok', version: pip.version, trovate: pipelines.length } : { esito: 'errore', tentativi: pip.tentativi },
       workflow: wf.ok ? { esito: 'ok', version: wf.version, trovati: workflows.length } : { esito: 'errore', tentativi: wf.tentativi }
