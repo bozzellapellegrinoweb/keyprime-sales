@@ -1,6 +1,6 @@
 -- FASE 1 — Chiusura delle tabelle che nessuno legge.
 --
--- NON APPLICATA. Da rivedere prima.
+-- APPLICATA il 2026-11-23 (versione 20261123165835 nel database).
 --
 -- Perche' e' separata dal resto: queste tre tabelle non compaiono in nessun
 -- punto del codice, ne' nel portale ne' nel sito pubblico ne' nelle funzioni

@@ -1,4 +1,16 @@
--- FASE 2 — sales e clienti.
+-- FASE 2 — sales e clienti.  [SUPERATO — tenuto come registro di una scelta]
+--
+-- QUESTO FILE NON E' STATO APPLICATO. Quello che gira e':
+--   20261123174059_identita_da_intestazione.sql
+--   20261123174514_rls_sales_e_clienti.sql
+--
+-- La premessa qui sotto resta valida e vale la pena leggerla: il database non
+-- sapeva chi stesse chiedendo. La strada B (coniare JWT) non e' pero' servita.
+-- PostgREST passa gia' le intestazioni della richiesta a SQL, quindi il token
+-- di sessione che il portale ha sempre avuto identifica chi chiede, senza una
+-- chiave di firma da generare, importare e ruotare. Il dubbio lasciato aperto
+-- al fondo ("auth.jwt() espone i claim personalizzati?") e' rimasto senza
+-- risposta perche' non e' piu' una domanda che ci riguarda.
 --
 -- NON APPLICATA, E NON APPLICABILE COSI' COM'E'. Leggere prima il blocco
 -- "PREMESSA", perche' questo file da solo spegnerebbe il portale.
