@@ -193,18 +193,35 @@ motivo e' il volume: le mail ai lead crescono con le campagne, quelle interne
 no. In piu' la mail spedita da GHL resta attaccata alla conversazione del
 contatto, quindi una risposta non si perde.
 
-**Una pipeline per agente in rotazione**, con gli id sull'anagrafica
-(`ghl_pipeline_id`, `ghl_stadio_iniziale_id`):
-
-| | pipeline | stadio "Da contattare" |
-|---|---|---|
-| Giovanni Aguit | `OKvPvoWtJKRZQx5kM20n` | `016c2631-fe68-42a3-9afd-73c64e9d06cb` |
-| Alessandro Banfi | `OhKjF55e9h8gIKSICuPq` | `207df880-593b-4c94-8441-afd7465ed5cf` |
+**Una pipeline sola per tutti**: `OKvPvoWtJKRZQx5kM20n` — "Pipeline Lead
+KeyPrime", stadio di ingresso "Da contattare"
+`016c2631-fe68-42a3-9afd-73c64e9d06cb`. Gli id stanno sull'anagrafica
+(`ghl_pipeline_id`, `ghl_stadio_iniziale_id`).
 
 Stadi: Da contattare, Call fissata, Qualificato, Proposta inviata, Trattativa,
 Chiuso. Quando la rotazione assegna un lead nasce l'opportunita' li' dentro, e
 il contatto passa in carico all'agente anche in GHL — senza, lui apre GHL e
 non vede niente, perche' gira con `assignedDataOnly`.
+
+Erano nate due pipeline separate, una per agente, poi accorpate: con
+`assignedDataOnly` ciascuno vede comunque solo i propri, quindi la
+separazione c'e' lo stesso e in piu' resta una lavagna unica per chi
+amministra. Due pipeline avrebbero voluto dire due board da guardare, e tre
+al terzo agente.
+
+**Quello che in questa location NON c'e'** (verificato il 23/11, non dedotto):
+
+- **nessun numero di telefono**: `active-numbers` risponde `No Twilio account
+  found for location`. Senza numero non partono SMS, e WhatsApp non ha canale.
+- **nessun agente AI**: `list-managed-agents` risponde zero.
+- **i moduli si leggono ma non si creano**: l'API offre `get-forms` e
+  `get-forms-submissions`, nessuna scrittura. Ne esiste uno solo, "Form 1
+  landing keyprime" (`AiobyCSmW3Wb3FNWQIQ2`), quello dei lead Meta di giugno.
+- le landing delle campagne (`uae.keyprimere.com`) sono **funnel GHL**, non il
+  Next.js di `keyprime-lead`: confermato dagli header `x-ghl-serve-region`.
+
+Quindi la catena "WhatsApp qualifica e prenota la call" oggi non ha dove
+appoggiarsi, e i moduli nuovi vanno fatti nell'interfaccia.
 
 **L'indice di ricerca di GHL e' in ritardo sulla scrittura.** Un contatto
 appena creato non compare subito in `/contacts/search`: misurato, il primo
