@@ -91,6 +91,38 @@ export function template({ accento = '#c9a84c', badge, titolo, righe = '', nota,
 </div>`;
 }
 
+/* Template per chi NON e' del team: il lead che ha appena lasciato i dati.
+ *
+ * Separato da `template` e non un suo parametro perche' le due email non si
+ * somigliano: quella interna finisce con "Apri il portale" e puo' elencare la
+ * richiesta per esteso, questa parla a un estraneo e deve portarlo a un'unica
+ * azione. Riusare l'altra significherebbe mandare a un cliente il pulsante del
+ * gestionale.
+ *
+ * L'oro pieno sta a 2,29:1 col bianco: il pulsante porta inchiostro navy, non
+ * testo bianco. E' la stessa regola del portale.
+ */
+export function templateCliente({ titolo, corpo, azione, urlAzione, poscritto }) {
+  const oro = '#c9a84c';
+  return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f2ed;padding:32px 16px">
+  <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e4e0d8">
+    <div style="background:#0f1c35;padding:26px 28px">
+      <div style="color:${oro};font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:600">KeyPrime Real Estate</div>
+      <div style="color:#ffffff;font-size:21px;font-weight:600;margin-top:8px">${titolo}</div>
+    </div>
+    <div style="padding:26px 28px">
+      <div style="color:#334155;font-size:15px;line-height:1.65">${corpo}</div>
+      ${azione && urlAzione ? `<a href="${urlAzione}" style="display:inline-block;margin-top:22px;background:${oro};color:#0f1c35;text-decoration:none;padding:13px 24px;border-radius:10px;font-weight:600;font-size:15px">${azione}</a>` : ''}
+      ${poscritto ? `<p style="color:#64748b;font-size:13px;line-height:1.55;margin:22px 0 0;padding-top:16px;border-top:1px solid #e4e0d8">${poscritto}</p>` : ''}
+    </div>
+    <div style="padding:16px 28px;background:#faf9f6;color:#94a3b8;font-size:11px;line-height:1.5">
+      KeyPrime Real Estate Brokerage &middot; Dubai, EAU &middot; info@keyprimere.com<br>
+      Ricevi questa email perché hai lasciato i tuoi dati su un nostro annuncio o sul nostro sito.
+    </div>
+  </div>
+</div>`;
+}
+
 export function riga(etichetta, valore) {
   if (valore === null || valore === undefined || valore === '') return '';
   return `<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e2e8f0">
