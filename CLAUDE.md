@@ -37,14 +37,43 @@ concedono niente ad `anon` tranne — per `immobili` — le righe con
 `pubblicato = true`, perche' quella tabella la legge il sito pubblico con la
 chiave anonima. Letture delle bozze e scritture passano dalle funzioni.
 
-**Debito aperto** (tabelle storiche): `clienti`, `sales`, `users`,
-`cliente_interazioni`, `email_log` hanno **RLS disattivato**. Con la chiave
-`anon` — che sta nel bundle pubblico, la scarica chiunque — si leggono e si
-scrivono. Verificato: `clienti` risponde con 36 righe.
+**Chiuso il 23/11** (era il debito piu' grosso): `sales` e `clienti` avevano
+RLS disattivato e con la chiave `anon` — che sta nel bundle pubblico, la
+scarica chiunque — si leggevano e si scrivevano. Ora hanno RLS con policy per
+ruolo. `users`, `cliente_interazioni` ed `email_log` sono chiuse e basta:
+nessuno le legge.
 
-Non si chiude accendendo RLS: l'app legge quelle tabelle proprio con quella
-chiave e si spegnerebbe. Va rifatto il giro delle letture (funzioni, o un
-endpoint serverless con la service_role). E' un lavoro a se'.
+Come fa il database a sapere chi sta chiedendo, visto che non c'e'
+`auth.uid()`: **PostgREST passa le intestazioni della richiesta a SQL**. Il
+client mette il token di sessione in `x-kp-token` (vedi
+`src/lib/supabaseClient.js`, che per questo passa da un `fetch` proprio: le
+`global.headers` si fissano alla creazione, il token no), e
+`kp_sessione()` / `kp_nome()` / `kp_ruolo()` lo leggono da
+`current_setting('request.headers', true)::json`. Le policy si appoggiano a
+quelle tre. Provato: senza token `sales` e `clienti` rispondono 0 righe (erano
+33 e 38), con token admin 33 e 38, con token agente solo i propri.
+
+**Le viste scavalcano RLS.** Una vista gira coi permessi di chi la possiede, non
+di chi la interroga, a meno di `security_invoker`. Per questo
+`sales_with_commissions` e `team_members` erano leggibili da chiunque anche con
+RLS accesa sotto: `team_members` dava nome, email, username, telefono,
+commissioni e ultimo accesso di tutti e dodici. Rimedio per entrambe: `revoke`
+sulla vista e lettura da una funzione — `sales_visibili()` e `team_visibile()`.
+Se nasce un'altra vista su dati del team, vale lo stesso.
+
+Il taglio di `team_visibile()` e' voluto cosi': fra colleghi restano visibili
+nome, ruolo, email, username, telefono (sono dodici persone che lavorano
+insieme, e gli username sono `nome.cognome`); sono riservate ad admin, o alla
+propria riga, le cose che un agente non deve sapere dei colleghi —
+`commission_pct`, `last_login_at`, `must_change_password`, `ghl_user_id`.
+Resta aperto che un membro loggato veda i recapiti dei colleghi: per toglierlo
+bisogna spostare lato server le notifiche che oggi leggono l'email del
+destinatario dal browser (`convertLeadToSale`, `updateSale`, `createTask`).
+
+Le funzioni serverless non passano da qui: usano la `service_role`, che
+scavalca RLS. Verificato il 23/11 che sia configurata su Vercel
+(`/api/ghl/config` risponde `service_role_configurata: true`) — senza, si
+fermerebbero tutte.
 
 `api/proxy-image.js` era un proxy aperto (SSRF). Ora: solo https, niente
 redirect, solo risposte immagine, e il nome si risolve per rifiutare gli
@@ -124,7 +153,10 @@ aperto su un indirizzo pubblico.
 
 ## Cosa resta aperto
 
-1. **RLS sulle tabelle storiche** (sopra). La cosa piu' seria.
+1. **Notifiche che leggono i recapiti dal browser** (sopra): finche' ci sono,
+   un membro loggato vede le email dei colleghi. Si chiude spostando la
+   risoluzione del destinatario dentro `/api/send-email` e `/api/send-push`,
+   che hanno gia' sessione e `service_role`.
 2. **`richieste`**: tabella creata, **funzioni di lettura/scrittura mancanti**
    (migrazione interrotta da un timeout). Senza quelle la tabella e' inerte.
 3. **Catena pubblicazione → vetrina** mai provata da capo a fondo: serve un
@@ -136,6 +168,9 @@ aperto su un indirizzo pubblico.
    portale non compare.
 6. **Token GHL** passato in chat: da rigenerare.
 7. **Dati sporchi** segnalati e mai corretti: un lead a valore `-2`, una zona
-   senza nome da 7M, nessun telefono in anagrafica Team.
+   senza nome da 7M, nessun telefono in anagrafica Team (0 su 12), email solo
+   per 5 su 12. E **Alessandro Banfi ha `commission_pct = 0`**: non e' un
+   valore mancante, e' uno zero, quindi `percentualeAgente` non ripiega sul
+   70% di default e gli calcola commissione nulla.
 8. **Dati del Calcolatore ROI** fermi al 2024-2025, e le zone di Fujairah sono
    dichiarate stime.

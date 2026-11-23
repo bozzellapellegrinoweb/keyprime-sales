@@ -538,7 +538,7 @@ async function recapitiAgente(offerta) {
   if ((email && telefono) || !offerta.agente_nome) return { email, telefono };
   try {
     const { data } = await supabase
-      .from('team_members').select('email, telefono')
+      .rpc('team_visibile').select('email, telefono')
       .eq('nome', offerta.agente_nome).maybeSingle();
     if (data) {
       email = email || (data.email || '').trim();

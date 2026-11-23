@@ -81,8 +81,12 @@ export async function cambiaPassword(vecchia, nuova) {
 
 // --- Team (solo admin, autorizzazione verificata lato database) -------------
 
+// La vista team_members gira coi permessi del proprietario e scavalca RLS su
+// user_credentials: chiunque avesse la chiave pubblica si scaricava dodici
+// schede complete. Ora e' chiusa e si legge da team_visibile(), che pretende
+// una sessione e nasconde ai non-admin cosa prendono i colleghi.
 export async function caricaTeam() {
-  const { data } = await supabase.from('team_members').select('*').order('nome');
+  const { data } = await supabase.rpc('team_visibile');
   return data || [];
 }
 

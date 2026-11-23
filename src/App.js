@@ -1345,7 +1345,9 @@ export default function App() {
   };
   
   // Data Loading
-  const loadSales = async () => { setLoading(true); const { data } = await supabase.from('sales_with_commissions').select('*').order('created_at', { ascending: false }); setSales(data || []); setLoading(false); };
+  // La vista scavalca RLS, quindi e' chiusa alla chiave pubblica: si legge
+  // attraverso una funzione che applica le stesse regole delle policy.
+  const loadSales = async () => { setLoading(true); const { data } = await supabase.rpc('sales_visibili'); setSales(data || []); setLoading(false); };
   const loadUsers = async () => { setUsers(await auth.caricaTeam()); };
   const loadClienti = async () => { const { data } = await supabase.from('clienti').select('*').order('created_at', { ascending: false }); setClienti(data || []); };
   const loadTasks = async () => { const { data } = await supabase.from('tasks').select('*').order('scadenza', { ascending: true }); setTasks(data || []); };
@@ -1598,7 +1600,7 @@ export default function App() {
     const updatedSale = { ...sale, valore: v, stato: 'venduto' };
     await notifyNewSaleToAdmin(updatedSale, sale?.agente || sale?.segnalatore || 'N/A', sale?.segnalatore && !sale?.agente ? 'segnalatore' : 'agente');
     if (sale?.segnalatore) {
-      const { data: sg } = await supabase.from('team_members').select('email, username').eq('nome', sale.segnalatore).maybeSingle();
+      const { data: sg } = await supabase.rpc('team_visibile').select('email, username').eq('nome', sale.segnalatore).maybeSingle();
       if (sg) await notifySegnalatoreLeadVenduto(updatedSale, sg.username, sg.email);
     }
     setConvertingSale(null); setShowLeadDetail(null); showToast('Vendita confermata!'); loadSales(); loadClienti();
@@ -1611,7 +1613,7 @@ export default function App() {
     if (u.stato === 'vinto' && s?.stato !== 'vinto') {
       await notifyNewSaleToAdmin(s, s.agente || s.segnalatore || 'N/A', s?.segnalatore && !s?.agente ? 'segnalatore' : 'agente');
       if (s?.segnalatore) {
-        const { data: sg } = await supabase.from('team_members').select('email, username').eq('nome', s.segnalatore).maybeSingle();
+        const { data: sg } = await supabase.rpc('team_visibile').select('email, username').eq('nome', s.segnalatore).maybeSingle();
         if (sg) await notifySegnalatoreLeadVenduto(s, sg.username, sg.email);
       }
     }
@@ -1628,7 +1630,7 @@ export default function App() {
     if (u.pagato === true && !s?.pagato) {
       const tn = s.agente || s.segnalatore;
       if (tn) {
-        const { data: tu } = await supabase.from('team_members').select('*').eq('nome', tn).maybeSingle();
+        const { data: tu } = await supabase.rpc('team_visibile').select('*').eq('nome', tn).maybeSingle();
         if (tu) {
           const isAdmin = tu.ruolo === 'agente_admin';
           const agRate = isAdmin ? (s.referente === 'Giovanni' ? 0.7 : 0.3) : (s.agente && tu.nome === s.agente ? 0.7 : 0.3);
@@ -1735,7 +1737,7 @@ export default function App() {
     await supabase.from('tasks').insert([{ ...d, created_by: user?.nome }]);
     // Notifica push + email per nuovo task assegnato
     if (d.assegnato_a) {
-      const { data: agentData } = await supabase.from('team_members').select('email, username').eq('nome', d.assegnato_a).maybeSingle();
+      const { data: agentData } = await supabase.rpc('team_visibile').select('email, username').eq('nome', d.assegnato_a).maybeSingle();
       await notifyNewTaskToAgent(d, agentData?.email, agentData?.username);
     }
     loadTasks(); setShowTaskModal(null); showToast('Task creato');
