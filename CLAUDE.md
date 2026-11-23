@@ -151,6 +151,44 @@ aperto su un indirizzo pubblico.
   per l'affitto: a Dubai l'affitto si quota per anno.
 - **Un segnalatore puo' inserire un immobile, non pubblicarlo.**
 
+## GoHighLevel: cosa si puo' fare da qui e cosa no
+
+Location unica: `Yjm3Uvb0rc8mRuraj7ad` (company `TKb1V76Yu1nychT1uppg`).
+L'accesso e' via connettore MCP, non via browser.
+
+**Il limite che decide l'architettura**: l'API dei workflow risponde
+`WORKFLOW_API_NOT_ENABLED_FOR_LOCATION`. Non e' un problema di token o di
+scope — la funzione e' riservata a certi sotto-account. Quindi **ogni
+automazione dentro GHL va costruita a mano nell'interfaccia**, e la regola
+pratica e': tutto cio' che si puo' fare nel portale si fa nel portale, cosi'
+il lavoro manuale in GHL resta un passo solo (il webhook di ingresso).
+
+Non esiste nemmeno un'operazione per modificare le impostazioni della
+location: **il fuso e' `Europe/Amsterdam` su un'agenzia di Dubai** e si
+corregge solo a mano. Finche' resta cosi', le 9:00–18:00 di disponibilita'
+dei calendari sono le 12:00–21:00 di Dubai. Verificato aprendo il widget:
+primo slot alle 08:00 UTC.
+
+Si puo' fare via API: utenti, calendari, contatti, opportunita', campi
+personalizzati, tag, pipeline.
+
+Creati il 2026-11-23:
+
+| | id utente | calendario | link |
+|---|---|---|---|
+| Giovanni Aguit | `pBNgGBRKnfoMNCIdVMSN` | `iIsN5XdyoXVIaRXYw4Oj` | `/widget/bookings/giovanni-aguit` |
+| Alessandro Banfi | `T78lJ6xvDeJX0poCREKJ` | `mxq1GwJzJEorNbP2wMfo` | `/widget/bookings/alessandro-banfi` |
+
+Base dei link: `https://api.leadconnectorhq.com`. Entrambi ruolo `user` con
+`assignedDataOnly`, cioe' vedono solo i propri dati — la stessa separazione
+che fa RLS nel portale. I due id e i due link stanno in `user_credentials`
+(`ghl_user_id`, `ghl_calendario_url`): la mail di conferma al lead pesca il
+link da li', quindi cambiare agente in rotazione non richiede toccare codice.
+
+Trappola gia' incontrata: `openHours` vuole **una voce per giorno**
+(`daysOfTheWeek: [1]`, poi `[2]`...). Passare `[1,2,3,4,5]` in una sola voce
+da' `must be a valid day of week`.
+
 ## Cosa resta aperto
 
 1. **Notifiche che leggono i recapiti dal browser** (sopra): finche' ci sono,
@@ -167,6 +205,12 @@ aperto su un indirizzo pubblico.
    `lead_registrations`: se il rientro da GHL non e' attivo, nell'Inbox del
    portale non compare.
 6. **Token GHL** passato in chat: da rigenerare.
+6-bis. **Il workflow di ingresso in GHL non esiste ancora.** Finche' non c'e',
+   nessun lead di campagna arriva nel portale: il resto della catena
+   (dedupe, rotazione, SLA, mail di conferma) e' pronto e provato, ma non
+   viene mai chiamato. Trigger sul contatto creato, azione Webhook POST a
+   `https://portal.keyprimere.com/api/ghl/webhook`, header `x-kp-secret`.
+6-ter. **Fuso della location** da correggere a mano (sopra).
 7. **Dati sporchi** segnalati e mai corretti: un lead a valore `-2`, una zona
    senza nome da 7M, nessun telefono in anagrafica Team (0 su 12), email solo
    per 5 su 12. E **Alessandro Banfi ha `commission_pct = 0`**: non e' un
