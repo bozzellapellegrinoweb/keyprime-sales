@@ -193,6 +193,23 @@ motivo e' il volume: le mail ai lead crescono con le campagne, quelle interne
 no. In piu' la mail spedita da GHL resta attaccata alla conversazione del
 contatto, quindi una risposta non si perde.
 
+**Attenzione: in GHL c'e' GIA' un'automazione sul modulo, e manda la sua
+conferma.** Verificato in `search-conversation`: ogni contatto dei lead ads
+ha un `TYPE_EMAIL` in uscita con `lastOutboundMessageAction: "automated"` e
+corpo "Ecco cosa fare — Abbiamo ricevuto la tua richiesta. Un consulente ti
+contattera' a breve.", da `info@keyprimere.com`, da marzo a giugno. Parte
+anche la notifica interna all'agente ("Ti informo che abbiamo ricevuto un
+nuovo lead..."). Quindi il punto 6-bis era doppiamente sbagliato: non solo il
+workflow non serve piu', ma **un'automazione in GHL esiste da sempre** — l'API
+dei workflow e' chiusa in lettura, quindi non si vedeva.
+
+Conseguenza da risolvere prima delle campagne: la catena del portale manda la
+*sua* mail di conferma (`conferma_lead`, col link al calendario dell'agente
+assegnato), quindi **il lead ne riceve due**. Quella del portale e' la
+migliore delle due, perche' porta il calendario di chi lo chiamera'; quella di
+GHL e' generica. Va spenta una delle due, e spegnere quella di GHL si fa solo
+dall'interfaccia.
+
 **Una pipeline sola per tutti**: `OKvPvoWtJKRZQx5kM20n` — "Pipeline Lead
 KeyPrime", stadio di ingresso "Da contattare"
 `016c2631-fe68-42a3-9afd-73c64e9d06cb`. Gli id stanno sull'anagrafica
@@ -232,10 +249,31 @@ al terzo agente.
 
 - **nessun numero di telefono**: `active-numbers` risponde `No Twilio account
   found for location`. Senza numero non partono SMS, e WhatsApp non ha canale.
-- **nessun agente AI**: `list-managed-agents` risponde zero.
-- **i moduli si leggono ma non si creano**: l'API offre `get-forms` e
-  `get-forms-submissions`, nessuna scrittura. Ne esiste uno solo, "Form 1
-  landing keyprime" (`AiobyCSmW3Wb3FNWQIQ2`), quello dei lead Meta di giugno.
+- ~~nessun agente AI: `list-managed-agents` risponde zero.~~ **Inferenza
+  sbagliata, non ripeterla.** `list-managed-agents` sta nel dominio
+  `agent-studio`: sono i Managed Agents, un prodotto *diverso* dalla
+  Conversation AI. Che sia vuoto non dice niente sulla Conversation AI, e
+  questo connettore **non ha alcuna operazione** per leggerla
+  (`get-conversation-channel` accetta solo `SMS` e `Email`). Quindi da qui
+  l'agente non si puo' ne' confermare ne' smentire: Pellegrino dice che c'e',
+  e va creduto. Il solo dato oggettivo: in 21 conversazioni della location
+  **non esiste un `TYPE_WHATSAPP`** — solo `TYPE_EMAIL`, `TYPE_FACEBOOK`,
+  `TYPE_CALL`, `TYPE_NO_SHOW`. L'agente puo' essere configurato, ma non ha mai
+  girato un messaggio.
+- Allo stesso modo "nessun numero Twilio" **non** vuol dire "WhatsApp non ha
+  canale": in GHL WhatsApp si collega via Meta, non via Twilio. Sono due cose
+  separate e il passaggio di consegne le confondeva.
+- **i moduli dei funnel si leggono ma non si creano**: il dominio `forms`
+  offre `get-forms` e `get-forms-submissions`, nessuna scrittura. Ne esiste
+  uno solo, "Form 1 landing keyprime" (`AiobyCSmW3Wb3FNWQIQ2`), quello dei
+  lead Meta di giugno. **Ma i moduli lead di Meta sono un'altra cosa e quelli
+  si creano**: `fb-create-page-lead-form` nel dominio `ad-publishing`, con
+  `isDraft: true` per preparare senza pubblicare su Facebook. Oggi e' bloccato
+  da un solo passo: `fb-get-ad-accounts` vede i 67 account del proprietario
+  (quello buono e' **"keyprime ads"**, `act_678532348612369`, ACTIVE, AED,
+  business "In Dubai") ma tutti con `integrationConnected: false`, e
+  `fb-get-page-lead-forms` risponde `422 Location ... has no integration`.
+  Serve collegare Meta Ads alla location dall'interfaccia, una volta.
 - le landing delle campagne (`uae.keyprimere.com`) sono **funnel GHL**, non il
   Next.js di `keyprime-lead`: confermato dagli header `x-ghl-serve-region`.
 
