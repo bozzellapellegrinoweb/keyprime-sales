@@ -10,7 +10,7 @@
 import { serviceClient } from '../_lib/supabase.mjs';
 import { checkSecret } from '../_lib/auth.mjs';
 import { logSync } from '../_lib/ghl.mjs';
-import { push, email, template, riga, APP_URL } from '../_lib/notify.mjs';
+import { push, email, template, templateCliente, riga, APP_URL } from '../_lib/notify.mjs';
 
 // I payload dei workflow GHL non hanno una forma fissa: ogni campo puo'
 // arrivare in camelCase, snake_case o annidato sotto "contact".
@@ -44,12 +44,33 @@ function normalizza(payload) {
 
   const budget = pesca(payload, 'budget', 'budget_max', 'budgetMax');
 
+  // Da dove arriva, davvero. "fonte" da sola dice il tubo (GHL), non la
+  // campagna: con le inserzioni attive serve sapere quale annuncio ha prodotto
+  // quale lead, altrimenti il budget si decide a sensazione.
+  const utmSource = pesca(payload, 'utm_source', 'utmSource');
+  const utmMedium = pesca(payload, 'utm_medium', 'utmMedium');
+  const canale = (() => {
+    const s = (utmSource || '').toLowerCase();
+    if (/facebook|instagram|meta|fb|ig/.test(s)) return 'meta';
+    if (/google|adwords|gads|youtube/.test(s)) return 'google';
+    if (/tiktok/.test(s)) return 'tiktok';
+    if (!s) return null;
+    return 'altro';
+  })();
+
   return {
     ghlContactId: contactId,
     nome: nome || 'Lead',
     cognome: cognome || '',
     email: pesca(payload, 'email'),
     telefono: pesca(payload, 'phone', 'telefono', 'phone_number'),
+    canale,
+    campagna: pesca(payload, 'utm_campaign', 'utmCampaign', 'campaign_name', 'campagna'),
+    utmSource,
+    utmMedium,
+    utmContent: pesca(payload, 'utm_content', 'utmContent'),
+    utmTerm: pesca(payload, 'utm_term', 'utmTerm'),
+    adId: pesca(payload, 'ad_id', 'adId', 'adset_id', 'creative_id'),
     fonte: pesca(payload, 'source', 'fonte', 'utm_source') || 'GHL',
     zona: pesca(payload, 'zona', 'zone', 'area', 'location', 'interesse_zona'),
     progetto: pesca(payload, 'progetto', 'project', 'property', 'immobile'),
@@ -143,7 +164,15 @@ export default async function handler(req, res) {
       cliente_id: cliente.id,
       inserted_by: 'GHL',
       inserted_as: 'admin',
-      ghl_contact_id: lead.ghlContactId
+      ghl_contact_id: lead.ghlContactId,
+      canale: lead.canale,
+      campagna: lead.campagna,
+      utm_source: lead.utmSource,
+      utm_medium: lead.utmMedium,
+      utm_campaign: lead.campagna,
+      utm_content: lead.utmContent,
+      utm_term: lead.utmTerm,
+      ad_id: lead.adId
     }]).select().single();
     if (errSale) throw errSale;
 
@@ -181,10 +210,18 @@ export default async function handler(req, res) {
     }]);
 
     // 6. Avviso all'agente: un lead caldo non deve aspettare che qualcuno apra l'app.
+    const nominativo = `${cliente.nome} ${cliente.cognome || ''}`.trim();
+    let utente = null;
+
     if (agente) {
-      const { data: utente } = await supabase
-        .from('team_members').select('username, email').eq('nome', agente).maybeSingle();
-      const nominativo = `${cliente.nome} ${cliente.cognome || ''}`.trim();
+      // user_credentials e non la vista team_members: la vista ha un elenco di
+      // colonne fisso e non comprende ghl_calendario_url. Qui si gira con la
+      // service_role, che la legge senza problemi.
+      const { data } = await supabase
+        .from('user_credentials')
+        .select('username, email, ghl_calendario_url')
+        .eq('nome', agente).maybeSingle();
+      utente = data;
 
       await push({
         titolo: `Nuovo lead: ${nominativo}`,
@@ -208,6 +245,41 @@ export default async function handler(req, res) {
       }
     } else {
       await push({ titolo: 'Lead non assegnato', messaggio: `${lead.fonte}: nessun agente attivo in rotazione`, url: APP_URL });
+    }
+
+    // 7. Conferma al lead.
+    //
+    // Chi lascia i dati su un'inserzione e poi non riceve niente pensa di aver
+    // sbagliato qualcosa, e intanto compila il modulo del concorrente. Questa
+    // email parte entro pochi secondi, dice chi lo chiamera' e gli lascia in
+    // mano il link del calendario di quell'agente: se ha fretta prenota da
+    // solo invece di aspettare.
+    //
+    // Sta qui e non in un workflow GHL per due motivi: l'API dei workflow non
+    // e' abilitata su questo sotto-account, e qui il testo e' versionato e si
+    // prova prima di pubblicarlo.
+    if (lead.email) {
+      const nomeLead = (cliente.nome || '').trim() || 'ciao';
+      const link = utente?.ghl_calendario_url || null;
+
+      const corpo = agente
+        ? `<p style="margin:0 0 14px">Grazie per averci scritto: abbiamo ricevuto la tua richiesta${lead.zona ? ` su <strong>${lead.zona}</strong>` : ''}.</p>
+           <p style="margin:0 0 14px">Se ne occupa <strong>${agente}</strong>, che ti contatterà entro ${ore} ore al numero che ci hai lasciato.</p>
+           ${link ? `<p style="margin:0">Se preferisci scegliere tu quando sentirvi, puoi fissare una call di 30 minuti quando ti è comodo.</p>` : ''}`
+        : `<p style="margin:0 0 14px">Grazie per averci scritto: abbiamo ricevuto la tua richiesta${lead.zona ? ` su <strong>${lead.zona}</strong>` : ''}.</p>
+           <p style="margin:0">Un nostro consulente ti contatterà a breve al numero che ci hai lasciato.</p>`;
+
+      await email({
+        a: lead.email,
+        oggetto: 'Abbiamo ricevuto la tua richiesta — KeyPrime Real Estate',
+        html: templateCliente({
+          titolo: `Ciao ${nomeLead}, ci siamo.`,
+          corpo,
+          azione: link ? 'Prenota la tua call' : null,
+          urlAzione: link,
+          poscritto: 'Se nel frattempo vuoi aggiungere qualcosa, rispondi pure a questa email: la leggiamo noi.'
+        })
+      });
     }
 
     await logSync(supabase, {
