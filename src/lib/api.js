@@ -92,3 +92,17 @@ export async function leggiConfigGhl() {
     return { ok: false, error: 'Connessione non disponibile' };
   }
 }
+
+/* Va a prendere in GHL i lead arrivati dall'ultimo giro.
+ *
+ * Serve perche' GHL non ce li spinge: l'azione "Webhook" vive dentro un
+ * workflow, e l'API dei workflow e' chiusa su questo sotto-account. Invece di
+ * dipendere da un pezzo costruito a mano, il portale se li va a prendere.
+ *
+ * Il giro e' idempotente: una sentinella in app_settings tiene il punto, e
+ * chiamarlo due volte di fila non crea niente la seconda. Per questo lo puo'
+ * far scattare chiunque sia dentro, senza chiedere permessi particolari.
+ */
+export function tiraLeadGhl() {
+  return chiama('/api/ghl/pull-lead');
+}

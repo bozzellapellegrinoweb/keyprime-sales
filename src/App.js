@@ -1367,6 +1367,47 @@ export default function App() {
 
   useEffect(() => { if (user) { loadSales(); loadClienti(); loadTasks(); loadActivities(); loadFollowUps(); loadSavedListings(); loadOfferte(); loadImpostazioni(); loadUsers(); }}, [user]);
 
+  /* I lead delle campagne arrivano perche' andiamo a prenderli.
+   *
+   * GHL non ce li spinge: l'azione "Webhook" sta dentro un workflow, e l'API
+   * dei workflow e' chiusa su questo sotto-account (403
+   * WORKFLOW_API_NOT_ENABLED_FOR_LOCATION, in lettura e in scrittura). Invece
+   * di dipendere da un pezzo costruito a mano nell'interfaccia di GHL, che un
+   * giorno qualcuno mette in pausa senza che nessuno se ne accorga, il
+   * portale interroga GHL mentre qualcuno lo ha aperto.
+   *
+   * Due minuti e' il compromesso: un lead caldo non aspetta, e sono 30
+   * chiamate l'ora per sessione aperta, che non si sentono. Il lavoro vero lo
+   * fa il server, qui si bussa soltanto.
+   *
+   * Il giro e' idempotente — una sentinella tiene il punto — quindi dieci
+   * schede aperte non creano dieci lead.
+   */
+  useEffect(() => {
+    if (!user) return;
+    let vivo = true;
+
+    const giro = async () => {
+      if (!vivo || document.visibilityState === 'hidden') return;
+      const esito = await apiKp.tiraLeadGhl();
+      if (!vivo || !esito?.ok || !esito.creati) return;
+      // Non si aspetta il realtime: con RLS attiva il canale pubblico non
+      // riceve piu' gli eventi di sales, quindi si ricarica a mano.
+      loadSales();
+      loadClienti();
+      showToast(esito.creati === 1 ? 'Nuovo lead da GHL' : `${esito.creati} nuovi lead da GHL`);
+    };
+
+    giro();
+    const t = setInterval(giro, 2 * 60 * 1000);
+    document.addEventListener('visibilitychange', giro);
+    return () => {
+      vivo = false;
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', giro);
+    };
+  }, [user]);
+
   // Realtime sync
   useEffect(() => {
     if (!user) return;
