@@ -252,10 +252,20 @@ server di GHL, non a noi: quello che il nostro container riesce o non riesce a
 risolvere non conta nulla. E su `nPT7tjulrU7cftXU41p0` il crawl e' partito
 davvero (85 URL prenotati su `dubailand.gov.ae`).
 
-Due avvertenze. In modalita' `Domain` il crawler scende prima nell'albero
-`/ar/` e raccoglie organigrammi e relazioni internazionali: con `autoTrain:
-false` piu' `preSelectedUrls` si decide pagina per pagina, e per un compratore
-italiano serve l'albero `/en/`. E delle fonti ufficiali **solo
+Stato al 23/11: **16 pagine addestrate, tutte `Successful`**, fra cui Rules &
+Regulations (che nomina la Law No. 8 of 2007 sugli escrow, il decreto sugli
+aumenti di affitto, il Jointly Owned Property), First Time Home Buyer, Service
+Charge Index e Project Status. Il contenuto e' servito dal server, non
+renderizzato nel browser: verificato, 231 KB di HTML con i testi dentro.
+
+Tre avvertenze. In modalita' `Domain` il crawler scende prima nell'albero
+`/ar/` e raccoglie organigrammi e relazioni internazionali; `Path` su
+`https://dubailand.gov.ae/en/` resta in inglese per costruzione, ed e' quella
+da usare. `preSelectedUrls` funziona ma **e' lento a partire**: a tre minuti
+dalla chiamata era ancora a `discoveredUrlsCount: 0` e sembrava bloccato,
+mentre invece poi ha addestrato tutto — non concludere che sia rotto.
+`trainDiscoveredUrls` vuole gli **id** delle pagine scoperte, non gli URL,
+quindi serve sempre un `discoverWebsite` prima. E delle fonti ufficiali **solo
 `dubailand.gov.ae` esiste**: `dld.gov.ae`, `rera.dubai.gov.ae` e
 `dubairest.gov.ae` non hanno record DNS — lo dicono sia il container sia i
 server GHL (`getaddrinfo ENOTFOUND`). Non sono bloccati dalla rete: non
@@ -312,8 +322,19 @@ da' `must be a valid day of week`.
 6-ter. **Fuso della location** da correggere a mano (sopra).
 7. **Dati sporchi** segnalati e mai corretti: un lead a valore `-2`, una zona
    senza nome da 7M, nessun telefono in anagrafica Team (0 su 12), email solo
-   per 5 su 12. E **Alessandro Banfi ha `commission_pct = 0`**: non e' un
-   valore mancante, e' uno zero, quindi `percentualeAgente` non ripiega sul
-   70% di default e gli calcola commissione nulla.
+   per 5 su 12 — e fra i mancanti c'e' Pellegrino stesso.
+   ~~Alessandro Banfi ha `commission_pct = 0`.~~ **Corretto a 70 il 23/11**,
+   su conferma di Pellegrino. Vale la pena sapere perche' contava: dei due
+   agenti in rotazione sulle campagne, Giovanni Aguit ha ruolo `agente_admin`
+   e prende il ramo `referente === 'Giovanni' ? 70 : 30`, quindi la sua
+   `commission_pct` non viene nemmeno letta; Alessandro e' `agente`, e quel
+   campo era l'unica cosa che decideva la sua paga. Stava a zero.
+7-bis. **Cancellare un lead non tocca sei tabelle, ne tocca tredici.**
+   Hanno `sale_id` o `cliente_id`: `follow_ups`, `lead_activities`,
+   `lead_assignment_log`, `ghl_sync_log`, `ghl_messages`, `email_log`,
+   `tasks`, `cliente_interazioni`, `offerte`, `saved_listings`, `richieste`,
+   `sales`, `clienti`. Sul lead dimostrativo solo le prime quattro avevano
+   righe, quindi l'ordine breve che girava funzionava per caso: contare prima
+   di cancellare.
 8. **Dati del Calcolatore ROI** fermi al 2024-2025, e le zone di Fujairah sono
    dichiarate stime.
