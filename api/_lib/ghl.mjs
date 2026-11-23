@@ -59,6 +59,17 @@ export function upsertContact({ nome, cognome, email, telefono, tags, source, as
   return ghlFetch('/contacts/upsert', { body, version: 'v3' });
 }
 
+// Il contatto passa in carico all'agente anche dentro GHL, non solo nel
+// portale: altrimenti l'agente apre GHL e non trova il proprio lead, perche'
+// gira con assignedDataOnly.
+export function assegnaContatto(contactId, ghlUserId) {
+  return ghlFetch(`/contacts/${contactId}`, {
+    method: 'PUT',
+    body: { assignedTo: ghlUserId },
+    version: 'v3'
+  });
+}
+
 export function addContactTags(contactId, tags) {
   return ghlFetch(`/contacts/${contactId}/tags`, { body: { tags }, version: 'v3' });
 }
