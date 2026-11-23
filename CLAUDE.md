@@ -198,6 +198,25 @@ KeyPrime", stadio di ingresso "Da contattare"
 `016c2631-fe68-42a3-9afd-73c64e9d06cb`. Gli id stanno sull'anagrafica
 (`ghl_pipeline_id`, `ghl_stadio_iniziale_id`).
 
+**Ma la pipeline e' scritta in DUE posti, e vanno tenuti d'accordo.**
+`webhook.mjs` (ingresso del lead) legge gli id dall'anagrafica.
+`sync-contact.mjs` (avanzamento di stato) legge invece
+`app_settings.ghl.pipeline_id` e `app_settings.ghl.stage_map`, che si cambiano
+da Impostazioni nel portale. Il 23/11 quel secondo posto puntava ancora a
+`SVHvR3Une6YaJbyYcZYO` — "Marketing Pipeline", quella di marzo con gli stadi in
+inglese — con una `stage_map` di id che non appartengono alla pipeline nuova.
+Effetto: l'agente spostava un lead in "trattativa" e GHL rispondeva
+`400 OPPORTUNITY_STAGE_ID_INVALID`, quindi l'opportunita' non si muoveva mai.
+Era rimasto invisibile perche' l'ultimo `sync_contatto` e' del 23 ottobre, un
+mese prima che la pipeline nuova esistesse. Rimappato e provato sul campo. Se
+nasce un'altra pipeline, questi due posti si cambiano insieme.
+
+La corrispondenza fra i due mondi non e' uno a uno: il portale ha cinque stati
+sul percorso della *trattativa* (`lead → trattativa → EOI → venduto (SPA) →
+incassato`), la pipeline ha sei stadi sul percorso del *lead*. `venduto` e
+`incassato` cadono entrambi su "Chiuso": li distingue `status` (`won`), non lo
+stadio. `EOI` non e' mai stato usato in trentaquattro righe di `sales`.
+
 Stadi: Da contattare, Call fissata, Qualificato, Proposta inviata, Trattativa,
 Chiuso. Quando la rotazione assegna un lead nasce l'opportunita' li' dentro, e
 il contatto passa in carico all'agente anche in GHL — senza, lui apre GHL e
@@ -223,11 +242,43 @@ al terzo agente.
 Quindi la catena "WhatsApp qualifica e prenota la call" oggi non ha dove
 appoggiarsi, e i moduli nuovi vanno fatti nell'interfaccia.
 
+Sul fuso: cercata l'operazione, non c'e'. `update-business` esiste ma riguarda
+i "business" *dentro* la location, non la location stessa — non usarla
+sperando che serva.
+
+**La knowledge base invece si riempie da qui.** `discoverWebsite`,
+`trainDiscoveredUrls` e `getSitemapPreview` fanno scaricare le pagine ai
+server di GHL, non a noi: quello che il nostro container riesce o non riesce a
+risolvere non conta nulla. E su `nPT7tjulrU7cftXU41p0` il crawl e' partito
+davvero (85 URL prenotati su `dubailand.gov.ae`).
+
+Due avvertenze. In modalita' `Domain` il crawler scende prima nell'albero
+`/ar/` e raccoglie organigrammi e relazioni internazionali: con `autoTrain:
+false` piu' `preSelectedUrls` si decide pagina per pagina, e per un compratore
+italiano serve l'albero `/en/`. E delle fonti ufficiali **solo
+`dubailand.gov.ae` esiste**: `dld.gov.ae`, `rera.dubai.gov.ae` e
+`dubairest.gov.ae` non hanno record DNS — lo dicono sia il container sia i
+server GHL (`getaddrinfo ENOTFOUND`). Non sono bloccati dalla rete: non
+esistono, quindi non vale la pena riprovare da un'altra macchina. I contenuti
+RERA stanno sotto il DLD, che ne e' il braccio regolatorio.
+
 **L'indice di ricerca di GHL e' in ritardo sulla scrittura.** Un contatto
 appena creato non compare subito in `/contacts/search`: misurato, il primo
 giro trovava zero e quello dopo lo trovava. Non e' un bug del nostro codice.
 Il giro ogni due minuti lo copre da solo, ma non fidarsi di una singola
 chiamata subito dopo una creazione.
+
+**Sulla scheda contatto l'attribuzione sta in DUE blocchi, e nessuno dei due e'
+completo.** `attributionSource` e' il primo contatto, `lastAttributionSource`
+l'ultimo. Misurato sul contatto `mpvl4tYg2ZhLMogoW0S0` (lead ads Meta vero di
+giugno): `utmKeyword`, che porta l'id della creativita', c'e' nel primo e vale
+`null` nel secondo. `aPayload` leggeva un blocco solo e cosi' `ad_id` ricadeva
+su `mediumId`, che e' l'id del MODULO — identico per ogni lead dello stesso
+form, quindi inservibile per confrontare annunci. Ora i due blocchi si fondono
+campo per campo (vince l'ultimo dove ha un valore, il primo riempie i buchi) e
+`ad_id` prende `adId`, poi `utmKeyword`, poi `utmTerm`. `aPayload` e' esportata
+per poterla provare su schede vere senza creare lead: usarla, invece di
+dedurre.
 
 Trappola gia' incontrata: `openHours` vuole **una voce per giorno**
 (`daysOfTheWeek: [1]`, poi `[2]`...). Passare `[1,2,3,4,5]` in una sola voce
@@ -249,11 +300,15 @@ da' `must be a valid day of week`.
    `lead_registrations`: se il rientro da GHL non e' attivo, nell'Inbox del
    portale non compare.
 6. **Token GHL** passato in chat: da rigenerare.
-6-bis. **Il workflow di ingresso in GHL non esiste ancora.** Finche' non c'e',
-   nessun lead di campagna arriva nel portale: il resto della catena
-   (dedupe, rotazione, SLA, mail di conferma) e' pronto e provato, ma non
-   viene mai chiamato. Trigger sul contatto creato, azione Webhook POST a
-   `https://portal.keyprimere.com/api/ghl/webhook`, header `x-kp-secret`.
+6-bis. ~~Il workflow di ingresso in GHL non esiste ancora.~~ **Superato, e non
+   serve piu' costruirlo.** Il workflow era il piano quando si aspettava che
+   GHL spingesse i lead; adesso `/api/ghl/pull-lead` va a prenderseli e li
+   rigira a `/api/ghl/webhook`, che resta l'unico posto dove un lead nasce.
+   Verificato il 23/11 che gira: in `ghl_sync_log` ci sono tre `pull_lead`
+   con esito `ok`, e la sentinella `app_settings.ghl_pull.ultimo_contatto_iso`
+   avanza al `dateAdded` del contatto importato (valore 19:44:53, riga scritta
+   alle 19:45:44). La nota dentro quel record parla ancora di "momento
+   dell'attivazione": e' vecchia, non descrive piu' il comportamento.
 6-ter. **Fuso della location** da correggere a mano (sopra).
 7. **Dati sporchi** segnalati e mai corretti: un lead a valore `-2`, una zona
    senza nome da 7M, nessun telefono in anagrafica Team (0 su 12), email solo
