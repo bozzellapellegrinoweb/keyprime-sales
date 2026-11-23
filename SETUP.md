@@ -101,6 +101,12 @@ un'azione **Webhook**:
 - URL: `https://portal.keyprimere.com/api/ghl/webhook`
 - Header: `x-kp-secret` = il valore di `GHL_WEBHOOK_SECRET`
 
+> **Non serve piu'.** Dal 23/11 il portale va a prendersi i lead da solo
+> (`/api/ghl/pull-lead`, ogni due minuti mentre qualcuno ha l'app aperta).
+> Questo webhook resta documentato perche' se un giorno lo aggiungi funziona
+> lo stesso, e il controllo anti-doppione impedisce il doppio inserimento.
+> Quanto segue vale solo se decidi di metterlo comunque.
+
 **Senza questo webhook non arriva niente.** Tutto il resto della catena è
 pronto e provato, ma non viene mai chiamato: i lead delle inserzioni restano
 in GHL e nell'Inbox del portale non compaiono. È l'unico passo che non si può
