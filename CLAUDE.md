@@ -378,7 +378,22 @@ da' `must be a valid day of week`.
 5. **`/api/request-info`** (sito pubblico) manda il lead solo a GHL, non a
    `lead_registrations`: se il rientro da GHL non e' attivo, nell'Inbox del
    portale non compare.
-6. **Token GHL** passato in chat: da rigenerare.
+6. **Chiavi: il repository e' pulito, verificato il 24/11.** Niente segreti
+   ne' ora ne' nella storia di git: `.env` e' tracciato ma contiene solo `CI`,
+   e nei commit `RESEND_API_KEY=` e `ONESIGNAL_REST_API_KEY=` sono vuote. I due
+   JWT nel codice (`src/lib/supabaseClient.js`, `api/_lib/supabase.mjs`) sono
+   `role=anon`: pubblici per progetto, come lo e' `ONESIGNAL_APP_ID`, che il
+   browser deve avere per registrare i dispositivi. La `service_role` arriva
+   dall'ambiente Vercel, non dal codice.
+   Quindi l'unica via di fuga possibile e' una conversazione. ~~Token GHL
+   passato in chat: da rigenerare.~~ Quell'avvertenza riguardava le chiavi di
+   **sessioni precedenti**, ruotate il 22/11: se i valori nuovi non sono stati
+   incollati in chat, non c'e' niente da fare e la voce e' chiusa.
+   **La regola, per non farla rinascere sbagliata**: una chiave si rigenera se
+   il suo valore e' finito in una conversazione o in un commit. **Mai per il
+   tempo passato.** Prima di scrivere "da rigenerare" in questo elenco, dire
+   *quale* valore e *dove* e' stato esposto, altrimenti si fa ruotare chiavi a
+   vuoto e si logora la fiducia nell'elenco.
 6-bis. ~~Il workflow di ingresso in GHL non esiste ancora.~~ **Superato, e non
    serve piu' costruirlo.** Il workflow era il piano quando si aspettava che
    GHL spingesse i lead; adesso `/api/ghl/pull-lead` va a prenderseli e li
