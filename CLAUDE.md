@@ -167,26 +167,39 @@ Non esiste un'operazione per modificare le impostazioni della location: il
 fuso si corregge solo a mano. **Fatto il 24/11**: `get-location` risponde
 `timezone: "Asia/Dubai"` su location e business, valuta `AED`.
 
-**Ma gli slot non si sono spostati, e questo e' aperto.** `get-slots` su
-entrambi i calendari (`iIsN5XdyoXVIaRXYw4Oj` e `mxq1GwJzJEorNbP2wMfo`) per il
-25/11 restituisce `08:00`–`16:30 UTC`: sono le 9:00–18:00 di **Amsterdam**, non
-di Dubai, che sarebbero 05:00–14:00 UTC. Identico sui due calendari, quindi e'
-sistemico, non del singolo.
+**Ma cambiare la location non sposta i calendari gia' esistenti: il fuso lo
+catturano alla creazione.** Dopo il passaggio ad `Asia/Dubai` i due calendari
+nati il 23/11 continuavano a dare `08:00`–`16:30 UTC`, cioe' 9:00–18:00 di
+**Amsterdam**, e in `Asia/Dubai` uscivano come 12:00–20:30: un lead che
+prenotava "alle 9:00" si prendeva mezzogiorno.
 
-Dove NON sta la causa, verificato: il calendario non ha un fuso proprio
-(`get-calendar` non ne restituisce uno e `update-calendar` non ha il campo),
-e nemmeno l'utente (`get-user` su Giovanni non ha un campo fuso). Quindi il
-calendario pesca dalla location, che e' giusta: resta una copia denormalizzata
-lato GHL che non si e' allineata.
+Non e' una cache che si allinea aspettando, ed e' bene non averlo trattato
+come tale. Dimostrato il 24/11 creando un calendario usa-e-getta a location
+gia' corretta: quello nasceva giusto (`05:00`–`13:30 UTC`) con gli stessi
+`openHours`. Quindi il fuso e' dentro il calendario, in un campo che
+`get-calendar` non restituisce e che `update-calendar` non puo' scrivere.
 
-**Non compensare spostando `openHours` a 13:00–22:00.** Quando la copia si
-allinea il calendario finirebbe sbagliato dall'altra parte, e nessuno
-ricollegherebbe la cosa. La prova da rifare, cosi' com'e':
+**Percio' un calendario col fuso sbagliato non si corregge: si rifa.** Fatto
+per entrambi (id e slug nuovi nella tabella sopra). I vecchi sono
+**disattivati, non cancellati** — `isActive: false` e rinominati
+`[NON USARE — fuso Amsterdam] ...` — cosi' eventuali appuntamenti gia' presi
+non si perdono. Se un giorno servono, gli slug liberi sono `giovanni-aguit` e
+`alessandro-banfi`.
+
+Due cose imparate nel farlo. La prima: `update-calendar` restituisce
+`openHours: {}` anche quando gli orari sono intatti — **non e' un azzeramento**,
+e' solo la forma della risposta; verificato con `get-slots` subito dopo, gli
+slot c'erano. La seconda: `create-calendar` non riporta il `consentLabel`
+italiano, ci mette quello inglese di default. Su KeyPrime va
+`Acconsento a essere ricontattato da KeyPrime Real Estate ai recapiti che ho
+lasciato.`
+
+La prova, per chiunque rifaccia un calendario:
 
 ```
-get-slots  calendarId=iIsN5XdyoXVIaRXYw4Oj
-           startDate=1795564800000 endDate=1795651200000 timezone=UTC
-# atteso quando si allinea: primo slot 05:00Z, ultimo 13:30Z
+get-slots  calendarId=<nuovo>  timezone=Asia/Dubai
+           startDate=1795564800000 endDate=1795651200000
+# giusto: 09:00–17:30 +04:00   sbagliato: 12:00–20:30 +04:00
 ```
 
 Si puo' fare via API: utenti, calendari, contatti, opportunita', campi
@@ -196,8 +209,13 @@ Creati il 2026-11-23:
 
 | | id utente | calendario | link |
 |---|---|---|---|
-| Giovanni Aguit | `pBNgGBRKnfoMNCIdVMSN` | `iIsN5XdyoXVIaRXYw4Oj` | `/widget/bookings/giovanni-aguit` |
-| Alessandro Banfi | `T78lJ6xvDeJX0poCREKJ` | `mxq1GwJzJEorNbP2wMfo` | `/widget/bookings/alessandro-banfi` |
+| Giovanni Aguit | `pBNgGBRKnfoMNCIdVMSN` | `rcxv19enCjCSz44rVp6D` | `/widget/bookings/giovanni-aguit-dubai` |
+| Alessandro Banfi | `T78lJ6xvDeJX0poCREKJ` | `yAs2ZqYg05uMygwty1h3` | `/widget/bookings/alessandro-banfi-dubai` |
+
+Rifatti il 24/11 col fuso di Dubai (sotto, "il fuso lo catturano alla
+creazione"). I primi due — `iIsN5XdyoXVIaRXYw4Oj` e `mxq1GwJzJEorNbP2wMfo`,
+slug `giovanni-aguit` e `alessandro-banfi` — sono disattivati e tenuti da
+parte, non cancellati.
 
 Base dei link: `https://api.leadconnectorhq.com`. Entrambi ruolo `user` con
 `assignedDataOnly`, cioe' vedono solo i propri dati — la stessa separazione
@@ -403,10 +421,11 @@ da' `must be a valid day of week`.
    avanza al `dateAdded` del contatto importato (valore 19:44:53, riga scritta
    alle 19:45:44). La nota dentro quel record parla ancora di "momento
    dell'attivazione": e' vecchia, non descrive piu' il comportamento.
-6-ter. ~~Fuso della location da correggere a mano.~~ **Corretto il 24/11** ad
-   `Asia/Dubai`, **ma gli slot dei calendari escono ancora su Amsterdam**
-   (sopra, con la prova da rifare). Finche' non si allinea, un lead che
-   prenota alle 9:00 si prende le 13:00 di Dubai.
+6-ter. ~~Fuso della location da correggere a mano.~~ ~~Corretto, ma gli slot
+   escono su Amsterdam.~~ **Chiuso il 24/11.** Location su `Asia/Dubai`, e i
+   due calendari rifatti perche' quelli vecchi avevano catturato Amsterdam
+   alla creazione (sopra). Verificato: `09:00`–`17:30 +04:00` su entrambi, e
+   `user_credentials.ghl_calendario_url` aggiornata ai link nuovi.
 7. **Dati sporchi** segnalati e mai corretti: un lead a valore `-2`, una zona
    senza nome da 7M, nessun telefono in anagrafica Team (0 su 12), email solo
    per 5 su 12 — e fra i mancanti c'e' Pellegrino stesso.
