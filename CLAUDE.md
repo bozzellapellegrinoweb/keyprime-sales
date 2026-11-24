@@ -163,11 +163,31 @@ automazione dentro GHL va costruita a mano nell'interfaccia**, e la regola
 pratica e': tutto cio' che si puo' fare nel portale si fa nel portale, cosi'
 il lavoro manuale in GHL resta un passo solo (il webhook di ingresso).
 
-Non esiste nemmeno un'operazione per modificare le impostazioni della
-location: **il fuso e' `Europe/Amsterdam` su un'agenzia di Dubai** e si
-corregge solo a mano. Finche' resta cosi', le 9:00–18:00 di disponibilita'
-dei calendari sono le 12:00–21:00 di Dubai. Verificato aprendo il widget:
-primo slot alle 08:00 UTC.
+Non esiste un'operazione per modificare le impostazioni della location: il
+fuso si corregge solo a mano. **Fatto il 24/11**: `get-location` risponde
+`timezone: "Asia/Dubai"` su location e business, valuta `AED`.
+
+**Ma gli slot non si sono spostati, e questo e' aperto.** `get-slots` su
+entrambi i calendari (`iIsN5XdyoXVIaRXYw4Oj` e `mxq1GwJzJEorNbP2wMfo`) per il
+25/11 restituisce `08:00`–`16:30 UTC`: sono le 9:00–18:00 di **Amsterdam**, non
+di Dubai, che sarebbero 05:00–14:00 UTC. Identico sui due calendari, quindi e'
+sistemico, non del singolo.
+
+Dove NON sta la causa, verificato: il calendario non ha un fuso proprio
+(`get-calendar` non ne restituisce uno e `update-calendar` non ha il campo),
+e nemmeno l'utente (`get-user` su Giovanni non ha un campo fuso). Quindi il
+calendario pesca dalla location, che e' giusta: resta una copia denormalizzata
+lato GHL che non si e' allineata.
+
+**Non compensare spostando `openHours` a 13:00–22:00.** Quando la copia si
+allinea il calendario finirebbe sbagliato dall'altra parte, e nessuno
+ricollegherebbe la cosa. La prova da rifare, cosi' com'e':
+
+```
+get-slots  calendarId=iIsN5XdyoXVIaRXYw4Oj
+           startDate=1795564800000 endDate=1795651200000 timezone=UTC
+# atteso quando si allinea: primo slot 05:00Z, ultimo 13:30Z
+```
 
 Si puo' fare via API: utenti, calendari, contatti, opportunita', campi
 personalizzati, tag, pipeline.
@@ -368,7 +388,10 @@ da' `must be a valid day of week`.
    avanza al `dateAdded` del contatto importato (valore 19:44:53, riga scritta
    alle 19:45:44). La nota dentro quel record parla ancora di "momento
    dell'attivazione": e' vecchia, non descrive piu' il comportamento.
-6-ter. **Fuso della location** da correggere a mano (sopra).
+6-ter. ~~Fuso della location da correggere a mano.~~ **Corretto il 24/11** ad
+   `Asia/Dubai`, **ma gli slot dei calendari escono ancora su Amsterdam**
+   (sopra, con la prova da rifare). Finche' non si allinea, un lead che
+   prenota alle 9:00 si prende le 13:00 di Dubai.
 7. **Dati sporchi** segnalati e mai corretti: un lead a valore `-2`, una zona
    senza nome da 7M, nessun telefono in anagrafica Team (0 su 12), email solo
    per 5 su 12 — e fra i mancanti c'e' Pellegrino stesso.
